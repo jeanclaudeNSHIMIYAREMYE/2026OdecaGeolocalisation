@@ -1,0 +1,142 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Colline;
+use App\Models\Commune;
+use App\Models\Menage;
+use App\Models\Province;
+use App\Models\User;
+use App\Models\Zone;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class MenageController extends Controller
+{
+    public function index(Request $request): Response
+    {
+        $this->authorize('viewAny', Menage::class);
+
+        $filtres = $request->only(['recherche', 'statut', 'province_id', 'commune_id', 'zone_id', 'colline_id']);
+
+        $menages = Menage::query()
+            ->with(['colline.zone.commune.province', 'enqueteur:id,name'])
+            ->when($filtres['recherche'] ?? null, fn ($q, $v) => $q->where(
+                fn ($q) => $q->where('code_menage', 'like', "%{$v}%")
+                    ->orWhere('nom_chef_menage', 'like', "%{$v}%")
+                    ->orWhere('prenom_chef_menage', 'like', "%{$v}%")
+            ))
+            ->when($filtres['statut'] ?? null, fn ($q, $v) => $q->where('statut', $v))
+            ->when($filtres['colline_id'] ?? null, fn ($q, $v) => $q->where('colline_id', $v))
+            ->when($filtres['zone_id'] ?? null, fn ($q, $v) => $q->whereHas('colline', fn ($q) => $q->where('zone_id', $v)))
+            ->when($filtres['commune_id'] ?? null, fn ($q, $v) => $q->whereHas('colline.zone', fn ($q) => $q->where('commune_id', $v)))
+            ->when($filtres['province_id'] ?? null, fn ($q, $v) => $q->whereHas('colline.zone.commune', fn ($q) => $q->where('province_id', $v)))
+            ->orderByDesc('updated_at')
+            ->paginate(20)
+            ->withQueryString();
+
+        return Inertia::render('Menages/Index', [
+            'menages' => $menages,
+            'filtres' => $filtres,
+            'provinces' => Province::orderBy('nom')->get(['id', 'nom']),
+            'communes' => Commune::orderBy('nom')->get(['id', 'nom', 'province_id']),
+            'zones' => Zone::orderBy('nom')->get(['id', 'nom', 'commune_id']),
+            'collines' => Colline::orderBy('nom')->get(['id', 'nom', 'zone_id']),
+            'peutCreer' => $request->user()->can('create', Menage::class),
+        ]);
+    }
+
+    public function create(): Response
+    {
+        $this->authorize('create', Menage::class);
+
+        return Inertia::render('Menages/Creer', $this->donneesFormulaire());
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $this->authorize('create', Menage::class);
+
+        $donnees = $this->valider($request);
+
+        $menage = Menage::create([
+            ...$donnees,
+            'source' => 'pre_enregistre',
+            'cree_par_id' => $request->user()->id,
+        ]);
+
+        return redirect()->route('menages.show', $menage)->with('succes', 'Ménage créé.');
+    }
+
+    public function show(Menage $menage): Response
+    {
+        $this->authorize('view', $menage);
+
+        $menage->load(['colline.zone.commune.province', 'enqueteur:id,name', 'parcelles', 'reponses.question']);
+
+        return Inertia::render('Menages/Afficher', [
+            'menage' => $menage,
+            'peutModifier' => request()->user()->can('update', $menage),
+        ]);
+    }
+
+    public function edit(Menage $menage): Response
+    {
+        $this->authorize('update', $menage);
+
+        return Inertia::render('Menages/Modifier', [
+            'menage' => $menage->only([
+                'id', 'code_menage', 'nom_chef_menage', 'prenom_chef_menage',
+                'telephone', 'colline_id', 'statut', 'enqueteur_id',
+            ]),
+            ...$this->donneesFormulaire(),
+        ]);
+    }
+
+    public function update(Request $request, Menage $menage): RedirectResponse
+    {
+        $this->authorize('update', $menage);
+
+        $donnees = $this->valider($request, $menage->id);
+
+        $menage->update($donnees);
+
+        return redirect()->route('menages.show', $menage)->with('succes', 'Ménage mis à jour.');
+    }
+
+    public function destroy(Menage $menage): RedirectResponse
+    {
+        $this->authorize('delete', $menage);
+
+        $menage->delete();
+
+        return redirect()->route('menages.index')->with('succes', 'Ménage supprimé.');
+    }
+
+    private function donneesFormulaire(): array
+    {
+        return [
+            'provinces' => Province::orderBy('nom')->get(['id', 'nom']),
+            'communes' => Commune::orderBy('nom')->get(['id', 'nom', 'province_id']),
+            'zones' => Zone::orderBy('nom')->get(['id', 'nom', 'commune_id']),
+            'collines' => Colline::orderBy('nom')->get(['id', 'nom', 'zone_id']),
+            'enqueteurs' => User::where('role', 'enqueteur')->where('actif', true)->orderBy('name')->get(['id', 'name']),
+        ];
+    }
+
+    private function valider(Request $request, ?int $idIgnore = null): array
+    {
+        return $request->validate([
+            'code_menage' => ['required', 'string', 'max:50', Rule::unique('menages', 'code_menage')->ignore($idIgnore)],
+            'nom_chef_menage' => ['nullable', 'string', 'max:255'],
+            'prenom_chef_menage' => ['nullable', 'string', 'max:255'],
+            'telephone' => ['nullable', 'string', 'max:30'],
+            'colline_id' => ['required', 'exists:collines,id'],
+            'statut' => ['required', Rule::in(['a_faire', 'en_attente', 'termine'])],
+            'enqueteur_id' => ['nullable', 'exists:users,id'],
+        ]);
+    }
+}
