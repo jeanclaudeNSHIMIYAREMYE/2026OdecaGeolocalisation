@@ -15,15 +15,108 @@ class StoreParcelleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nombre_pieds' => ['nullable', 'integer', 'min:0'],
-            'annee_mise_en_place' => ['nullable', 'integer', 'min:1900', 'max:'.(date('Y') + 1)],
-            'etat_verger' => ['nullable', 'string', 'max:255'],
-            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
-            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
-            'polygone' => ['nullable', 'array'],
-            'polygone.*.latitude' => ['required_with:polygone', 'numeric', 'between:-90,90'],
-            'polygone.*.longitude' => ['required_with:polygone', 'numeric', 'between:-180,180'],
-            'mode_positionnement' => ['nullable', Rule::in(['automatique', 'manuel'])],
+            /*
+             * Caractéristiques
+             */
+            'nombre_pieds' => [
+                'nullable',
+                'integer',
+                'min:0',
+            ],
+
+            'annee_mise_en_place' => [
+                'nullable',
+                'integer',
+                'min:1900',
+                'max:' . (date('Y') + 1),
+            ],
+
+            'etat_verger' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
+            /*
+             * Localisation
+             */
+            'latitude' => [
+                'nullable',
+                'numeric',
+                'between:-90,90',
+            ],
+
+            'longitude' => [
+                'nullable',
+                'numeric',
+                'between:-180,180',
+            ],
+
+            'polygone' => [
+                'nullable',
+                'array',
+            ],
+
+            'polygone.*.latitude' => [
+                'required_with:polygone',
+                'numeric',
+                'between:-90,90',
+            ],
+
+            'polygone.*.longitude' => [
+                'required_with:polygone',
+                'numeric',
+                'between:-180,180',
+            ],
+
+            'mode_positionnement' => [
+                'nullable',
+                Rule::in([
+                    'automatique',
+                    'manuel',
+                ]),
+            ],
+
+            /*
+             * Acquisition de la terre
+             */
+            'mode_acquisition' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
+            /*
+             * Pièce justificative
+             */
+            'piece_justificative' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
+            /*
+             * Photo de la pièce justificative
+             */
+            'piece_justificative_photo' => [
+                'nullable',
+                // 'image',
+                // 'mimes:jpeg,jpg,png,webp',
+                'max:10240', // 10 MB
+            ],
+
+            /*
+             * Informations complémentaires
+             */
+            'notes' => [
+                'nullable',
+                'string',
+            ],
+
+            'autres_donnees' => [
+                'nullable',
+                'string',
+            ],
         ];
     }
 }

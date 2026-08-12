@@ -19,11 +19,13 @@ class Question extends Model
         'options',
         'obligatoire',
         'autre_option',
+        'condition',
         'ordre',
     ];
 
     protected $casts = [
         'options' => 'array',
+        'condition' => 'array',
         'obligatoire' => 'boolean',
         'autre_option' => 'boolean',
     ];

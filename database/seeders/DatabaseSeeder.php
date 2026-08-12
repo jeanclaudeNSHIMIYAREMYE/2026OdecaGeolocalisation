@@ -15,12 +15,16 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call(ReferentielAdministratifSeeder::class);
+        $this->call([
+            ReferentielAdministratifSeeder::class,
+            QuestionnaireSeeder::class
+        ]);
 
         User::factory()->create([
             'name' => 'Administrateur',
             'email' => 'admin@lnc-burundi.bi',
             'role' => 'admin',
+            'password' => bcrypt('password'),
         ]);
     }
 }

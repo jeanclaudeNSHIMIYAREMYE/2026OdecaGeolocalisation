@@ -10,18 +10,34 @@ use Illuminate\Support\Facades\DB;
 class ReponseController extends Controller
 {
     /**
-     * Enregistre (ou met à jour, s'il existe déjà) la réponse à une question
-     * pour un ménage/parcelle donné. La contrainte unique (menage_id,
-     * parcelle_id, question_id) permet un upsert idempotent — pratique
-     * quand l'app mobile rejoue une soumission après une coupure réseau.
+     * Enregistre ou met à jour une réponse à une question
+     * pour un ménage.
+     *
+     * parcelle_id est optionnel. Lorsqu'il n'est pas fourni,
+     * la réponse est considérée comme une réponse générale
+     * au niveau du ménage.
      */
     public function store(Request $request)
     {
         $donnees = $request->validate([
-            'menage_id' => ['required', 'exists:menages,id'],
-            'parcelle_id' => ['nullable', 'exists:parcelles,id'],
-            'question_id' => ['required', 'exists:questions,id'],
-            'valeur' => ['required'],
+            'menage_id' => [
+                'required',
+                'exists:menages,id',
+            ],
+
+            'parcelle_id' => [
+                'nullable',
+                'exists:parcelles,id',
+            ],
+
+            'question_id' => [
+                'required',
+                'exists:questions,id',
+            ],
+
+            'valeur' => [
+                'required',
+            ],
         ]);
 
         $reponse = ReponseQuestionnaire::updateOrCreate(
@@ -30,40 +46,91 @@ class ReponseController extends Controller
                 'parcelle_id' => $donnees['parcelle_id'] ?? null,
                 'question_id' => $donnees['question_id'],
             ],
-            ['valeur' => $donnees['valeur']]
+            [
+                'valeur' => $donnees['valeur'],
+            ]
         );
 
-        return response()->json(['data' => $reponse], 201);
+        return response()->json([
+            'data' => $reponse,
+        ], 201);
     }
 
+
     /**
-     * Enregistre un lot de réponses en une seule requête : c'est le mode
-     * utilisé par l'app mobile à la soumission d'un formulaire terrain
-     * complet (souvent 15-40 questions d'un coup).
+     * Enregistre plusieurs réponses en une seule requête.
+     *
+     * Exemple:
+     *
+     * {
+     *     "reponses": [
+     *         {
+     *             "menage_id": 1,
+     *             "question_id": 1,
+     *             "valeur": 5
+     *         },
+     *         {
+     *             "menage_id": 1,
+     *             "question_id": 2,
+     *             "valeur": ["Fertilisation organique"]
+     *         }
+     *     ]
+     * }
      */
     public function storeLot(Request $request)
     {
         $donnees = $request->validate([
-            'reponses' => ['required', 'array', 'min:1'],
-            'reponses.*.menage_id' => ['required', 'exists:menages,id'],
-            'reponses.*.parcelle_id' => ['nullable', 'exists:parcelles,id'],
-            'reponses.*.question_id' => ['required', 'exists:questions,id'],
-            'reponses.*.valeur' => ['required'],
+            'reponses' => [
+                'required',
+                'array',
+                'min:1',
+            ],
+
+            'reponses.*.menage_id' => [
+                'required',
+                'exists:menages,id',
+            ],
+
+            'reponses.*.parcelle_id' => [
+                'nullable',
+                'exists:parcelles,id',
+            ],
+
+            'reponses.*.question_id' => [
+                'required',
+                'exists:questions,id',
+            ],
+
+            'reponses.*.valeur' => [
+                'required',
+            ],
         ]);
 
         $enregistrees = DB::transaction(function () use ($donnees) {
             return collect($donnees['reponses'])->map(
-                fn (array $r) => ReponseQuestionnaire::updateOrCreate(
-                    [
-                        'menage_id' => $r['menage_id'],
-                        'parcelle_id' => $r['parcelle_id'] ?? null,
-                        'question_id' => $r['question_id'],
-                    ],
-                    ['valeur' => $r['valeur']]
-                )
+                function (array $reponse) {
+                    return ReponseQuestionnaire::updateOrCreate(
+                        [
+                            'menage_id' => $reponse['menage_id'],
+
+                            'parcelle_id' =>
+                                $reponse['parcelle_id'] ?? null,
+
+                            'question_id' =>
+                                $reponse['question_id'],
+                        ],
+                        [
+                            'valeur' =>
+                                $reponse['valeur'],
+                        ]
+                    );
+                }
             );
         });
 
-        return response()->json(['data' => $enregistrees, 'total' => $enregistrees->count()], 201);
+        return response()->json([
+            'data' => $enregistrees->values(),
+            'total' => $enregistrees->count(),
+        ], 201);
     }
 }

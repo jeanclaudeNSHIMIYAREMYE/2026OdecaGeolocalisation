@@ -76,7 +76,7 @@ class MenageController extends Controller
         $this->authorize('view', $menage);
 
         $menage->load(['colline.zone.commune.province', 'enqueteur:id,name', 'parcelles', 'reponses.question']);
-
+        
         return Inertia::render('Menages/Afficher', [
             'menage' => $menage,
             'peutModifier' => request()->user()->can('update', $menage),
