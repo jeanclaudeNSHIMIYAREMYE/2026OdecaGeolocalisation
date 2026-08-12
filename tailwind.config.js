@@ -15,6 +15,13 @@ export default {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
             },
+            colors: {
+                burundi: {
+                    rouge: '#CE1126',
+                    vert: '#1EB53A',
+                    blanc: '#FFFFFF',
+                },
+            },
         },
     },
 

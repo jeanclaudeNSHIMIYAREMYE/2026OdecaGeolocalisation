@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 const LIEN_CLASSE_BASE =
     'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition';
-const LIEN_CLASSE_ACTIF = 'bg-indigo-50 text-indigo-700';
+const LIEN_CLASSE_ACTIF = 'bg-green-50 text-burundi-vert';
 const LIEN_CLASSE_INACTIF = 'text-gray-600 hover:bg-gray-100 hover:text-gray-900';
 
 function LienNav({ href, actif, children }) {
@@ -27,6 +27,10 @@ function ContenuNavigation({ user }) {
 
             <LienNav href={route('menages.index')} actif={route().current('menages.*')}>
                 Ménages
+            </LienNav>
+
+            <LienNav href={route('statistiques.index')} actif={route().current('statistiques.*')}>
+                Statistiques
             </LienNav>
 
             {user.role !== 'enqueteur' && (
@@ -70,10 +74,16 @@ export default function Sidebar() {
             )}
 
             <aside
-                className={`fixed inset-y-0 left-0 z-40 flex w-64 transform flex-col border-r border-gray-200 bg-white py-6 transition-transform sm:static sm:translate-x-0 ${
+                className={`fixed inset-y-0 left-0 z-40 flex w-64 transform flex-col border-r border-gray-200 bg-white pb-6 pt-1 transition-transform sm:static sm:translate-x-0 ${
                     ouvert ? 'translate-x-0' : '-translate-x-full'
                 }`}
             >
+                <div className="mb-5 flex h-1.5 w-full">
+                    <div className="flex-1 bg-burundi-rouge" />
+                    <div className="flex-1 bg-white" />
+                    <div className="flex-1 bg-burundi-vert" />
+                </div>
+
                 <div className="mb-6 flex items-center gap-2 px-4">
                     <Link href="/">
                         <ApplicationLogo className="block h-8 w-auto fill-current text-gray-800" />
