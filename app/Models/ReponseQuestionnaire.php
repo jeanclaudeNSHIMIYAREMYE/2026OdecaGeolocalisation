@@ -20,7 +20,7 @@ class ReponseQuestionnaire extends Model
 
     protected $fillable = [
         'menage_id',
-        'parcelle_id',
+        //'parcelle_id',
         'question_id',
         'valeur',
     ];

@@ -20,14 +20,32 @@ class Menage extends Model
 
     protected $fillable = [
         'code_menage',
+
+        // Type de ménage
+        'type_menage',
+
+        // Chef de ménage
         'nom_chef_menage',
         'prenom_chef_menage',
         'telephone',
+
+        // Identification / photos
+        'photo_proprietaire',
+        'photo_piece_identification',
+        'cni',
+
+        // Localisation
         'colline_id',
+
+        // Statut
         'statut',
         'source',
+
+        // Utilisateurs
         'enqueteur_id',
         'cree_par_id',
+
+        // Activité
         'date_derniere_activite',
     ];
 
@@ -64,19 +82,29 @@ class Menage extends Model
     public function scopeVisiblePour(Builder $query, User $utilisateur): Builder
     {
         return match ($utilisateur->role) {
-            'admin', 'superviseur_national' => $query,
+            'admin',
+            'superviseur_national' => $query,
 
             'superviseur_provincial' => $query->whereHas(
                 'colline.zone.commune',
-                fn (Builder $q) => $q->where('province_id', $utilisateur->province_id)
+                fn (Builder $q) => $q->where(
+                    'province_id',
+                    $utilisateur->province_id
+                )
             ),
 
             'superviseur_communal' => $query->whereHas(
                 'colline.zone',
-                fn (Builder $q) => $q->where('commune_id', $utilisateur->commune_id)
+                fn (Builder $q) => $q->where(
+                    'commune_id',
+                    $utilisateur->commune_id
+                )
             ),
 
-            'enqueteur' => $query->where('enqueteur_id', $utilisateur->id),
+            'enqueteur' => $query->where(
+                'enqueteur_id',
+                $utilisateur->id
+            ),
 
             default => $query->whereRaw('1 = 0'),
         };

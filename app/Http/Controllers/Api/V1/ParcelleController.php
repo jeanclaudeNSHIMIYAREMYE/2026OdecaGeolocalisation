@@ -7,21 +7,42 @@ use App\Http\Requests\Api\StoreParcelleRequest;
 use App\Http\Resources\Api\ParcelleResource;
 use App\Models\Menage;
 use App\Models\Parcelle;
+use Illuminate\Support\Facades\Storage;
 
 class ParcelleController extends Controller
 {
     public function index(Menage $menage)
     {
-        return ParcelleResource::collection($menage->parcelles);
+        $parcelles = $menage->parcelles()
+            ->orderByDesc('updated_at')
+            ->get();
+
+        return ParcelleResource::collection($parcelles);
     }
 
     public function store(StoreParcelleRequest $request, Menage $menage)
     {
-        $parcelle = $menage->parcelles()->create($request->validated());
+        $data = $request->validated();
 
-        $menage->update(['date_derniere_activite' => now()]);
+        /*
+         * Upload de la photo de la pièce justificative
+         */
+        if ($request->hasFile('piece_justificative_photo')) {
+            $data['piece_justificative_photo'] = $request
+                ->file('piece_justificative_photo')
+                ->store('parcelles/pieces-justificatives', 'public');
+        }
 
-        return (new ParcelleResource($parcelle))->response()->setStatusCode(201);
+        $parcelle = $menage->parcelles()->create($data);
+
+        // Mise à jour de l'activité du ménage
+        $menage->update([
+            'date_derniere_activite' => now(),
+        ]);
+
+        return (new ParcelleResource($parcelle))
+            ->response()
+            ->setStatusCode(201);
     }
 
     public function show(Parcelle $parcelle)
@@ -29,17 +50,61 @@ class ParcelleController extends Controller
         return new ParcelleResource($parcelle);
     }
 
-    public function update(StoreParcelleRequest $request, Parcelle $parcelle)
-    {
-        $parcelle->update($request->validated());
-        $parcelle->menage()->update(['date_derniere_activite' => now()]);
+    public function update(
+        StoreParcelleRequest $request,
+        Parcelle $parcelle
+    ) {
+        $data = $request->validated();
 
-        return new ParcelleResource($parcelle->fresh());
+        /*
+         * Si une nouvelle photo est envoyée,
+         * supprimer l'ancienne puis enregistrer la nouvelle.
+         */
+        if ($request->hasFile('piece_justificative_photo')) {
+
+            if ($parcelle->piece_justificative_photo) {
+                Storage::disk('public')->delete(
+                    $parcelle->piece_justificative_photo
+                );
+            }
+
+            $data['piece_justificative_photo'] = $request
+                ->file('piece_justificative_photo')
+                ->store('parcelles/pieces-justificatives', 'public');
+        }
+
+        $parcelle->update($data);
+
+        $parcelle->menage()->update([
+            'date_derniere_activite' => now(),
+        ]);
+
+        return new ParcelleResource(
+            $parcelle->fresh()
+        );
     }
 
     public function destroy(Parcelle $parcelle)
     {
+        /*
+         * Supprimer la photo associée avant de supprimer
+         * la parcelle.
+         */
+        if ($parcelle->piece_justificative_photo) {
+            Storage::disk('public')->delete(
+                $parcelle->piece_justificative_photo
+            );
+        }
+
+        $menage = $parcelle->menage;
+
         $parcelle->delete();
+
+        if ($menage) {
+            $menage->update([
+                'date_derniere_activite' => now(),
+            ]);
+        }
 
         return response()->json(null, 204);
     }

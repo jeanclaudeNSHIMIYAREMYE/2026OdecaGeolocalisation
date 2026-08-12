@@ -19,13 +19,26 @@ class Parcelle extends Model
 
     protected $fillable = [
         'menage_id',
+
+        // Caractéristiques
         'nombre_pieds',
         'annee_mise_en_place',
         'etat_verger',
+
+        // Localisation
         'latitude',
         'longitude',
         'polygone',
         'mode_positionnement',
+
+        // Propriété / acquisition
+        'mode_acquisition',
+        'piece_justificative',
+        'piece_justificative_photo',
+
+        // Informations complémentaires
+        'notes',
+        'autres_donnees',
     ];
 
     protected $casts = [
