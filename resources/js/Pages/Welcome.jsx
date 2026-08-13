@@ -42,16 +42,11 @@ export default function Welcome({ auth }) {
                                 <>
                                     <Link
                                         href={route('login')}
-                                        className="rounded-md px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-white"
+                                        className="rounded-md bg-burundi-vert px-4 py-2 text-sm font-medium text-white transition hover:bg-green-700"
                                     >
                                         Connexion
                                     </Link>
-                                    <Link
-                                        href={route('register')}
-                                        className="rounded-md bg-burundi-vert px-4 py-2 text-sm font-medium text-white transition hover:bg-green-700"
-                                    >
-                                        Inscription
-                                    </Link>
+
                                 </>
                             )}
                         </nav>
