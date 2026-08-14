@@ -55,15 +55,15 @@ class StoreMenageRequest extends FormRequest
 
             'photo_proprietaire' => [
                 'nullable',
-                'image',
-                'mimes:jpg,jpeg,png,webp',
+                //'image',
+                //'mimes:jpg,jpeg,png,webp',
                 'max:5120',
             ],
 
             'photo_piece_identification' => [
                 'nullable',
-                'image',
-                'mimes:jpg,jpeg,png,webp',
+                //'image',
+                //'mimes:jpg,jpeg,png,webp',
                 'max:5120',
             ],
 

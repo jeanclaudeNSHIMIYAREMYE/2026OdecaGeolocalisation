@@ -13,6 +13,7 @@ function CarteBurundi({ points }) {
     const conteneurRef = useRef(null);
     const carteRef = useRef(null);
     const coucheMarqueursRef = useRef(null);
+    const couchePolygonesRef = useRef(null);
 
     useEffect(() => {
         let annule = false;
@@ -21,37 +22,157 @@ function CarteBurundi({ points }) {
             if (annule || !conteneurRef.current) return;
 
             if (!carteRef.current) {
-                carteRef.current = L.map(conteneurRef.current).setView([-3.373, 29.918], 8);
+                carteRef.current = L.map(conteneurRef.current).setView(
+                    [-3.373, 29.918],
+                    8,
+                );
 
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; OpenStreetMap',
-                    maxZoom: 18,
-                }).addTo(carteRef.current);
+                L.tileLayer(
+                    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    {
+                        attribution: '&copy; OpenStreetMap',
+                        maxZoom: 18,
+                    },
+                ).addTo(carteRef.current);
 
-                coucheMarqueursRef.current = L.layerGroup().addTo(carteRef.current);
+                coucheMarqueursRef.current =
+                    L.layerGroup().addTo(carteRef.current);
+
+                couchePolygonesRef.current =
+                    L.layerGroup().addTo(carteRef.current);
             }
 
+            /*
+             * Nettoyer les anciennes données
+             */
             coucheMarqueursRef.current.clearLayers();
+            couchePolygonesRef.current.clearLayers();
+
+            const toutesLesCoordonnees = [];
 
             points.forEach((point) => {
-                L.circleMarker([point.latitude, point.longitude], {
-                    radius: 6,
-                    color: COULEURS_STATUT[point.statut_menage] ?? '#6366f1',
-                    fillColor: COULEURS_STATUT[point.statut_menage] ?? '#6366f1',
-                    fillOpacity: 0.8,
-                    weight: 1,
-                })
-                    .bindPopup(
-                        `<strong>${point.code_menage}</strong><br>` +
-                            `${point.nom_chef_menage ?? ''}<br>` +
-                            `${point.nombre_pieds ?? '—'} pieds de café`,
+                const couleur =
+                    COULEURS_STATUT[point.statut_menage] ??
+                    '#6366f1';
+
+                /*
+                 * ============================
+                 * POLYGONE
+                 * ============================
+                 */
+                if (
+                    Array.isArray(point.polygone) &&
+                    point.polygone.length >= 3
+                ) {
+                    const coordinates = point.polygone
+                        .map((coord) => {
+                            /*
+                             * Supporte :
+                             *
+                             * { latitude, longitude }
+                             *
+                             * ou éventuellement :
+                             *
+                             * [latitude, longitude]
+                             */
+                            if (
+                                Array.isArray(coord) &&
+                                coord.length >= 2
+                            ) {
+                                return [
+                                    Number(coord[0]),
+                                    Number(coord[1]),
+                                ];
+                            }
+
+                            if (
+                                coord &&
+                                coord.latitude != null &&
+                                coord.longitude != null
+                            ) {
+                                return [
+                                    Number(coord.latitude),
+                                    Number(coord.longitude),
+                                ];
+                            }
+
+                            return null;
+                        })
+                        .filter(Boolean);
+
+                    if (coordinates.length >= 3) {
+                        L.polygon(coordinates, {
+                            color: couleur,
+                            fillColor: couleur,
+                            fillOpacity: 0.25,
+                            weight: 2,
+                        })
+                            .bindPopup(
+                                `<strong>${point.code_menage}</strong><br>` +
+                                    `${point.nom_chef_menage ?? ''}<br>` +
+                                    `${point.nombre_pieds ?? '—'} pieds de café<br>` +
+                                    `État : ${point.etat_verger ?? '—'}`,
+                            )
+                            .addTo(couchePolygonesRef.current);
+
+                        toutesLesCoordonnees.push(
+                            ...coordinates,
+                        );
+                    }
+                }
+
+                /*
+                 * ============================
+                 * POINT GPS
+                 * ============================
+                 */
+                if (
+                    point.latitude != null &&
+                    point.longitude != null
+                ) {
+                    const latitude = Number(point.latitude);
+                    const longitude = Number(point.longitude);
+
+                    L.circleMarker(
+                        [latitude, longitude],
+                        {
+                            radius: 6,
+                            color: couleur,
+                            fillColor: couleur,
+                            fillOpacity: 0.8,
+                            weight: 1,
+                        },
                     )
-                    .addTo(coucheMarqueursRef.current);
+                        .bindPopup(
+                            `<strong>${point.code_menage}</strong><br>` +
+                                `${point.nom_chef_menage ?? ''}<br>` +
+                                `${point.nombre_pieds ?? '—'} pieds de café<br>` +
+                                `État : ${point.etat_verger ?? '—'}`,
+                        )
+                        .addTo(coucheMarqueursRef.current);
+
+                    toutesLesCoordonnees.push([
+                        latitude,
+                        longitude,
+                    ]);
+                }
             });
 
-            if (points.length > 0) {
-                const bornes = L.latLngBounds(points.map((p) => [p.latitude, p.longitude]));
-                carteRef.current.fitBounds(bornes, { padding: [30, 30] });
+            /*
+             * Ajuster automatiquement la carte
+             * sur les points ET les polygones.
+             */
+            if (toutesLesCoordonnees.length > 0) {
+                const bornes = L.latLngBounds(
+                    toutesLesCoordonnees,
+                );
+
+                carteRef.current.fitBounds(
+                    bornes,
+                    {
+                        padding: [30, 30],
+                    },
+                );
             }
         });
 
@@ -67,7 +188,12 @@ function CarteBurundi({ points }) {
         };
     }, []);
 
-    return <div ref={conteneurRef} className="h-[500px] w-full rounded-lg" />;
+    return (
+        <div
+            ref={conteneurRef}
+            className="h-[500px] w-full rounded-lg"
+        />
+    );
 }
 
 function CarteKpi({ titre, valeur, sousTitre }) {

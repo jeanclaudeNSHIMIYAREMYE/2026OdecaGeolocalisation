@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\AccueilController;
 use App\Http\Controllers\Api\V1\GeoReferenceController;
 use App\Http\Controllers\Api\V1\MenageController;
 use App\Http\Controllers\Api\V1\ParcelleController;
@@ -26,6 +27,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
     // --- Authentification (publique) ---
     Route::post('/login', [AuthController::class, 'login'])->name('login');
+    Route::get('/ping', function () {
+        return response()->json(['status' => 'ok'], 200);
+    });
 
     Route::middleware('auth:sanctum')->group(function () {
 
@@ -51,6 +55,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // --- Parcelles géolocalisées (points/polygones GPS) ---
         Route::apiResource('menages.parcelles', ParcelleController::class)
             ->shallow();
+
+        Route::get('/accueil', [AccueilController::class, 'index'])
+            ->name('accueil.index');
 
         // --- Réponses au questionnaire ---
         Route::post('/reponses', [ReponseController::class, 'store'])->name('reponses.store');
