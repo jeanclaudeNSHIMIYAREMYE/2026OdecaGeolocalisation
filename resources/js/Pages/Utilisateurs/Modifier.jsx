@@ -2,13 +2,14 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
 import Formulaire from './Partials/Formulaire';
 
-export default function Modifier({ utilisateur, roles, provinces, communes }) {
+export default function Modifier({ utilisateur, roles, provinces, communes, zones, collines }) {
     const { data, setData, put, processing, errors } = useForm({
         name: utilisateur.name,
         email: utilisateur.email,
         role: utilisateur.role,
         province_id: utilisateur.province_id ?? '',
         commune_id: utilisateur.commune_id ?? '',
+        collines_ids: utilisateur.collines_ids ?? [],
         password: '',
     });
 
@@ -38,6 +39,8 @@ export default function Modifier({ utilisateur, roles, provinces, communes }) {
                             roles={roles}
                             provinces={provinces}
                             communes={communes}
+                            zones={zones}
+                            collines={collines}
                             modeCreation={false}
                             onSubmit={soumettre}
                         />
