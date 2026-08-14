@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Colline;
 use App\Models\Commune;
 use App\Models\Province;
 use App\Models\User;
+use App\Models\Zone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -19,9 +22,11 @@ class UserController extends Controller
         $this->authorize('viewAny', User::class);
 
         $utilisateurs = User::visiblePour($request->user())
+            ->select(['id', 'name', 'email', 'role', 'province_id', 'commune_id', 'actif'])
             ->with(['province:id,nom', 'commune:id,nom'])
+            ->withCount('collines')
             ->orderBy('name')
-            ->get(['id', 'name', 'email', 'role', 'province_id', 'commune_id', 'actif']);
+            ->get();
 
         return Inertia::render('Utilisateurs/Index', [
             'utilisateurs' => $utilisateurs,
@@ -47,6 +52,10 @@ class UserController extends Controller
             'password' => bcrypt($donnees['password']),
         ]);
 
+        if ($donnees['role'] === 'enqueteur') {
+            $utilisateur->collines()->sync($donnees['collines_ids'] ?? []);
+        }
+
         return redirect()->route('utilisateurs.index')->with('succes', 'Compte créé.');
     }
 
@@ -55,7 +64,10 @@ class UserController extends Controller
         $this->authorize('update', $utilisateur);
 
         return Inertia::render('Utilisateurs/Modifier', [
-            'utilisateur' => $utilisateur->only(['id', 'name', 'email', 'role', 'province_id', 'commune_id']),
+            'utilisateur' => [
+                ...$utilisateur->only(['id', 'name', 'email', 'role', 'province_id', 'commune_id']),
+                'collines_ids' => $utilisateur->collines()->pluck('collines.id'),
+            ],
             ...$this->donneesFormulaire(),
         ]);
     }
@@ -75,6 +87,12 @@ class UserController extends Controller
             ...(filled($donnees['password'] ?? null) ? ['password' => bcrypt($donnees['password'])] : []),
         ]);
 
+        // Un utilisateur qui change de rôle et n'est plus enquêteur perd
+        // ses affectations de collines ; sync([]) les retire proprement.
+        $utilisateur->collines()->sync(
+            $donnees['role'] === 'enqueteur' ? ($donnees['collines_ids'] ?? []) : []
+        );
+
         return redirect()->route('utilisateurs.index')->with('succes', 'Compte mis à jour.');
     }
 
@@ -93,6 +111,8 @@ class UserController extends Controller
             'roles' => $this->roles(),
             'provinces' => Province::orderBy('nom')->get(['id', 'nom']),
             'communes' => Commune::orderBy('nom')->get(['id', 'nom', 'province_id']),
+            'zones' => Zone::orderBy('nom')->get(['id', 'nom', 'commune_id']),
+            'collines' => Colline::orderBy('nom')->get(['id', 'nom', 'zone_id']),
         ];
     }
 
@@ -115,6 +135,8 @@ class UserController extends Controller
             'role' => ['required', Rule::in(array_keys($this->roles()))],
             'province_id' => ['nullable', 'exists:provinces,id', 'required_if:role,superviseur_provincial'],
             'commune_id' => ['nullable', 'exists:communes,id', 'required_if:role,superviseur_communal'],
+            'collines_ids' => ['nullable', 'array', 'required_if:role,enqueteur'],
+            'collines_ids.*' => ['integer', 'exists:collines,id'],
             'password' => [$idIgnore ? 'nullable' : 'required', 'string', 'min:8'],
         ]);
     }

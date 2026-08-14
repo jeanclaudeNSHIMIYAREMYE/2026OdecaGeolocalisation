@@ -33,6 +33,12 @@ function ContenuNavigation({ user }) {
                 Statistiques
             </LienNav>
 
+            {user.role === 'admin' && (
+                <LienNav href={route('rapports.index')} actif={route().current('rapports.*')}>
+                    Rapports
+                </LienNav>
+            )}
+
             {user.role !== 'enqueteur' && (
                 <LienNav href={route('utilisateurs.index')} actif={route().current('utilisateurs.*')}>
                     Utilisateurs

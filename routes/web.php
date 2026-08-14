@@ -4,6 +4,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\MenageController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RapportController;
 use App\Http\Controllers\StatistiqueController;
 use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Application;
@@ -37,6 +38,18 @@ Route::middleware(['auth', 'verified'])
         Route::get('/menages.xlsx', [ExportController::class, 'xlsx'])->name('menages-xlsx');
         Route::get('/menages.pdf', [ExportController::class, 'pdf'])->name('menages-pdf');
         Route::get('/parcelles.geojson', [ExportController::class, 'geojson'])->name('parcelles-geojson');
+    });
+
+Route::middleware(['auth', 'verified', 'role:admin'])
+    ->prefix('rapports')
+    ->name('rapports.')
+    ->group(function () {
+        Route::get('/', [RapportController::class, 'index'])->name('index');
+        Route::get('/export/pdf', [RapportController::class, 'pdf'])->name('pdf');
+        Route::get('/export/xlsx', [RapportController::class, 'xlsx'])->name('xlsx');
+        Route::get('/export/csv', [RapportController::class, 'csv'])->name('csv');
+        Route::get('/export/kml', [RapportController::class, 'kml'])->name('kml');
+        Route::get('/export/geojson', [RapportController::class, 'geojson'])->name('geojson');
     });
 
 Route::get('/statistiques', [StatistiqueController::class, 'index'])

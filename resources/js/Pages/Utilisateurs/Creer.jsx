@@ -2,13 +2,14 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
 import Formulaire from './Partials/Formulaire';
 
-export default function Creer({ roles, provinces, communes }) {
+export default function Creer({ roles, provinces, communes, zones, collines }) {
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         email: '',
         role: '',
         province_id: '',
         commune_id: '',
+        collines_ids: [],
         password: '',
     });
 
@@ -38,6 +39,8 @@ export default function Creer({ roles, provinces, communes }) {
                             roles={roles}
                             provinces={provinces}
                             communes={communes}
+                            zones={zones}
+                            collines={collines}
                             modeCreation
                             onSubmit={soumettre}
                         />
