@@ -83,7 +83,9 @@ export default function Index({ utilisateurs, peutGerer }) {
                                         <td className="px-6 py-4 text-gray-600">
                                             {utilisateur.commune?.nom ??
                                                 utilisateur.province?.nom ??
-                                                '—'}
+                                                (utilisateur.role === 'enqueteur'
+                                                    ? `${utilisateur.collines_count ?? 0} colline(s)`
+                                                    : '—')}
                                         </td>
                                         <td className="px-6 py-4">
                                             <span
@@ -104,11 +106,13 @@ export default function Index({ utilisateurs, peutGerer }) {
                                                 >
                                                     Modifier
                                                 </Link>
+                                                {!utilisateur.is_super_admin && (
                                                 <SecondaryButton
                                                     onClick={() => basculerStatut(utilisateur)}
                                                 >
                                                     {utilisateur.actif ? 'Désactiver' : 'Réactiver'}
                                                 </SecondaryButton>
+                                            )}
                                             </td>
                                         )}
                                     </tr>
