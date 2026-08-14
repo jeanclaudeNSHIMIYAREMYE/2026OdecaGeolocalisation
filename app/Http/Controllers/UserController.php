@@ -47,7 +47,7 @@ class UserController extends Controller
 
         $donnees = $this->valider($request);
 
-        User::create([
+        $utilisateur = User::create([
             ...$donnees,
             'password' => bcrypt($donnees['password']),
         ]);
