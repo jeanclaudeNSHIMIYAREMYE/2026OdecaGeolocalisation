@@ -44,7 +44,7 @@ class UserController extends Controller
 
         User::create([
             ...$donnees,
-            'password' => Hash::make($donnees['password']),
+            'password' => bcrypt($donnees['password']),
         ]);
 
         return redirect()->route('utilisateurs.index')->with('succes', 'Compte créé.');
@@ -72,7 +72,7 @@ class UserController extends Controller
             'role' => $donnees['role'],
             'province_id' => $donnees['province_id'] ?? null,
             'commune_id' => $donnees['commune_id'] ?? null,
-            ...(filled($donnees['password'] ?? null) ? ['password' => Hash::make($donnees['password'])] : []),
+            ...(filled($donnees['password'] ?? null) ? ['password' => bcrypt($donnees['password'])] : []),
         ]);
 
         return redirect()->route('utilisateurs.index')->with('succes', 'Compte mis à jour.');
