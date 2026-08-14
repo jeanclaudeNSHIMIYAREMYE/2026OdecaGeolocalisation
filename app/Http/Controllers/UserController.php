@@ -47,9 +47,9 @@ class UserController extends Controller
 
         $donnees = $this->valider($request);
 
-        $utilisateur = User::create([
-            ...Arr::except($donnees, ['collines_ids', 'password']),
-            'password' => Hash::make($donnees['password']),
+        User::create([
+            ...$donnees,
+            'password' => bcrypt($donnees['password']),
         ]);
 
         if ($donnees['role'] === 'enqueteur') {
@@ -84,7 +84,7 @@ class UserController extends Controller
             'role' => $donnees['role'],
             'province_id' => $donnees['province_id'] ?? null,
             'commune_id' => $donnees['commune_id'] ?? null,
-            ...(filled($donnees['password'] ?? null) ? ['password' => Hash::make($donnees['password'])] : []),
+            ...(filled($donnees['password'] ?? null) ? ['password' => bcrypt($donnees['password'])] : []),
         ]);
 
         // Un utilisateur qui change de rôle et n'est plus enquêteur perd
