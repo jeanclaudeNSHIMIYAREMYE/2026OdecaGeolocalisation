@@ -52,20 +52,36 @@ class DashboardController extends Controller
         ];
 
         $pointsCarte = (clone $parcelles)
-            ->whereNotNull('latitude')
-            ->whereNotNull('longitude')
-            ->with('menage:id,code_menage,nom_chef_menage,statut')
-            ->get(['id', 'menage_id', 'latitude', 'longitude', 'nombre_pieds', 'etat_verger'])
-            ->map(fn (Parcelle $parcelle) => [
-                'id' => $parcelle->id,
-                'latitude' => (float) $parcelle->latitude,
-                'longitude' => (float) $parcelle->longitude,
-                'nombre_pieds' => $parcelle->nombre_pieds,
-                'etat_verger' => $parcelle->etat_verger,
-                'code_menage' => $parcelle->menage->code_menage,
-                'nom_chef_menage' => $parcelle->menage->nom_chef_menage,
-                'statut_menage' => $parcelle->menage->statut,
-            ]);
+    ->with('menage:id,code_menage,nom_chef_menage,statut')
+    ->get([
+        'id',
+        'menage_id',
+        'latitude',
+        'longitude',
+        'polygone',
+        'nombre_pieds',
+        'etat_verger',
+    ])
+    ->map(fn (Parcelle $parcelle) => [
+        'id' => $parcelle->id,
+
+        'latitude' => $parcelle->latitude !== null
+            ? (float) $parcelle->latitude
+            : null,
+
+        'longitude' => $parcelle->longitude !== null
+            ? (float) $parcelle->longitude
+            : null,
+
+        'polygone' => $parcelle->polygone,
+
+        'nombre_pieds' => $parcelle->nombre_pieds,
+        'etat_verger' => $parcelle->etat_verger,
+
+        'code_menage' => $parcelle->menage->code_menage,
+        'nom_chef_menage' => $parcelle->menage->nom_chef_menage,
+        'statut_menage' => $parcelle->menage->statut,
+    ]);
 
         return Inertia::render('Dashboard', [
             'kpi' => $kpi,

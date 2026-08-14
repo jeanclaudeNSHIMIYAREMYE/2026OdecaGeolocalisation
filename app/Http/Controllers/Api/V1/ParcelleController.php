@@ -39,6 +39,7 @@ class ParcelleController extends Controller
         $menage->update([
             'date_derniere_activite' => now(),
         ]);
+        $menage->verifierStatutTermine();
 
         return (new ParcelleResource($parcelle))
             ->response()
@@ -78,6 +79,7 @@ class ParcelleController extends Controller
         $parcelle->menage()->update([
             'date_derniere_activite' => now(),
         ]);
+        $parcelle->menage()->verifierStatutTermine();
 
         return new ParcelleResource(
             $parcelle->fresh()

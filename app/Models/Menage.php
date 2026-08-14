@@ -109,4 +109,18 @@ class Menage extends Model
             default => $query->whereRaw('1 = 0'),
         };
     }
+
+    public function verifierStatutTermine(): void
+    {
+        $aDesParcelles = $this->parcelles()->exists();
+
+        $aDesReponses = $this->reponses()->exists();
+
+        if ($aDesParcelles && $aDesReponses) {
+            $this->update([
+                'statut' => 'termine',
+                'date_derniere_activite' => now(),
+            ]);
+        }
+    }
 }

@@ -91,6 +91,19 @@ class MenageController extends Controller
         $data['cree_par_id'] = $utilisateur->id;
         $data['date_derniere_activite'] = now();
 
+        $menage = Menage::where(
+        'code_menage',
+        $data['code_menage']
+    )->first();
+
+    if ($menage) {
+        return response()->json([
+            'message' => 'Ménage déjà enregistré.',
+            'menage' => $menage,
+            'already_exists' => true,
+        ], 200);
+    }
+
         $menage = Menage::create($data);
 
         return (new MenageResource(
@@ -105,7 +118,7 @@ class MenageController extends Controller
     return new MenageResource(
         $menage->load([
             'colline.zone.commune.province',
-            'parcelles',
+            'parcelles', 'reponses'
         ])
     );
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ReponseQuestionnaire;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\Menage;
 
 class ReponseController extends Controller
 {
@@ -40,6 +41,8 @@ class ReponseController extends Controller
             ],
         ]);
 
+
+
         $reponse = ReponseQuestionnaire::updateOrCreate(
             [
                 'menage_id' => $donnees['menage_id'],
@@ -50,6 +53,8 @@ class ReponseController extends Controller
                 'valeur' => $donnees['valeur'],
             ]
         );
+        $menage = Menage::find($donnees['menage_id']);
+        $menage->verifierStatutTermine();
 
         return response()->json([
             'data' => $reponse,
