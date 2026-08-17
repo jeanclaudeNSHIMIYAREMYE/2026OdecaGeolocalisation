@@ -14,8 +14,12 @@ class MenageController extends Controller
 {
     public function index(Request $request)
     {
+        $user = $request->user();
+
+        $collineIds = $user->collines()->pluck('collines.id');
         $menages = Menage::query()
             ->with('colline')
+            ->whereIn('colline_id', $collineIds)
             ->when(
                 $request->filled('colline_id'),
                 fn ($q) => $q->where(
