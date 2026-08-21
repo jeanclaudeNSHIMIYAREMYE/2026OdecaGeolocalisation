@@ -80,7 +80,7 @@ class Menage extends Model
                 fn (Builder $q) => $q->where('commune_id', $utilisateur->commune_id)
             ),
 
-            'enqueteur' => $query->where('enqueteur_id', $utilisateur->id),
+            //'enqueteur' => $query->where('enqueteur_id', $utilisateur->id),
 
             default => $query->whereRaw('1 = 0'),
         };
