@@ -80,7 +80,16 @@ class Menage extends Model
                 fn (Builder $q) => $q->where('commune_id', $utilisateur->commune_id)
             ),
 
-            'enqueteur' => $query->where('enqueteur_id', $utilisateur->id),
+            // Un enquêteur voit tous les ménages des collines qui lui sont
+            // affectées (table pivot enqueteur_colline), plus tout ménage
+            // qui lui serait assigné individuellement en dehors de ses
+            // collines affectées.
+            'enqueteur' => $query->where(
+                fn (Builder $q) => $q->whereHas(
+                    'colline.enqueteurs',
+                    fn (Builder $q) => $q->where('users.id', $utilisateur->id)
+                )->orWhere('enqueteur_id', $utilisateur->id)
+            ),
 
             default => $query->whereRaw('1 = 0'),
         };

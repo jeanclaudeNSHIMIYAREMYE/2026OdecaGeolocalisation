@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Colline extends Model
@@ -21,5 +22,10 @@ class Colline extends Model
     public function menages(): HasMany
     {
         return $this->hasMany(Menage::class);
+    }
+
+    public function enqueteurs(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'enqueteur_colline')->withTimestamps();
     }
 }
