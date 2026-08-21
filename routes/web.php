@@ -10,6 +10,9 @@ use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\MenageExportController;
+use App\Http\Controllers\MenageImportController;
+
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -64,6 +67,19 @@ Route::middleware(['auth', 'verified'])
 Route::delete('/menages/{menage}', [MenageController::class, 'destroy'])
     ->middleware(['auth', 'verified', 'role:admin'])
     ->name('menages.destroy');
+
+// Import / export du fichier "caféiculteurs" — routes indépendantes du
+// groupe "utilisateurs" ci-dessous : elles portent sur les ménages, pas
+// sur la gestion des comptes, et doivent donc rester accessibles à tout
+// utilisateur autorisé à consulter/créer des ménages (pas seulement aux
+// admins/superviseurs de la gestion des utilisateurs).
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/menages/export', [MenageExportController::class, 'exporter'])
+        ->name('menages.export');
+
+    Route::post('/menages/import', [MenageImportController::class, 'importer'])
+        ->name('menages.import');
+});
 
 Route::middleware(['auth', 'verified', 'role:admin,superviseur_national,superviseur_provincial,superviseur_communal'])
     ->prefix('utilisateurs')

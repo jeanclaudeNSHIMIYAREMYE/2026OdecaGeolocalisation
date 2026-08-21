@@ -4,6 +4,7 @@ import TextInput from '@/Components/TextInput';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import BoutonImporterMenages from './Partials/BoutonImporterMenages';
 
 const LIBELLES_STATUT = {
     termine: { texte: 'Terminé', classe: 'bg-green-100 text-green-700' },
@@ -37,27 +38,31 @@ export default function Index({ menages, filtres, provinces, communes, zones, co
                     )}
 
                     <div className="space-y-4 rounded-lg bg-white p-4 shadow-sm">
-                        <div className="flex flex-wrap items-center gap-4">
-                            <form onSubmit={soumettreRecherche} className="flex gap-2">
-                                <TextInput
-                                    value={recherche}
-                                    onChange={(e) => setRecherche(e.target.value)}
-                                    placeholder="Code ménage, nom du chef de ménage..."
-                                    className="w-64"
-                                />
-                                <PrimaryButton type="submit">Rechercher</PrimaryButton>
-                            </form>
+                        <div className="flex flex-wrap items-center justify-between gap-4">
+                            <div className="flex flex-wrap items-center gap-4">
+                                <form onSubmit={soumettreRecherche} className="flex gap-2">
+                                    <TextInput
+                                        value={recherche}
+                                        onChange={(e) => setRecherche(e.target.value)}
+                                        placeholder="Code ménage, nom du chef de ménage..."
+                                        className="w-64"
+                                    />
+                                    <PrimaryButton type="submit">Rechercher</PrimaryButton>
+                                </form>
 
-                            <select
-                                className="rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                value={filtres.statut ?? ''}
-                                onChange={(e) => appliquerFiltres({ ...filtres, statut: e.target.value || undefined })}
-                            >
-                                <option value="">Tous les statuts</option>
-                                <option value="a_faire">À faire</option>
-                                <option value="en_attente">En attente</option>
-                                <option value="termine">Terminé</option>
-                            </select>
+                                <select
+                                    className="rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    value={filtres.statut ?? ''}
+                                    onChange={(e) => appliquerFiltres({ ...filtres, statut: e.target.value || undefined })}
+                                >
+                                    <option value="">Tous les statuts</option>
+                                    <option value="a_faire">À faire</option>
+                                    <option value="en_attente">En attente</option>
+                                    <option value="termine">Terminé</option>
+                                </select>
+                            </div>
+
+                            {peutCreer && <BoutonImporterMenages />}
                         </div>
 
                         <div className="flex flex-wrap gap-4">
