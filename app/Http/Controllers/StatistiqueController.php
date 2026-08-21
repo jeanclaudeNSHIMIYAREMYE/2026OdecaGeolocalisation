@@ -51,6 +51,44 @@ class StatistiqueController extends Controller
     }
 
     /**
+     * Parcelles correspondant aux MÊMES filtres que menagesFiltres(), mais
+     * interrogées directement via une sous-requête corrélée (whereHas) au
+     * lieu de collecter les IDs de ménages puis whereIn('menage_id', ...).
+     *
+     * CORRECTIF : à l'échelle nationale (dizaines de milliers de ménages),
+     * un whereIn() avec la liste complète des IDs dépasse la limite
+     * PostgreSQL de 65 535 paramètres liés par requête
+     * (SQLSTATE[HY000]: number of parameters must be between 0 and 65535).
+     * whereHas() génère un EXISTS corrélé dont le nombre de paramètres ne
+     * dépend que du nombre de filtres actifs, jamais du nombre de lignes.
+     */
+    private function parcellesFiltrees(Request $request)
+    {
+        $filtres = $request->only(['province_id', 'commune_id', 'zone_id', 'colline_id', 'enqueteur_id', 'date_debut', 'date_fin']);
+
+        return Parcelle::query()
+            ->whereHas('menage', function ($q) use ($filtres) {
+                $q->when($filtres['colline_id'] ?? null, fn ($q, $v) => $q->where('colline_id', $v))
+                    ->when($filtres['zone_id'] ?? null, fn ($q, $v) => $q->whereHas(
+                        'colline',
+                        fn ($q) => $q->where('zone_id', $v)
+                    ))
+                    ->when($filtres['commune_id'] ?? null, fn ($q, $v) => $q->whereHas(
+                        'colline.zone',
+                        fn ($q) => $q->where('commune_id', $v)
+                    ))
+                    ->when($filtres['province_id'] ?? null, fn ($q, $v) => $q->whereHas(
+                        'colline.zone.commune',
+                        fn ($q) => $q->where('province_id', $v)
+                    ))
+                    ->when($filtres['enqueteur_id'] ?? null, fn ($q, $v) => $q->where('enqueteur_id', $v))
+                    ->when($filtres['date_debut'] ?? null, fn ($q, $v) => $q->whereDate('created_at', '>=', $v))
+                    ->when($filtres['date_fin'] ?? null, fn ($q, $v) => $q->whereDate('created_at', '<=', $v));
+            })
+            ->get();
+    }
+
+    /**
      * Enquêteurs à proposer dans le filtre "Enquêteur", restreints au
      * niveau territorial le plus précis déjà sélectionné (colline > zone
      * > commune > province). Sans cette restriction, le menu déroulant
@@ -81,11 +119,12 @@ class StatistiqueController extends Controller
         $filtres = $request->only(['province_id', 'commune_id', 'zone_id', 'colline_id', 'enqueteur_id', 'date_debut', 'date_fin']);
 
         $menages = $this->menagesFiltres($request)->get();
-        $menageIds = $menages->pluck('id');
 
-        $parcelles = Parcelle::query()
-            ->whereIn('menage_id', $menageIds)
-            ->get();
+        // CORRECTIF : remplace l'ancien
+        //   $menageIds = $menages->pluck('id');
+        //   $parcelles = Parcelle::query()->whereIn('menage_id', $menageIds)->get();
+        // qui dépassait la limite de paramètres PostgreSQL à l'échelle nationale.
+        $parcelles = $this->parcellesFiltrees($request);
 
         $totalMenages = $menages->count();
         $totalParcelles = $parcelles->count();
@@ -253,3 +292,8 @@ class StatistiqueController extends Controller
         ]);
     }
 }
+
+
+
+
+
