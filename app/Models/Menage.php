@@ -81,15 +81,21 @@ class Menage extends Model
             ),
 
             // Un enquêteur voit tous les ménages des collines qui lui sont
-            // affectées (table pivot enqueteur_colline), plus tout ménage
+            // affectées (table pivot colline_user), plus tout ménage
             // qui lui serait assigné individuellement en dehors de ses
             // collines affectées.
-            'enqueteur' => $query->where(
+            /*'enqueteur' => $query->where(
                 fn (Builder $q) => $q->whereHas(
                     'colline.enqueteurs',
                     fn (Builder $q) => $q->where('users.id', $utilisateur->id)
                 )->orWhere('enqueteur_id', $utilisateur->id)
-            ),
+            ),*/
+
+            'enqueteur' => $query->whereHas(
+            'colline.enqueteurs',
+            fn (Builder $q) =>
+                $q->where('users.id', $utilisateur->id)
+        ),
 
             default => $query->whereRaw('1 = 0'),
         };
