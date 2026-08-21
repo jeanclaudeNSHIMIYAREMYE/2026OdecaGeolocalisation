@@ -26,6 +26,6 @@ class Colline extends Model
 
     public function enqueteurs(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'enqueteur_colline')->withTimestamps();
+        return $this->belongsToMany(User::class, 'colline_user')->withTimestamps();
     }
 }
