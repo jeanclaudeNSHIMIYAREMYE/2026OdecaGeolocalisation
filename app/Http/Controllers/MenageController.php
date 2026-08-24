@@ -20,7 +20,7 @@ class MenageController extends Controller
     {
         $this->authorize('viewAny', Menage::class);
 
-        $filtres = $request->only(['recherche', 'statut', 'province_id', 'commune_id', 'zone_id', 'colline_id']);
+        $filtres = $request->only(['recherche', 'statut', 'province_id', 'commune_id', 'zone_id', 'colline_id', 'possede_vergers_cafe']);
 
         $menages = Menage::query()
             ->with(['colline.zone.commune.province', 'enqueteur:id,name'])
@@ -34,6 +34,17 @@ class MenageController extends Controller
             ->when($filtres['zone_id'] ?? null, fn ($q, $v) => $q->whereHas('colline', fn ($q) => $q->where('zone_id', $v)))
             ->when($filtres['commune_id'] ?? null, fn ($q, $v) => $q->whereHas('colline.zone', fn ($q) => $q->where('commune_id', $v)))
             ->when($filtres['province_id'] ?? null, fn ($q, $v) => $q->whereHas('colline.zone.commune', fn ($q) => $q->where('province_id', $v)))
+            ->when(
+                $filtres['possede_vergers_cafe'] ?? null,
+                function ($q, $v) {
+                    $q->whereHas('reponses', function ($q) use ($v) {
+                        $q->whereHas('question', function ($q) {
+                            $q->where('code', 'possede_vergers_cafe');
+                        })
+                        ->where('valeur->valeur', $v);
+                    });
+                }
+            )
             ->orderByDesc('updated_at')
             ->paginate(20)
             ->withQueryString();
@@ -76,7 +87,7 @@ class MenageController extends Controller
         $this->authorize('view', $menage);
 
         $menage->load(['colline.zone.commune.province', 'enqueteur:id,name', 'parcelles', 'reponses.question']);
-        
+
         return Inertia::render('Menages/Afficher', [
             'menage' => $menage,
             'peutModifier' => request()->user()->can('update', $menage),
