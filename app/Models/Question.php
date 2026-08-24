@@ -20,6 +20,7 @@ class Question extends Model
         'obligatoire',
         'autre_option',
         'condition',
+        'termine_si',
         'ordre',
     ];
 

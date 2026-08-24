@@ -60,6 +60,30 @@ export default function Index({ menages, filtres, provinces, communes, zones, co
                                     <option value="en_attente">En attente</option>
                                     <option value="termine">Terminé</option>
                                 </select>
+
+                                <select
+                                    className="rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    value={filtres.possede_vergers_cafe ?? ''}
+                                    onChange={(e) =>
+                                        appliquerFiltres({
+                                            ...filtres,
+                                            possede_vergers_cafe:
+                                                e.target.value || undefined,
+                                        })
+                                    }
+                                >
+                                    <option value="">
+                                        Tous les ménages
+                                    </option>
+
+                                    <option value="Oui">
+                                        Possèdent des vergers
+                                    </option>
+
+                                    <option value="Non">
+                                        Ne possèdent pas de vergers
+                                    </option>
+                                </select>
                             </div>
 
                             {peutCreer && <BoutonImporterMenages />}
