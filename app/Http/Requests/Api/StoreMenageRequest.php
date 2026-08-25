@@ -12,6 +12,19 @@ class StoreMenageRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'nom_chef_menage' => $this->nom_chef_menage
+                ? mb_strtoupper($this->nom_chef_menage, 'UTF-8')
+                : null,
+
+            'prenom_chef_menage' => $this->prenom_chef_menage
+                ? mb_strtoupper($this->prenom_chef_menage, 'UTF-8')
+                : null,
+        ]);
+    }
+
     public function rules(): array
     {
         $menageId = $this->route('menage')?->id;
@@ -55,15 +68,11 @@ class StoreMenageRequest extends FormRequest
 
             'photo_proprietaire' => [
                 'nullable',
-                //'image',
-                //'mimes:jpg,jpeg,png,webp',
                 'max:5120',
             ],
 
             'photo_piece_identification' => [
                 'nullable',
-                //'image',
-                //'mimes:jpg,jpeg,png,webp',
                 'max:5120',
             ],
 
