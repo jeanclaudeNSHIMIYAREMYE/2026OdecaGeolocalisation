@@ -189,7 +189,7 @@ class QuestionnaireSeeder extends Seeder
 
                 'options' => null,
 
-                'obligatoire' => true,
+                'obligatoire' => false,
 
                 'autre_option' => false,
 
