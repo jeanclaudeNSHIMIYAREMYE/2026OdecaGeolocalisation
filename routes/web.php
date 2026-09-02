@@ -23,6 +23,15 @@ Route::get('/', function () {
     ]);
 });
 
+Route::get('/php-info', function () {
+    return [
+        'php_version' => PHP_VERSION,
+        'max_execution_time' => ini_get('max_execution_time'),
+        'php_ini' => php_ini_loaded_file(),
+        'sapi' => php_sapi_name(),
+    ];
+});
+
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');

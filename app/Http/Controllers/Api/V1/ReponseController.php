@@ -54,6 +54,10 @@ class ReponseController extends Controller
             ]
         );
         $menage = Menage::find($donnees['menage_id']);
+        $menage->update([
+            'date_derniere_activite' => now(),
+            'enqueteur_id' => auth()->id()
+        ]);
         $menage->verifierStatutTermine();
 
         return response()->json([
@@ -83,59 +87,70 @@ class ReponseController extends Controller
      * }
      */
     public function storeLot(Request $request)
-    {
-        $donnees = $request->validate([
-            'reponses' => [
-                'required',
-                'array',
-                'min:1',
-            ],
+{
+    $donnees = $request->validate([
+        'reponses' => [
+            'required',
+            'array',
+            'min:1',
+        ],
 
-            'reponses.*.menage_id' => [
-                'required',
-                'exists:menages,id',
-            ],
+        'reponses.*.menage_id' => [
+            'required',
+            'exists:menages,id',
+        ],
 
-            'reponses.*.parcelle_id' => [
-                'nullable',
-                'exists:parcelles,id',
-            ],
+        'reponses.*.parcelle_id' => [
+            'nullable',
+            'exists:parcelles,id',
+        ],
 
-            'reponses.*.question_id' => [
-                'required',
-                'exists:questions,id',
-            ],
+        'reponses.*.question_id' => [
+            'required',
+            'exists:questions,id',
+        ],
 
-            'reponses.*.valeur' => [
-                'required',
-            ],
-        ]);
+        'reponses.*.valeur' => [
+            'required',
+        ],
+    ]);
 
-        $enregistrees = DB::transaction(function () use ($donnees) {
-            return collect($donnees['reponses'])->map(
-                function (array $reponse) {
-                    return ReponseQuestionnaire::updateOrCreate(
-                        [
-                            'menage_id' => $reponse['menage_id'],
+    $enregistrees = DB::transaction(function () use ($donnees) {
 
-                            'parcelle_id' =>
-                                $reponse['parcelle_id'] ?? null,
+        $enqueteurId = auth()->id();
 
-                            'question_id' =>
-                                $reponse['question_id'],
-                        ],
-                        [
-                            'valeur' =>
-                                $reponse['valeur'],
-                        ]
-                    );
-                }
-            );
-        });
+        return collect($donnees['reponses'])->map(
+            function (array $reponse) use ($enqueteurId) {
 
-        return response()->json([
-            'data' => $enregistrees->values(),
-            'total' => $enregistrees->count(),
-        ], 201);
-    }
+                // Mettre à jour l'enquêteur du ménage
+                $menage = Menage::findOrFail($reponse['menage_id']);
+
+                $menage->update([
+                    'enqueteur_id' => $enqueteurId,
+                    'date_derniere_activite' => now(),
+                ]);
+
+                return ReponseQuestionnaire::updateOrCreate(
+                    [
+                        'menage_id' => $reponse['menage_id'],
+
+                        'parcelle_id' =>
+                            $reponse['parcelle_id'] ?? null,
+
+                        'question_id' =>
+                            $reponse['question_id'],
+                    ],
+                    [
+                        'valeur' => $reponse['valeur'],
+                    ]
+                );
+            }
+        );
+    });
+
+    return response()->json([
+        'data' => $enregistrees->values(),
+        'total' => $enregistrees->count(),
+    ], 201);
+}
 }

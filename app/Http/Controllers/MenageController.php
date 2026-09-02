@@ -20,7 +20,7 @@ class MenageController extends Controller
     {
         $this->authorize('viewAny', Menage::class);
 
-        $filtres = $request->only(['recherche', 'statut', 'province_id', 'commune_id', 'zone_id', 'colline_id', 'possede_vergers_cafe']);
+        $filtres = $request->only(['recherche', 'statut', 'province_id', 'commune_id', 'zone_id', 'colline_id', 'enqueteur_id', 'possede_vergers_cafe']);
 
         $menages = Menage::query()
             ->with(['colline.zone.commune.province', 'enqueteur:id,name'])
@@ -30,6 +30,7 @@ class MenageController extends Controller
                     ->orWhere('prenom_chef_menage', 'like', "%{$v}%")
             ))
             ->when($filtres['statut'] ?? null, fn ($q, $v) => $q->where('statut', $v))
+            ->when($filtres['enqueteur_id'] ?? null, fn ($q, $v) => $q->where('enqueteur_id', $v))
             ->when($filtres['colline_id'] ?? null, fn ($q, $v) => $q->where('colline_id', $v))
             ->when($filtres['zone_id'] ?? null, fn ($q, $v) => $q->whereHas('colline', fn ($q) => $q->where('zone_id', $v)))
             ->when($filtres['commune_id'] ?? null, fn ($q, $v) => $q->whereHas('colline.zone', fn ($q) => $q->where('commune_id', $v)))
@@ -57,6 +58,7 @@ class MenageController extends Controller
             'zones' => Zone::orderBy('nom')->get(['id', 'nom', 'commune_id']),
             'collines' => Colline::orderBy('nom')->get(['id', 'nom', 'zone_id']),
             'peutCreer' => $request->user()->can('create', Menage::class),
+            'enqueteurs' => User::where('actif', true)->where('role', 'enqueteur')->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
