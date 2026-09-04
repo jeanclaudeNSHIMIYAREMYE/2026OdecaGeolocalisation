@@ -31,20 +31,22 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         return response()->json(['status' => 'ok'], 200);
     });
 
-    Route::middleware('auth:sanctum')->group(function () {
-
-        // --- Session / compte ---
-        Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-        Route::get('/me', [AuthController::class, 'me'])->name('me');
-
-        // --- Données de référence géographiques (à mettre en cache côté mobile) ---
-        Route::prefix('geo')->name('geo.')->group(function () {
+    // --- Données de référence géographiques (à mettre en cache côté mobile) ---
+    Route::prefix('geo')->name('geo.')->group(function () {
             Route::get('/provinces', [GeoReferenceController::class, 'provinces'])->name('provinces');
             Route::get('/communes', [GeoReferenceController::class, 'communes'])->name('communes');
             Route::get('/zones', [GeoReferenceController::class, 'zones'])->name('zones');
             Route::get('/collines', [GeoReferenceController::class, 'collines'])->name('collines');
             Route::get('/arborescence', [GeoReferenceController::class, 'arborescence'])->name('arborescence');
         });
+
+    Route::middleware('auth:sanctum')->group(function () {
+
+        // --- Session / compte ---
+        Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+        Route::get('/me', [AuthController::class, 'me'])->name('me');
+
+
 
         // --- Questionnaire actif (formulaire dynamique côté mobile) ---
         Route::get('/questionnaire/actif', [QuestionnaireController::class, 'actif'])->name('questionnaire.actif');
