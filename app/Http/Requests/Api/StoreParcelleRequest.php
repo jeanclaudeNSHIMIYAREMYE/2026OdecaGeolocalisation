@@ -37,6 +37,12 @@ class StoreParcelleRequest extends FormRequest
                 'max:255',
             ],
 
+            'type' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
             /*
              * Localisation
              */
@@ -50,6 +56,12 @@ class StoreParcelleRequest extends FormRequest
                 'nullable',
                 'numeric',
                 'between:-180,180',
+            ],
+
+            'altitude' => [
+                'nullable',
+                'numeric',
+                'between:-500,9000',
             ],
 
             'polygone' => [

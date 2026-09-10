@@ -13,6 +13,8 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Models\Parcelle;
+use App\Models\ReponseQuestionnaire;
 
 class MenageController extends Controller
 {
@@ -127,6 +129,32 @@ class MenageController extends Controller
         $menage->delete();
 
         return redirect()->route('menages.index')->with('succes', 'Ménage supprimé.');
+    }
+
+    public function detruireParcelle(Menage $menage, Parcelle $parcelle): RedirectResponse
+    {
+        $this->authorize('update', $menage);
+
+        abort_if($parcelle->menage_id !== $menage->id, 404);
+
+        $parcelle->delete();
+
+        $menage->synchroniserStatut();
+
+        return redirect()->route('menages.show', $menage)->with('succes', 'Parcelle supprimée.');
+    }
+
+    public function detruireReponse(Menage $menage, ReponseQuestionnaire $reponse): RedirectResponse
+    {
+        $this->authorize('update', $menage);
+
+        abort_if($reponse->menage_id !== $menage->id, 404);
+
+        $reponse->delete();
+
+        $menage->synchroniserStatut();
+
+        return redirect()->route('menages.show', $menage)->with('succes', 'Réponse supprimée.');
     }
 
     private function donneesFormulaire(): array

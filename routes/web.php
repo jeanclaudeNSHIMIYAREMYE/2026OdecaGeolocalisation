@@ -77,6 +77,14 @@ Route::delete('/menages/{menage}', [MenageController::class, 'destroy'])
     ->middleware(['auth', 'verified', 'role:admin'])
     ->name('menages.destroy');
 
+Route::delete('/menages/{menage}/parcelles/{parcelle}', [MenageController::class, 'detruireParcelle'])
+    ->middleware(['auth', 'verified', 'role:admin'])
+    ->name('menages.parcelles.destroy');
+
+Route::delete('/menages/{menage}/reponses/{reponse}', [MenageController::class, 'detruireReponse'])
+    ->middleware(['auth', 'verified', 'role:admin'])
+    ->name('menages.reponses.destroy');
+
 // Import / export du fichier "caféiculteurs" — routes indépendantes du
 // groupe "utilisateurs" ci-dessous : elles portent sur les ménages, pas
 // sur la gestion des comptes, et doivent donc rester accessibles à tout

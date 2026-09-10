@@ -58,8 +58,10 @@
                 <th>Enquêteur</th>
                 <th>Latitude</th>
                 <th>Longitude</th>
+                <th>Altitude</th>
                 <th>Pieds</th>
                 <th>État verger</th>
+                <th>Type</th>
                 <th>Date géoloc.</th>
             </tr>
         </thead>
@@ -76,8 +78,10 @@
                     <td>{{ $menage->enqueteur?->name ?? '—' }}</td>
                     <td>{{ $parcelle->latitude }}</td>
                     <td>{{ $parcelle->longitude }}</td>
+                    <td>{{ $parcelle->altitude !== null ? $parcelle->altitude : '—' }}</td>
                     <td>{{ $parcelle->nombre_pieds ?? '—' }}</td>
                     <td>{{ $parcelle->etat_verger ?? '—' }}</td>
+                    <td>{{ $parcelle->type ?? '—' }}</td>
                     <td>{{ $parcelle->created_at->format('d/m/Y') }}</td>
                 </tr>
             @endforeach

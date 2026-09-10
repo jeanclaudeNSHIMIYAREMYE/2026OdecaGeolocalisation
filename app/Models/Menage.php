@@ -114,4 +114,23 @@ class Menage extends Model
             ]);
         }
     }
+
+    public function synchroniserStatut(): void
+    {
+        $aDesParcelles = $this->parcelles()->exists();
+        $aDesReponses = $this->reponses()->exists();
+
+        $statut = match (true) {
+            $aDesParcelles && $aDesReponses => 'termine',
+            $aDesParcelles || $aDesReponses => 'en_attente',
+            default => 'a_faire',
+        };
+
+        if ($statut !== $this->statut) {
+            $this->update([
+                'statut' => $statut,
+                'date_derniere_activite' => now(),
+            ]);
+        }
+    }
 }

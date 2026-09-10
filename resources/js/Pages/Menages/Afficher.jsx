@@ -1,6 +1,8 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import 'leaflet/dist/leaflet.css';
+import { useEffect, useRef } from 'react';
 
 const LIBELLES_STATUT = {
     termine: {
@@ -16,6 +18,139 @@ const LIBELLES_STATUT = {
         classe: 'bg-gray-100 text-gray-600',
     },
 };
+
+const COULEURS_STATUT = {
+    termine: '#16a34a',
+    en_attente: '#f59e0b',
+    a_faire: '#9ca3af',
+};
+
+function CarteMenage({ parcelles, statutMenage, codeMenage }) {
+    const conteneurRef = useRef(null);
+    const carteRef = useRef(null);
+    const coucheMarqueursRef = useRef(null);
+    const couchePolygonesRef = useRef(null);
+
+    useEffect(() => {
+        let annule = false;
+
+        import('leaflet').then((L) => {
+            if (annule || !conteneurRef.current) return;
+
+            if (!carteRef.current) {
+                carteRef.current = L.map(conteneurRef.current).setView(
+                    [-3.373, 29.918],
+                    8,
+                );
+
+                L.tileLayer(
+                    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    {
+                        attribution: '&copy; OpenStreetMap',
+                        maxZoom: 18,
+                    },
+                ).addTo(carteRef.current);
+
+                coucheMarqueursRef.current = L.layerGroup().addTo(carteRef.current);
+                couchePolygonesRef.current = L.layerGroup().addTo(carteRef.current);
+            }
+
+            coucheMarqueursRef.current.clearLayers();
+            couchePolygonesRef.current.clearLayers();
+
+            const couleur = COULEURS_STATUT[statutMenage] ?? '#6366f1';
+            const toutesLesCoordonnees = [];
+
+            (parcelles ?? []).forEach((parcelle) => {
+
+                const altitudeTexte =
+                    parcelle.altitude !== null && parcelle.altitude !== undefined
+                        ? `${Number(parcelle.altitude).toFixed(0)} m`
+                        : '—';
+                const popup =
+                    `<strong>${codeMenage}</strong><br>` +
+                    `${parcelle.nombre_pieds ?? '—'} pieds de café<br>` +
+                    `État : ${parcelle.etat_verger ?? '—'}<br>` +
+                    `Type : ${parcelle.type ?? '—'}<br>` +
+                    `Altitude : ${altitudeTexte}`;
+
+                /*
+                 * ============================
+                 * POLYGONE
+                 * ============================
+                 */
+                if (Array.isArray(parcelle.polygone) && parcelle.polygone.length >= 3) {
+                    const coordinates = parcelle.polygone
+                        .map((coord) => {
+                            if (Array.isArray(coord) && coord.length >= 2) {
+                                return [Number(coord[0]), Number(coord[1])];
+                            }
+
+                            if (coord && coord.latitude != null && coord.longitude != null) {
+                                return [Number(coord.latitude), Number(coord.longitude)];
+                            }
+
+                            return null;
+                        })
+                        .filter(Boolean);
+
+                    if (coordinates.length >= 3) {
+                        L.polygon(coordinates, {
+                            color: couleur,
+                            fillColor: couleur,
+                            fillOpacity: 0.25,
+                            weight: 2,
+                        })
+                            .bindPopup(popup)
+                            .addTo(couchePolygonesRef.current);
+
+                        toutesLesCoordonnees.push(...coordinates);
+                    }
+                }
+
+                /*
+                 * ============================
+                 * POINT GPS
+                 * ============================
+                 */
+                if (parcelle.latitude != null && parcelle.longitude != null) {
+                    const latitude = Number(parcelle.latitude);
+                    const longitude = Number(parcelle.longitude);
+
+                    L.circleMarker([latitude, longitude], {
+                        radius: 6,
+                        color: couleur,
+                        fillColor: couleur,
+                        fillOpacity: 0.8,
+                        weight: 1,
+                    })
+                        .bindPopup(popup)
+                        .addTo(coucheMarqueursRef.current);
+
+                    toutesLesCoordonnees.push([latitude, longitude]);
+                }
+            });
+
+            if (toutesLesCoordonnees.length > 0) {
+                const bornes = L.latLngBounds(toutesLesCoordonnees);
+                carteRef.current.fitBounds(bornes, { padding: [30, 30] });
+            }
+        });
+
+        return () => {
+            annule = true;
+        };
+    }, [parcelles, statutMenage, codeMenage]);
+
+    useEffect(() => {
+        return () => {
+            carteRef.current?.remove();
+            carteRef.current = null;
+        };
+    }, []);
+
+    return <div ref={conteneurRef} className="h-[400px] w-full rounded-lg" />;
+}
 
 function Ligne({ libelle, valeur }) {
     return (
@@ -89,6 +224,26 @@ export default function Afficher({ menage, peutModifier }) {
     const statut = LIBELLES_STATUT[menage.statut] ?? {
         texte: menage.statut ?? 'Inconnu',
         classe: 'bg-gray-100 text-gray-600',
+    };
+
+    const supprimerParcelle = (parcelle) => {
+        if (!confirm(`Supprimer cette parcelle (${parcelle.nombre_pieds ?? '—'} pieds de café) ? Cette action est irréversible.`)) {
+            return;
+        }
+
+        router.delete(route('menages.parcelles.destroy', [menage.id, parcelle.id]), {
+            preserveScroll: true,
+        });
+    };
+
+    const supprimerReponse = (reponse) => {
+        if (!confirm('Supprimer cette réponse au questionnaire ? Cette action est irréversible.')) {
+            return;
+        }
+
+        router.delete(route('menages.reponses.destroy', [menage.id, reponse.id]), {
+            preserveScroll: true,
+        });
     };
 
     return (
@@ -220,6 +375,16 @@ export default function Afficher({ menage, peutModifier }) {
                                                             'Question inconnue'}
                                                     </p>
 
+                                                    {peutModifier && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => supprimerReponse(reponse)}
+                                                            className="shrink-0 text-xs font-medium text-red-500 hover:text-red-700"
+                                                        >
+                                                            Supprimer
+                                                        </button>
+                                                    )}
+
                                                     {/* Code / section */}
                                                     <div className="mt-1 flex flex-wrap gap-2">
                                                         {reponse.question?.code && (
@@ -255,6 +420,35 @@ export default function Afficher({ menage, peutModifier }) {
                         )}
                     </div>
 
+                    {/* Carte des parcelles */}
+                    <div className="rounded-lg bg-white p-4 shadow-sm">
+                        <div className="mb-3 flex items-center justify-between">
+                            <h3 className="text-sm font-medium text-gray-700">
+                                Localisation des parcelles ({parcelles.length})
+                            </h3>
+
+                            <div className="flex gap-3 text-xs text-gray-500">
+                                <span><span className="inline-block h-2 w-2 rounded-full bg-green-600" /> Terminé</span>
+                                <span><span className="inline-block h-2 w-2 rounded-full bg-amber-500" /> En attente</span>
+                                <span><span className="inline-block h-2 w-2 rounded-full bg-gray-400" /> À faire</span>
+                            </div>
+                        </div>
+
+                        {parcelles.length === 0 ? (
+                            <div className="rounded-md bg-gray-50 p-6 text-center">
+                                <p className="text-sm text-gray-400">
+                                    Aucune parcelle géolocalisée pour l'instant.
+                                </p>
+                            </div>
+                        ) : (
+                            <CarteMenage
+                                parcelles={parcelles}
+                                statutMenage={menage.statut}
+                                codeMenage={menage.code_menage}
+                            />
+                        )}
+                    </div>
+
                     {/* Parcelles */}
                     <div className="rounded-lg bg-white p-6 shadow-sm">
                         <h3 className="mb-4 text-sm font-semibold uppercase text-gray-500">
@@ -272,24 +466,38 @@ export default function Afficher({ menage, peutModifier }) {
                                 key={parcelle.id}
                                 className="border-b py-3 text-sm last:border-0"
                             >
+                                <div>
                                 <p className="font-medium text-gray-900">
                                     {parcelle.nombre_pieds ?? '—'} pieds de café
                                 </p>
 
                                 <p className="text-gray-500">
                                     {parcelle.etat_verger ??
-                                        'État non renseigné'}
+                                        'État non renseigné'}, {" "}
+
+                                    {parcelle.type ??
+                                        'Type non renseigné'},
 
                                     {parcelle.latitude !== null &&
                                         parcelle.latitude !== undefined && (
                                             <>
                                                 {' '}
                                                 — {parcelle.latitude},{' '}
-                                                {parcelle.longitude}
+                                                {parcelle.longitude}, altitude: {parcelle.altitude ?? '—'}m
                                             </>
                                         )}
                                 </p>
                             </div>
+                            {peutModifier && (
+                            <button
+                                type="button"
+                                onClick={() => supprimerParcelle(parcelle)}
+                                className="shrink-0 text-xs font-medium text-red-500 hover:text-red-700"
+                            >
+                                Supprimer
+                            </button>
+                        )}
+                        </div>
                         ))}
                     </div>
                 </div>

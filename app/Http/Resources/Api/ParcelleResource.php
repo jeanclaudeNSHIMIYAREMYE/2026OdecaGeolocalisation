@@ -23,6 +23,7 @@ class ParcelleResource extends JsonResource
             'annee_mise_en_place' => $this->annee_mise_en_place,
 
             'etat_verger' => $this->etat_verger,
+            'type' => $this->type,
 
             /*
              * Localisation
@@ -34,6 +35,7 @@ class ParcelleResource extends JsonResource
             'longitude' => $this->longitude !== null
                 ? (float) $this->longitude
                 : null,
+            'altitude' => $this->altitude !== null,
 
             'polygone' => $this->polygone,
 

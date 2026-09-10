@@ -58,9 +58,11 @@ class DashboardController extends Controller
         'menage_id',
         'latitude',
         'longitude',
+        'altitude',
         'polygone',
         'nombre_pieds',
         'etat_verger',
+        'type'
     ])
     ->map(fn (Parcelle $parcelle) => [
         'id' => $parcelle->id,
@@ -73,10 +75,15 @@ class DashboardController extends Controller
             ? (float) $parcelle->longitude
             : null,
 
+        'altitude' => $parcelle->altitude !== null
+            ? (float) $parcelle->altitude
+            : null,
+
         'polygone' => $parcelle->polygone,
 
         'nombre_pieds' => $parcelle->nombre_pieds,
         'etat_verger' => $parcelle->etat_verger,
+        'type' => $parcelle->type,
 
         'code_menage' => $parcelle->menage->code_menage,
         'nom_chef_menage' => $parcelle->menage->nom_chef_menage,
