@@ -42,18 +42,62 @@ function CarteBurundi({ points }) {
                     L.layerGroup().addTo(carteRef.current);
             }
 
-            /*
-             * Nettoyer les anciennes données
-             */
             coucheMarqueursRef.current.clearLayers();
             couchePolygonesRef.current.clearLayers();
 
             const toutesLesCoordonnees = [];
 
+            /*
+             * Calcul de la plage d'altitude présente dans le jeu de
+             * points actuel, pour normaliser la taille des marqueurs
+             * (différencier visuellement les parcelles en altitude
+             * sans avoir à ouvrir chaque popup).
+             */
+            const altitudesValides = points
+                .map((p) => p.altitude)
+                .filter((a) => a !== null && a !== undefined && Number.isFinite(Number(a)))
+                .map(Number);
+
+            const altitudeMin = altitudesValides.length ? Math.min(...altitudesValides) : null;
+            const altitudeMax = altitudesValides.length ? Math.max(...altitudesValides) : null;
+
+            const RAYON_MIN = 5;
+            const RAYON_MAX = 12;
+
+            const rayonPourAltitude = (altitude) => {
+                if (
+                    altitude === null ||
+                    altitude === undefined ||
+                    !Number.isFinite(Number(altitude)) ||
+                    altitudeMin === null ||
+                    altitudeMax === null ||
+                    altitudeMax === altitudeMin
+                ) {
+                    return RAYON_MIN;
+                }
+
+                const ratio = (Number(altitude) - altitudeMin) / (altitudeMax - altitudeMin);
+
+                return RAYON_MIN + ratio * (RAYON_MAX - RAYON_MIN);
+            };
+
             points.forEach((point) => {
                 const couleur =
                     COULEURS_STATUT[point.statut_menage] ??
                     '#6366f1';
+
+                const altitudeTexte =
+                    point.altitude !== null && point.altitude !== undefined
+                        ? `${Number(point.altitude).toFixed(0)} m`
+                        : '—';
+
+                const popup =
+                    `<strong>${point.code_menage}</strong><br>` +
+                    `${point.nom_chef_menage ?? ''}<br>` +
+                    `${point.nombre_pieds ?? '—'} pieds de café<br>` +
+                    `État : ${point.etat_verger ?? '—'}<br>` +
+                    `Type : ${point.type ?? '—'}<br>` +
+                    `Altitude : ${altitudeTexte}`;
 
                 /*
                  * ============================
@@ -66,15 +110,6 @@ function CarteBurundi({ points }) {
                 ) {
                     const coordinates = point.polygone
                         .map((coord) => {
-                            /*
-                             * Supporte :
-                             *
-                             * { latitude, longitude }
-                             *
-                             * ou éventuellement :
-                             *
-                             * [latitude, longitude]
-                             */
                             if (
                                 Array.isArray(coord) &&
                                 coord.length >= 2
@@ -107,12 +142,7 @@ function CarteBurundi({ points }) {
                             fillOpacity: 0.25,
                             weight: 2,
                         })
-                            .bindPopup(
-                                `<strong>${point.code_menage}</strong><br>` +
-                                    `${point.nom_chef_menage ?? ''}<br>` +
-                                    `${point.nombre_pieds ?? '—'} pieds de café<br>` +
-                                    `État : ${point.etat_verger ?? '—'}`,
-                            )
+                            .bindPopup(popup)
                             .addTo(couchePolygonesRef.current);
 
                         toutesLesCoordonnees.push(
@@ -136,19 +166,14 @@ function CarteBurundi({ points }) {
                     L.circleMarker(
                         [latitude, longitude],
                         {
-                            radius: 6,
+                            radius: rayonPourAltitude(point.altitude),
                             color: couleur,
                             fillColor: couleur,
                             fillOpacity: 0.8,
                             weight: 1,
                         },
                     )
-                        .bindPopup(
-                            `<strong>${point.code_menage}</strong><br>` +
-                                `${point.nom_chef_menage ?? ''}<br>` +
-                                `${point.nombre_pieds ?? '—'} pieds de café<br>` +
-                                `État : ${point.etat_verger ?? '—'}`,
-                        )
+                        .bindPopup(popup)
                         .addTo(coucheMarqueursRef.current);
 
                     toutesLesCoordonnees.push([
@@ -158,10 +183,6 @@ function CarteBurundi({ points }) {
                 }
             });
 
-            /*
-             * Ajuster automatiquement la carte
-             * sur les points ET les polygones.
-             */
             if (toutesLesCoordonnees.length > 0) {
                 const bornes = L.latLngBounds(
                     toutesLesCoordonnees,
@@ -327,6 +348,9 @@ export default function Dashboard({ kpi, pointsCarte, filtres, provinces, commun
                                 <span><span className="inline-block h-2 w-2 rounded-full bg-gray-400" /> À faire</span>
                             </div>
                         </div>
+                        <p className="mb-3 text-xs text-gray-400">
+                            La taille des points varie selon l'altitude de la parcelle (plus grand = plus élevé).
+                        </p>
                         <CarteBurundi points={pointsCarte} />
                     </div>
                 </div>

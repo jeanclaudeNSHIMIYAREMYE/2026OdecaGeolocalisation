@@ -96,6 +96,8 @@ class RapportController extends Controller
             'id' => $parcelle->id,
             'latitude' => (float) $parcelle->latitude,
             'longitude' => (float) $parcelle->longitude,
+            'altitude' => $parcelle->altitude !== null ? (float) $parcelle->altitude : null,
+            'altitude' => $parcelle->altitude !== null ? (float) $parcelle->altitude : null,
             'nombre_pieds' => $parcelle->nombre_pieds,
             'etat_verger' => $parcelle->etat_verger,
             'date_geolocalisation' => $parcelle->created_at->format('d/m/Y'),
@@ -214,8 +216,8 @@ class RapportController extends Controller
         $entetes = [
             'Code ménage', 'Chef de ménage', 'Type de ménage', 'CNI', 'Téléphone',
             'Province', 'Commune', 'Zone', 'Colline', 'Enquêteur',
-            'Latitude', 'Longitude', 'Mode positionnement', 'Mode acquisition',
-            'Nombre de pieds', 'État du verger', 'Année mise en place',
+            'Latitude', 'Longitude', 'Altitude', 'Mode positionnement', 'Mode acquisition',
+            'Nombre de pieds', 'État du verger', 'Type', 'Année mise en place',
             'Pièce justificative', 'Notes', 'Date de géolocalisation',
         ];
         $feuilleDonnees->fromArray($entetes, null, 'A1');
@@ -236,10 +238,12 @@ class RapportController extends Controller
                 $menage->enqueteur?->name,
                 (float) $parcelle->latitude,
                 (float) $parcelle->longitude,
+                $parcelle->altitude !== null ? (float) $parcelle->altitude : null,
                 $parcelle->mode_positionnement,
                 $parcelle->mode_acquisition,
                 $parcelle->nombre_pieds,
                 $parcelle->etat_verger,
+                $parcelle->type,
                 $parcelle->annee_mise_en_place,
                 $parcelle->piece_justificative,
                 $parcelle->notes,
@@ -249,15 +253,15 @@ class RapportController extends Controller
         }
 
         $derniereLigne = $ligne - 1;
-        $feuilleDonnees->getStyle('A1:T1')->applyFromArray([
+        $feuilleDonnees->getStyle('A1:V1')->applyFromArray([
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'CE1126']],
         ]);
         if ($derniereLigne >= 1) {
-            $feuilleDonnees->setAutoFilter("A1:T{$derniereLigne}");
+            $feuilleDonnees->setAutoFilter("A1:V{$derniereLigne}");
         }
         $feuilleDonnees->freezePane('A2');
-        foreach (range('A', 'T') as $colonne) {
+        foreach (range('A', 'V') as $colonne) {
             $feuilleDonnees->getColumnDimension($colonne)->setAutoSize(true);
         }
 
@@ -313,8 +317,8 @@ class RapportController extends Controller
             fputcsv($sortie, [
                 'Code ménage', 'Chef de ménage', 'Type de ménage', 'CNI', 'Téléphone',
                 'Province', 'Commune', 'Zone', 'Colline', 'Enquêteur',
-                'Latitude', 'Longitude', 'Mode positionnement', 'Mode acquisition',
-                'Nombre de pieds', 'État du verger', 'Année mise en place',
+                'Latitude', 'Longitude', 'Altitude', 'Mode positionnement', 'Mode acquisition',
+                'Nombre de pieds', 'État du verger', 'Type', 'Année mise en place',
                 'Pièce justificative', 'Notes', 'Date de géolocalisation',
             ]);
 
@@ -333,10 +337,12 @@ class RapportController extends Controller
                     $menage->enqueteur?->name,
                     $parcelle->latitude,
                     $parcelle->longitude,
+                    $parcelle->altitude,
                     $parcelle->mode_positionnement,
                     $parcelle->mode_acquisition,
                     $parcelle->nombre_pieds,
                     $parcelle->etat_verger,
+                    $parcelle->type,
                     $parcelle->annee_mise_en_place,
                     $parcelle->piece_justificative,
                     $parcelle->notes,
@@ -365,20 +371,26 @@ class RapportController extends Controller
         foreach ($parcelles as $parcelle) {
             $menage = $parcelle->menage;
             $placemark = $document->addChild('Placemark');
-            $placemark->addChild('name', htmlspecialchars($menage->code_menage));
+            $nom = trim(($menage->prenom_chef_menage ?? '') . ' ' . ($menage->nom_chef_menage ?? ''));
+
+            $placemark->addChild('name', htmlspecialchars($nom));
+            //$placemark->addChild('name', htmlspecialchars($menage->code_menage));
 
             $description = sprintf(
                 'Chef de ménage : %s | Province : %s | Commune : %s | Pieds de café : %s | État du verger : %s',
                 trim($menage->prenom_chef_menage . ' ' . $menage->nom_chef_menage),
+                $menage->code_menage,
                 $menage->colline?->zone?->commune?->province?->nom,
                 $menage->colline?->zone?->commune?->nom,
                 $parcelle->nombre_pieds ?? '—',
                 $parcelle->etat_verger ?? '—',
+                $parcelle->type ?? '—',
             );
             $placemark->addChild('description', htmlspecialchars($description));
 
             $point = $placemark->addChild('Point');
-            $point->addChild('coordinates', "{$parcelle->longitude},{$parcelle->latitude},0");
+            $point->addChild('altitudeMode', 'absolute');
+            $point->addChild('coordinates', "{$parcelle->longitude},{$parcelle->latitude}," . ($parcelle->altitude ?? 0));
         }
 
         return response($xml->asXML(), 200, [
@@ -404,7 +416,11 @@ class RapportController extends Controller
                     'type' => 'Feature',
                     'geometry' => [
                         'type' => 'Point',
-                        'coordinates' => [(float) $parcelle->longitude, (float) $parcelle->latitude],
+                        'coordinates' => array_filter([
+                            (float) $parcelle->longitude,
+                            (float) $parcelle->latitude,
+                            $parcelle->altitude !== null ? (float) $parcelle->altitude : null,
+                        ], fn ($v) => $v !== null),
                     ],
                     'properties' => [
                         'code_menage' => $menage->code_menage,
@@ -417,6 +433,8 @@ class RapportController extends Controller
                         'enqueteur' => $menage->enqueteur?->name,
                         'nombre_pieds' => $parcelle->nombre_pieds,
                         'etat_verger' => $parcelle->etat_verger,
+                        'type' => $parcelle->type ?? '—',
+                        'altitude' => $parcelle->altitude !== null ? (float) $parcelle->altitude : null,
                         'annee_mise_en_place' => $parcelle->annee_mise_en_place,
                         'mode_acquisition' => $parcelle->mode_acquisition,
                         'date_geolocalisation' => $parcelle->created_at->format('Y-m-d'),

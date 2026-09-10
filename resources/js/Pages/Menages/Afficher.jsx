@@ -62,10 +62,17 @@ function CarteMenage({ parcelles, statutMenage, codeMenage }) {
             const toutesLesCoordonnees = [];
 
             (parcelles ?? []).forEach((parcelle) => {
+
+                const altitudeTexte =
+                    parcelle.altitude !== null && parcelle.altitude !== undefined
+                        ? `${Number(parcelle.altitude).toFixed(0)} m`
+                        : '—';
                 const popup =
                     `<strong>${codeMenage}</strong><br>` +
                     `${parcelle.nombre_pieds ?? '—'} pieds de café<br>` +
-                    `État : ${parcelle.etat_verger ?? '—'}`;
+                    `État : ${parcelle.etat_verger ?? '—'}<br>` +
+                    `Type : ${parcelle.type ?? '—'}<br>` +
+                    `Altitude : ${altitudeTexte}`;
 
                 /*
                  * ============================
@@ -466,14 +473,17 @@ export default function Afficher({ menage, peutModifier }) {
 
                                 <p className="text-gray-500">
                                     {parcelle.etat_verger ??
-                                        'État non renseigné'}
+                                        'État non renseigné'}, {" "}
+
+                                    {parcelle.type ??
+                                        'Type non renseigné'},
 
                                     {parcelle.latitude !== null &&
                                         parcelle.latitude !== undefined && (
                                             <>
                                                 {' '}
                                                 — {parcelle.latitude},{' '}
-                                                {parcelle.longitude}
+                                                {parcelle.longitude}, altitude: {parcelle.altitude ?? '—'}m
                                             </>
                                         )}
                                 </p>
