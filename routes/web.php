@@ -24,6 +24,15 @@ Route::get('/', function () {
     ]);
 });
 
+Route::get('/php-info', function () {
+    return [
+        'php_version' => PHP_VERSION,
+        'max_execution_time' => ini_get('max_execution_time'),
+        'php_ini' => php_ini_loaded_file(),
+        'sapi' => php_sapi_name(),
+    ];
+});
+
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
@@ -82,6 +91,14 @@ Route::middleware(['auth', 'verified'])
 Route::delete('/menages/{menage}', [MenageController::class, 'destroy'])
     ->middleware(['auth', 'verified', 'role:admin'])
     ->name('menages.destroy');
+
+Route::delete('/menages/{menage}/parcelles/{parcelle}', [MenageController::class, 'detruireParcelle'])
+    ->middleware(['auth', 'verified', 'role:admin'])
+    ->name('menages.parcelles.destroy');
+
+Route::delete('/menages/{menage}/reponses/{reponse}', [MenageController::class, 'detruireReponse'])
+    ->middleware(['auth', 'verified', 'role:admin'])
+    ->name('menages.reponses.destroy');
 
 // Import / export du fichier "caféiculteurs" — routes indépendantes du
 // groupe "utilisateurs" ci-dessous : elles portent sur les ménages, pas

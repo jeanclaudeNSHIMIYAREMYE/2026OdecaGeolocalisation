@@ -26,11 +26,50 @@ function CarteRapport({ points, menageCible }) {
 
             coucheRef.current.clearLayers();
 
+            /*
+             * Plage d'altitude du jeu de points actuel, pour moduler
+             * légèrement la taille des marqueurs sans écraser le
+             * signal déjà porté par le rayon (ménage ciblé = plus gros).
+             */
+            const altitudesValides = points
+                .map((p) => p.altitude)
+                .filter((a) => a !== null && a !== undefined && Number.isFinite(Number(a)))
+                .map(Number);
+
+            const altitudeMin = altitudesValides.length ? Math.min(...altitudesValides) : null;
+            const altitudeMax = altitudesValides.length ? Math.max(...altitudesValides) : null;
+
+            const AJUSTEMENT_MAX = 3; // pixels de rayon ajoutés au maximum
+
+            const ajustementAltitude = (altitude) => {
+                if (
+                    altitude === null ||
+                    altitude === undefined ||
+                    !Number.isFinite(Number(altitude)) ||
+                    altitudeMin === null ||
+                    altitudeMax === null ||
+                    altitudeMax === altitudeMin
+                ) {
+                    return 0;
+                }
+
+                const ratio = (Number(altitude) - altitudeMin) / (altitudeMax - altitudeMin);
+
+                return ratio * AJUSTEMENT_MAX;
+            };
+
             points.forEach((point) => {
                 const estCible = menageCible && point.menage_id === menageCible.id;
 
+                const altitudeTexte =
+                    point.altitude !== null && point.altitude !== undefined
+                        ? `${Number(point.altitude).toFixed(0)} m`
+                        : '—';
+
+                const rayonBase = estCible ? 9 : 6;
+
                 L.circleMarker([point.latitude, point.longitude], {
-                    radius: estCible ? 9 : 6,
+                    radius: rayonBase + ajustementAltitude(point.altitude),
                     color: estCible ? '#CE1126' : '#1EB53A',
                     fillColor: estCible ? '#CE1126' : '#1EB53A',
                     fillOpacity: 0.85,
@@ -39,7 +78,8 @@ function CarteRapport({ points, menageCible }) {
                     .bindPopup(
                         `<strong>${point.code_menage}</strong> — ${point.nom_chef_menage}<br>` +
                             `${point.province}, ${point.commune}<br>` +
-                            `${point.nombre_pieds ?? '—'} pieds · géolocalisé le ${point.date_geolocalisation}` +
+                            `${point.nombre_pieds ?? '—'} pieds · géolocalisé le ${point.date_geolocalisation}<br>` +
+                            `Altitude : ${altitudeTexte}` +
                             (point.enqueteur ? `<br>Enquêteur : ${point.enqueteur}` : ''),
                     )
                     .addTo(coucheRef.current);

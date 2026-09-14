@@ -35,7 +35,8 @@ class AccueilController extends Controller
 
         // Si vos ménages sont assignés à un enquêteur :
         if ($user) {
-            $query->where('enqueteur_id', $user->id);
+            //$query->where('enqueteur_id', $user->id);
+            $query->visiblePour($user);
         }
 
         /*

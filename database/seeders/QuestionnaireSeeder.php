@@ -32,6 +32,31 @@ class QuestionnaireSeeder extends Seeder
          */
 
         $questions = [
+                [
+                'code' => 'possede_vergers_cafe',
+
+                'libelle' =>
+                    'Possédez-vous des vergers de café ?',
+
+                'section' => 'Exploitation caféicole',
+
+                'type' => 'choix_unique',
+
+                'options' => [
+                    'Oui',
+                    'Non',
+                ],
+
+                'obligatoire' => true,
+
+                'autre_option' => false,
+
+                'condition' => null,
+
+                'termine_si' => 'Non',
+
+                'ordre' => 1,
+            ],
             [
                 'code' => 'effectif_vergers',
 
@@ -50,7 +75,9 @@ class QuestionnaireSeeder extends Seeder
 
                 'condition' => null,
 
-                'ordre' => 1,
+                'termine_si' => null,
+
+                'ordre' => 2,
             ],
 
             [
@@ -77,7 +104,9 @@ class QuestionnaireSeeder extends Seeder
 
                 'condition' => null,
 
-                'ordre' => 2,
+                'termine_si' => null,
+
+                'ordre' => 3,
             ],
 
             [
@@ -115,7 +144,9 @@ class QuestionnaireSeeder extends Seeder
 
                 'condition' => null,
 
-                'ordre' => 3,
+                'termine_si' => null,
+
+                'ordre' => 4,
             ],
 
             [
@@ -140,7 +171,9 @@ class QuestionnaireSeeder extends Seeder
 
                 'condition' => null,
 
-                'ordre' => 4,
+                'termine_si' => null,
+
+                'ordre' => 5,
             ],
 
             [
@@ -156,7 +189,7 @@ class QuestionnaireSeeder extends Seeder
 
                 'options' => null,
 
-                'obligatoire' => true,
+                'obligatoire' => false,
 
                 'autre_option' => false,
 
@@ -169,7 +202,9 @@ class QuestionnaireSeeder extends Seeder
                     'valeur' => 'Oui',
                 ],
 
-                'ordre' => 5,
+                'termine_si' => null,
+
+                'ordre' => 6,
             ],
 
             [
@@ -199,7 +234,9 @@ class QuestionnaireSeeder extends Seeder
 
                 'condition' => null,
 
-                'ordre' => 6,
+                'termine_si' => null,
+
+                'ordre' => 7,
             ],
 
             [
@@ -224,7 +261,9 @@ class QuestionnaireSeeder extends Seeder
 
                 'condition' => null,
 
-                'ordre' => 7,
+                'termine_si' => null,
+
+                'ordre' => 8,
             ],
         ];
 
@@ -248,6 +287,7 @@ class QuestionnaireSeeder extends Seeder
                     'obligatoire' => $question['obligatoire'],
                     'autre_option' => $question['autre_option'],
                     'condition' => $question['condition'],
+                    'termine_si' => $question['termine_si'],
                     'ordre' => $question['ordre'],
                 ]
             );

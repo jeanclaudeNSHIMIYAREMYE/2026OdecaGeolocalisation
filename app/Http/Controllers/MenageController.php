@@ -13,6 +13,8 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Models\Parcelle;
+use App\Models\ReponseQuestionnaire;
 
 class MenageController extends Controller
 {
@@ -20,7 +22,7 @@ class MenageController extends Controller
     {
         $this->authorize('viewAny', Menage::class);
 
-        $filtres = $request->only(['recherche', 'statut', 'province_id', 'commune_id', 'zone_id', 'colline_id']);
+        $filtres = $request->only(['recherche', 'statut', 'province_id', 'commune_id', 'zone_id', 'colline_id', 'enqueteur_id', 'possede_vergers_cafe']);
 
         $menages = Menage::query()
             ->with(['colline.zone.commune.province', 'enqueteur:id,name'])
@@ -30,10 +32,22 @@ class MenageController extends Controller
                     ->orWhere('prenom_chef_menage', 'like', "%{$v}%")
             ))
             ->when($filtres['statut'] ?? null, fn ($q, $v) => $q->where('statut', $v))
+            ->when($filtres['enqueteur_id'] ?? null, fn ($q, $v) => $q->where('enqueteur_id', $v))
             ->when($filtres['colline_id'] ?? null, fn ($q, $v) => $q->where('colline_id', $v))
             ->when($filtres['zone_id'] ?? null, fn ($q, $v) => $q->whereHas('colline', fn ($q) => $q->where('zone_id', $v)))
             ->when($filtres['commune_id'] ?? null, fn ($q, $v) => $q->whereHas('colline.zone', fn ($q) => $q->where('commune_id', $v)))
             ->when($filtres['province_id'] ?? null, fn ($q, $v) => $q->whereHas('colline.zone.commune', fn ($q) => $q->where('province_id', $v)))
+            ->when(
+                $filtres['possede_vergers_cafe'] ?? null,
+                function ($q, $v) {
+                    $q->whereHas('reponses', function ($q) use ($v) {
+                        $q->whereHas('question', function ($q) {
+                            $q->where('code', 'possede_vergers_cafe');
+                        })
+                        ->where('valeur->valeur', $v);
+                    });
+                }
+            )
             ->orderByDesc('updated_at')
             ->paginate(20)
             ->withQueryString();
@@ -46,6 +60,7 @@ class MenageController extends Controller
             'zones' => Zone::orderBy('nom')->get(['id', 'nom', 'commune_id']),
             'collines' => Colline::orderBy('nom')->get(['id', 'nom', 'zone_id']),
             'peutCreer' => $request->user()->can('create', Menage::class),
+            'enqueteurs' => User::where('actif', true)->where('role', 'enqueteur')->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -76,7 +91,7 @@ class MenageController extends Controller
         $this->authorize('view', $menage);
 
         $menage->load(['colline.zone.commune.province', 'enqueteur:id,name', 'parcelles', 'reponses.question']);
-        
+
         return Inertia::render('Menages/Afficher', [
             'menage' => $menage,
             'peutModifier' => request()->user()->can('update', $menage),
@@ -114,6 +129,32 @@ class MenageController extends Controller
         $menage->delete();
 
         return redirect()->route('menages.index')->with('succes', 'Ménage supprimé.');
+    }
+
+    public function detruireParcelle(Menage $menage, Parcelle $parcelle): RedirectResponse
+    {
+        $this->authorize('update', $menage);
+
+        abort_if($parcelle->menage_id !== $menage->id, 404);
+
+        $parcelle->delete();
+
+        $menage->synchroniserStatut();
+
+        return redirect()->route('menages.show', $menage)->with('succes', 'Parcelle supprimée.');
+    }
+
+    public function detruireReponse(Menage $menage, ReponseQuestionnaire $reponse): RedirectResponse
+    {
+        $this->authorize('update', $menage);
+
+        abort_if($reponse->menage_id !== $menage->id, 404);
+
+        $reponse->delete();
+
+        $menage->synchroniserStatut();
+
+        return redirect()->route('menages.show', $menage)->with('succes', 'Réponse supprimée.');
     }
 
     private function donneesFormulaire(): array

@@ -174,14 +174,20 @@ class ExportController extends Controller
                 'type' => 'Feature',
                 'geometry' => [
                     'type' => 'Point',
-                    'coordinates' => [(float) $parcelle->longitude, (float) $parcelle->latitude],
+                    'coordinates' => array_filter([
+                        (float) $parcelle->longitude,
+                        (float) $parcelle->latitude,
+                        $parcelle->altitude !== null ? (float) $parcelle->altitude : null,
+                    ], fn ($v) => $v !== null),
                 ],
                 'properties' => [
                     'code_menage' => $parcelle->menage->code_menage,
                     'nom_chef_menage' => $parcelle->menage->nom_chef_menage,
                     'statut_menage' => $parcelle->menage->statut,
+                    'altitude' => $parcelle->altitude !== null ? (float) $parcelle->altitude : null,
                     'nombre_pieds' => $parcelle->nombre_pieds,
                     'etat_verger' => $parcelle->etat_verger,
+                    'type' => $parcelle->type,
                     'annee_mise_en_place' => $parcelle->annee_mise_en_place,
                 ],
             ])->values(),

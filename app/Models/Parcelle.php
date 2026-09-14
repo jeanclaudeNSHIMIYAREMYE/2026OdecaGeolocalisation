@@ -24,10 +24,12 @@ class Parcelle extends Model
         'nombre_pieds',
         'annee_mise_en_place',
         'etat_verger',
+        'type',
 
         // Localisation
         'latitude',
         'longitude',
+        'altitude',
         'polygone',
         'mode_positionnement',
 
@@ -45,6 +47,7 @@ class Parcelle extends Model
         'polygone' => 'array',
         'latitude' => 'decimal:7',
         'longitude' => 'decimal:7',
+        'altitude' => 'decimal:4',
     ];
 
     public function menage(): BelongsTo

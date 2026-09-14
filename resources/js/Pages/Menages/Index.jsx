@@ -12,7 +12,7 @@ const LIBELLES_STATUT = {
     a_faire: { texte: 'À faire', classe: 'bg-gray-100 text-gray-600' },
 };
 
-export default function Index({ menages, filtres, provinces, communes, zones, collines, peutCreer }) {
+export default function Index({ menages, filtres, provinces, communes, zones, collines, peutCreer, enqueteurs }) {
     const { flash } = usePage().props;
     const [recherche, setRecherche] = useState(filtres.recherche ?? '');
 
@@ -60,9 +60,54 @@ export default function Index({ menages, filtres, provinces, communes, zones, co
                                     <option value="en_attente">En attente</option>
                                     <option value="termine">Terminé</option>
                                 </select>
+
+                                <select
+                                    className="rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    value={filtres.possede_vergers_cafe ?? ''}
+                                    onChange={(e) =>
+                                        appliquerFiltres({
+                                            ...filtres,
+                                            possede_vergers_cafe:
+                                                e.target.value || undefined,
+                                        })
+                                    }
+                                >
+                                    <option value="">
+                                        Tous les ménages
+                                    </option>
+
+                                    <option value="Oui">
+                                        Possèdent des vergers
+                                    </option>
+
+                                    <option value="Non">
+                                        Ne possèdent pas de vergers
+                                    </option>
+                                </select>
+                                <select
+                                    className="rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    value={filtres.enqueteur_id ?? ''}
+                                    onChange={(e) =>
+                                        appliquerFiltres({
+                                            ...filtres,
+                                            enqueteur_id: e.target.value || undefined,
+                                        })
+                                    }
+                                >
+                                    <option value="">Tous les enquêteurs</option>
+
+                                    {enqueteurs.map((enqueteur) => (
+                                        <option key={enqueteur.id} value={enqueteur.id}>
+                                            {enqueteur.name}
+                                        </option>
+                                    ))}
+                                </select>
+
                             </div>
 
+
                             {peutCreer && <BoutonImporterMenages />}
+
                         </div>
 
                         <div className="flex flex-wrap gap-4">
@@ -75,6 +120,7 @@ export default function Index({ menages, filtres, provinces, communes, zones, co
                                 collines={collines}
                             />
                         </div>
+
                     </div>
 
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">

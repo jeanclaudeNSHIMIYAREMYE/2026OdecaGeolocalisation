@@ -19,7 +19,8 @@ class MenageController extends Controller
         $collineIds = $user->collines()->pluck('collines.id');
         $menages = Menage::query()
             ->with('colline')
-            ->whereIn('colline_id', $collineIds)
+            //->whereIn('colline_id', $collineIds)
+            ->visiblePour($user)
             ->when(
                 $request->filled('colline_id'),
                 fn ($q) => $q->where(

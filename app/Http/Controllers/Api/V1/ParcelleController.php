@@ -38,6 +38,7 @@ class ParcelleController extends Controller
         // Mise à jour de l'activité du ménage
         $menage->update([
             'date_derniere_activite' => now(),
+            'enqueteur_id' => auth()->id()
         ]);
         $menage->verifierStatutTermine();
 
@@ -78,6 +79,7 @@ class ParcelleController extends Controller
 
         $parcelle->menage()->update([
             'date_derniere_activite' => now(),
+            'enqueteur_id' => auth()->id()
         ]);
         $parcelle->menage()->verifierStatutTermine();
 

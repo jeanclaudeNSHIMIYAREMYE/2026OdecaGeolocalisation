@@ -81,15 +81,21 @@ class Menage extends Model
             ),
 
             // Un enquêteur voit tous les ménages des collines qui lui sont
-            // affectées (table pivot enqueteur_colline), plus tout ménage
+            // affectées (table pivot colline_user), plus tout ménage
             // qui lui serait assigné individuellement en dehors de ses
             // collines affectées.
-            'enqueteur' => $query->where(
+            /*'enqueteur' => $query->where(
                 fn (Builder $q) => $q->whereHas(
                     'colline.enqueteurs',
                     fn (Builder $q) => $q->where('users.id', $utilisateur->id)
                 )->orWhere('enqueteur_id', $utilisateur->id)
-            ),
+            ),*/
+
+            'enqueteur' => $query->whereHas(
+            'colline.enqueteurs',
+            fn (Builder $q) =>
+                $q->where('users.id', $utilisateur->id)
+        ),
 
             default => $query->whereRaw('1 = 0'),
         };
@@ -104,6 +110,25 @@ class Menage extends Model
         if ($aDesParcelles && $aDesReponses) {
             $this->update([
                 'statut' => 'termine',
+                'date_derniere_activite' => now(),
+            ]);
+        }
+    }
+
+    public function synchroniserStatut(): void
+    {
+        $aDesParcelles = $this->parcelles()->exists();
+        $aDesReponses = $this->reponses()->exists();
+
+        $statut = match (true) {
+            $aDesParcelles && $aDesReponses => 'termine',
+            $aDesParcelles || $aDesReponses => 'en_attente',
+            default => 'a_faire',
+        };
+
+        if ($statut !== $this->statut) {
+            $this->update([
+                'statut' => $statut,
                 'date_derniere_activite' => now(),
             ]);
         }
