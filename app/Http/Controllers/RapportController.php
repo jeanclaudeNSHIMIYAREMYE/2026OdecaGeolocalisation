@@ -14,6 +14,75 @@ use Inertia\Response;
 class RapportController extends Controller
 {
     /**
+     * Géométrie GeoJSON d'une parcelle : Polygon si un polygone a été
+     * capturé (>= 3 sommets), sinon Point. L'altitude est incluse par
+     * sommet quand elle est disponible (polygone) ou via la colonne
+     * altitude (point).
+     */
+    private function geometrieParcelle(Parcelle $parcelle): array
+    {
+        $polygone = $parcelle->polygone; // array de ["latitude" => .., "longitude" => .., "altitude" => ..?] ou null
+
+        if (is_array($polygone) && count($polygone) >= 3) {
+            $coordonnees = array_values(array_map(function ($sommet) {
+                return array_filter([
+                    (float) $sommet['longitude'],
+                    (float) $sommet['latitude'],
+                    isset($sommet['altitude']) && $sommet['altitude'] !== null
+                        ? (float) $sommet['altitude']
+                        : null,
+                ], fn ($v) => $v !== null);
+            }, $polygone));
+
+            if ($coordonnees[0] !== end($coordonnees)) {
+                $coordonnees[] = $coordonnees[0];
+            }
+
+            return ['type' => 'Polygon', 'coordinates' => [$coordonnees]];
+        }
+
+        return [
+            'type' => 'Point',
+            'coordinates' => array_filter([
+                (float) $parcelle->longitude,
+                (float) $parcelle->latitude,
+                $parcelle->altitude !== null ? (float) $parcelle->altitude : null,
+            ], fn ($v) => $v !== null),
+        ];
+    }
+
+    /**
+     * Altitude "représentative" d'une parcelle, pour affichage tabulaire
+     * (CSV/XLSX/PDF) et pour la propriété GeoJSON `altitude` : la valeur
+     * de la colonne pour une parcelle ponctuelle, ou la moyenne des
+     * altitudes des sommets pour un polygone (si au moins un sommet en a
+     * une — les anciens polygones capturés avant l'ajout de l'altitude
+     * côté mobile n'en ont aucune, auquel cas on renvoie null).
+     */
+    private function altitudeParcelle(Parcelle $parcelle): ?float
+    {
+        $polygone = $parcelle->polygone;
+
+        if (is_array($polygone) && count($polygone) >= 3) {
+            $altitudes = array_values(array_filter(
+                array_map(
+                    fn ($s) => isset($s['altitude']) && $s['altitude'] !== null ? (float) $s['altitude'] : null,
+                    $polygone
+                ),
+                fn ($v) => $v !== null
+            ));
+
+            if (count($altitudes) > 0) {
+                return array_sum($altitudes) / count($altitudes);
+            }
+
+            return $parcelle->altitude !== null ? (float) $parcelle->altitude : null;
+        }
+
+        return $parcelle->altitude !== null ? (float) $parcelle->altitude : null;
+    }
+
+    /**
      * Construit la requête des parcelles géolocalisées selon les filtres
      * du module Rapports : province, enquêteur + intervalle de dates
      * (date de géolocalisation = date de création de la parcelle, faute
@@ -29,8 +98,10 @@ class RapportController extends Controller
         $filtres = $request->only(['province_id', 'commune_id', 'zone_id', 'colline_id', 'enqueteur_id', 'date_debut', 'date_fin', 'menage']);
 
         return Parcelle::query()
-            ->whereNotNull('latitude')
-            ->whereNotNull('longitude')
+            ->where(function ($q) {
+                $q->whereNotNull('latitude')->whereNotNull('longitude')
+                    ->orWhereNotNull('polygone');
+            })
             ->with(['menage.colline.zone.commune.province', 'menage.enqueteur:id,name'])
             ->when($filtres['colline_id'] ?? null, fn ($q, $v) => $q->whereHas(
                 'menage',
@@ -92,22 +163,43 @@ class RapportController extends Controller
 
         $parcelles = $this->parcellesFiltrees($request)->get();
 
-        $points = $parcelles->map(fn (Parcelle $parcelle) => [
-            'id' => $parcelle->id,
-            'latitude' => (float) $parcelle->latitude,
-            'longitude' => (float) $parcelle->longitude,
-            'altitude' => $parcelle->altitude !== null ? (float) $parcelle->altitude : null,
-            'altitude' => $parcelle->altitude !== null ? (float) $parcelle->altitude : null,
-            'nombre_pieds' => $parcelle->nombre_pieds,
-            'etat_verger' => $parcelle->etat_verger,
-            'date_geolocalisation' => $parcelle->created_at->format('d/m/Y'),
-            'menage_id' => $parcelle->menage->id,
-            'code_menage' => $parcelle->menage->code_menage,
-            'nom_chef_menage' => trim($parcelle->menage->prenom_chef_menage . ' ' . $parcelle->menage->nom_chef_menage),
-            'province' => $parcelle->menage->colline?->zone?->commune?->province?->nom,
-            'commune' => $parcelle->menage->colline?->zone?->commune?->nom,
-            'enqueteur' => $parcelle->menage->enqueteur?->name,
-        ]);
+        $points = $parcelles->map(function (Parcelle $parcelle) {
+            $polygone = $parcelle->polygone;
+            $estPolygone = is_array($polygone) && count($polygone) >= 3;
+
+            if ($estPolygone) {
+                $latitude = collect($polygone)->avg(fn ($s) => (float) $s['latitude']);
+                $longitude = collect($polygone)->avg(fn ($s) => (float) $s['longitude']);
+            } else {
+                $latitude = $parcelle->latitude !== null ? (float) $parcelle->latitude : null;
+                $longitude = $parcelle->longitude !== null ? (float) $parcelle->longitude : null;
+            }
+
+            if ($latitude === null || $longitude === null) {
+                return null; // parcelle sans géométrie exploitable
+            }
+
+            return [
+                'id' => $parcelle->id,
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+                'altitude' => $this->altitudeParcelle($parcelle),
+                'polygone' => $estPolygone ? array_map(fn ($s) => [
+                    'latitude' => (float) $s['latitude'],
+                    'longitude' => (float) $s['longitude'],
+                    'altitude' => isset($s['altitude']) && $s['altitude'] !== null ? (float) $s['altitude'] : null,
+                ], $polygone) : null,
+                'nombre_pieds' => $parcelle->nombre_pieds,
+                'etat_verger' => $parcelle->etat_verger,
+                'date_geolocalisation' => $parcelle->created_at->format('d/m/Y'),
+                'menage_id' => $parcelle->menage->id,
+                'code_menage' => $parcelle->menage->code_menage,
+                'nom_chef_menage' => trim($parcelle->menage->prenom_chef_menage . ' ' . $parcelle->menage->nom_chef_menage),
+                'province' => $parcelle->menage->colline?->zone?->commune?->province?->nom,
+                'commune' => $parcelle->menage->colline?->zone?->commune?->nom,
+                'enqueteur' => $parcelle->menage->enqueteur?->name,
+            ];
+        })->filter()->values();
 
         // Si la recherche cible un ménage précis, on renvoie aussi sa
         // fiche complète (toutes ses parcelles) pour l'affichage dédié.
@@ -216,7 +308,7 @@ class RapportController extends Controller
         $entetes = [
             'Code ménage', 'Chef de ménage', 'Type de ménage', 'CNI', 'Téléphone',
             'Province', 'Commune', 'Zone', 'Colline', 'Enquêteur',
-            'Latitude', 'Longitude', 'Altitude', 'Mode positionnement', 'Mode acquisition',
+            'Latitude', 'Longitude', 'Altitude', 'Géométrie', 'Mode positionnement', 'Mode acquisition',
             'Nombre de pieds', 'État du verger', 'Type', 'Année mise en place',
             'Pièce justificative', 'Notes', 'Date de géolocalisation',
         ];
@@ -225,6 +317,9 @@ class RapportController extends Controller
         $ligne = 2;
         foreach ($parcelles as $parcelle) {
             $menage = $parcelle->menage;
+            $polygone = $parcelle->polygone;
+            $estPolygone = is_array($polygone) && count($polygone) >= 3;
+
             $feuilleDonnees->fromArray([
                 $menage->code_menage,
                 trim($menage->prenom_chef_menage . ' ' . $menage->nom_chef_menage),
@@ -236,9 +331,10 @@ class RapportController extends Controller
                 $menage->colline?->zone?->nom,
                 $menage->colline?->nom,
                 $menage->enqueteur?->name,
-                (float) $parcelle->latitude,
-                (float) $parcelle->longitude,
-                $parcelle->altitude !== null ? (float) $parcelle->altitude : null,
+                $estPolygone ? null : ((float) $parcelle->latitude),
+                $estPolygone ? null : ((float) $parcelle->longitude),
+                $this->altitudeParcelle($parcelle),
+                $estPolygone ? ('Polygone (' . count($polygone) . ' sommets)') : 'Point',
                 $parcelle->mode_positionnement,
                 $parcelle->mode_acquisition,
                 $parcelle->nombre_pieds,
@@ -253,15 +349,15 @@ class RapportController extends Controller
         }
 
         $derniereLigne = $ligne - 1;
-        $feuilleDonnees->getStyle('A1:V1')->applyFromArray([
+        $feuilleDonnees->getStyle('A1:W1')->applyFromArray([
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'CE1126']],
         ]);
         if ($derniereLigne >= 1) {
-            $feuilleDonnees->setAutoFilter("A1:V{$derniereLigne}");
+            $feuilleDonnees->setAutoFilter("A1:W{$derniereLigne}");
         }
         $feuilleDonnees->freezePane('A2');
-        foreach (range('A', 'V') as $colonne) {
+        foreach (range('A', 'W') as $colonne) {
             $feuilleDonnees->getColumnDimension($colonne)->setAutoSize(true);
         }
 
@@ -317,13 +413,16 @@ class RapportController extends Controller
             fputcsv($sortie, [
                 'Code ménage', 'Chef de ménage', 'Type de ménage', 'CNI', 'Téléphone',
                 'Province', 'Commune', 'Zone', 'Colline', 'Enquêteur',
-                'Latitude', 'Longitude', 'Altitude', 'Mode positionnement', 'Mode acquisition',
+                'Latitude', 'Longitude', 'Altitude', 'Géométrie', 'Mode positionnement', 'Mode acquisition',
                 'Nombre de pieds', 'État du verger', 'Type', 'Année mise en place',
                 'Pièce justificative', 'Notes', 'Date de géolocalisation',
             ]);
 
             foreach ($parcelles as $parcelle) {
                 $menage = $parcelle->menage;
+                $polygone = $parcelle->polygone;
+                $estPolygone = is_array($polygone) && count($polygone) >= 3;
+
                 fputcsv($sortie, [
                     $menage->code_menage,
                     trim($menage->prenom_chef_menage . ' ' . $menage->nom_chef_menage),
@@ -335,9 +434,10 @@ class RapportController extends Controller
                     $menage->colline?->zone?->nom,
                     $menage->colline?->nom,
                     $menage->enqueteur?->name,
-                    $parcelle->latitude,
-                    $parcelle->longitude,
-                    $parcelle->altitude,
+                    $estPolygone ? '' : $parcelle->latitude,
+                    $estPolygone ? '' : $parcelle->longitude,
+                    $this->altitudeParcelle($parcelle),
+                    $estPolygone ? ('Polygone (' . count($polygone) . ' sommets)') : 'Point',
                     $parcelle->mode_positionnement,
                     $parcelle->mode_acquisition,
                     $parcelle->nombre_pieds,
@@ -356,7 +456,8 @@ class RapportController extends Controller
 
     /**
      * Données cartographiques — KML, pour ouverture directe dans
-     * Google Earth.
+     * Google Earth. Polygone si capturé (avec altitude par sommet
+     * quand disponible), sinon Point.
      */
     public function kml(Request $request)
     {
@@ -374,7 +475,6 @@ class RapportController extends Controller
             $nom = trim(($menage->prenom_chef_menage ?? '') . ' ' . ($menage->nom_chef_menage ?? ''));
 
             $placemark->addChild('name', htmlspecialchars($nom));
-            //$placemark->addChild('name', htmlspecialchars($menage->code_menage));
 
             $description = sprintf(
                 'Chef de ménage : %s | Code : %s | Province : %s | Commune : %s | Pieds de café : %s | État du verger : %s | Type : %s',
@@ -388,9 +488,30 @@ class RapportController extends Controller
             );
             $placemark->addChild('description', htmlspecialchars($description));
 
-            $point = $placemark->addChild('Point');
-            $point->addChild('altitudeMode', 'absolute');
-            $point->addChild('coordinates', "{$parcelle->longitude},{$parcelle->latitude}," . ($parcelle->altitude ?? 0));
+            $polygone = $parcelle->polygone;
+
+            if (is_array($polygone) && count($polygone) >= 3) {
+                $polygonKml = $placemark->addChild('Polygon');
+                $polygonKml->addChild('altitudeMode', 'absolute');
+                $outer = $polygonKml->addChild('outerBoundaryIs')->addChild('LinearRing');
+
+                $coordsTexte = array_map(function ($sommet) {
+                    $altitude = isset($sommet['altitude']) && $sommet['altitude'] !== null
+                        ? (float) $sommet['altitude']
+                        : 0;
+                    return "{$sommet['longitude']},{$sommet['latitude']},{$altitude}";
+                }, $polygone);
+
+                if (reset($coordsTexte) !== end($coordsTexte)) {
+                    $coordsTexte[] = reset($coordsTexte);
+                }
+
+                $outer->addChild('coordinates', implode(' ', $coordsTexte));
+            } elseif ($parcelle->latitude !== null && $parcelle->longitude !== null) {
+                $point = $placemark->addChild('Point');
+                $point->addChild('altitudeMode', 'absolute');
+                $point->addChild('coordinates', "{$parcelle->longitude},{$parcelle->latitude}," . ($parcelle->altitude ?? 0));
+            }
         }
 
         return response($xml->asXML(), 200, [
@@ -401,7 +522,8 @@ class RapportController extends Controller
 
     /**
      * Données géographiques — GeoJSON complet, pour SIG (QGIS) et
-     * cartes web.
+     * cartes web. Polygone si capturé (altitude par sommet quand
+     * disponible), sinon Point.
      */
     public function geojson(Request $request)
     {
@@ -414,14 +536,7 @@ class RapportController extends Controller
 
                 return [
                     'type' => 'Feature',
-                    'geometry' => [
-                        'type' => 'Point',
-                        'coordinates' => array_filter([
-                            (float) $parcelle->longitude,
-                            (float) $parcelle->latitude,
-                            $parcelle->altitude !== null ? (float) $parcelle->altitude : null,
-                        ], fn ($v) => $v !== null),
-                    ],
+                    'geometry' => $this->geometrieParcelle($parcelle),
                     'properties' => [
                         'code_menage' => $menage->code_menage,
                         'chef_menage' => trim($menage->prenom_chef_menage . ' ' . $menage->nom_chef_menage),
@@ -434,7 +549,7 @@ class RapportController extends Controller
                         'nombre_pieds' => $parcelle->nombre_pieds,
                         'etat_verger' => $parcelle->etat_verger,
                         'type' => $parcelle->type ?? '—',
-                        'altitude' => $parcelle->altitude !== null ? (float) $parcelle->altitude : null,
+                        'altitude' => $this->altitudeParcelle($parcelle),
                         'annee_mise_en_place' => $parcelle->annee_mise_en_place,
                         'mode_acquisition' => $parcelle->mode_acquisition,
                         'date_geolocalisation' => $parcelle->created_at->format('Y-m-d'),
