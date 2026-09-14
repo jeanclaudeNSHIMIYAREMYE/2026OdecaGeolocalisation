@@ -12,7 +12,8 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\MenageExportController;
 use App\Http\Controllers\MenageImportController;
-
+use App\Http\Controllers\SuiviMenagesController;
+use App\Http\Controllers\SuiviMenagesExportController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -58,6 +59,20 @@ Route::middleware(['auth', 'verified', 'role:admin'])
 Route::get('/statistiques', [StatistiqueController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('statistiques.index');
+
+// Suivi des ménages (pré-enregistrés / nouveaux terrain, réponses au
+// questionnaire) — groupe indépendant, même portée d'accès que la liste
+// générale des ménages (pas restreint aux rôles de gestion des comptes).
+Route::middleware(['auth', 'verified'])
+    ->prefix('suivi-menages')
+    ->name('suivi-menages.')
+    ->group(function () {
+        Route::get('/', [SuiviMenagesController::class, 'index'])->name('index');
+        Route::get('/export/xlsx', [SuiviMenagesExportController::class, 'xlsx'])->name('xlsx');
+        Route::get('/export/csv', [SuiviMenagesExportController::class, 'csv'])->name('csv');
+        Route::get('/export/pdf', [SuiviMenagesExportController::class, 'pdf'])->name('pdf');
+        Route::get('/export/geojson', [SuiviMenagesExportController::class, 'geojson'])->name('geojson');
+    });
 
 Route::middleware(['auth', 'verified'])
     ->resource('menages', MenageController::class)
