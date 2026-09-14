@@ -31,7 +31,7 @@ class RapportController extends Controller
                     isset($sommet['altitude']) && $sommet['altitude'] !== null
                         ? (float) $sommet['altitude']
                         : null,
-                ], fn ($v) => $v !== null);
+                ], fn($v) => $v !== null);
             }, $polygone));
 
             if ($coordonnees[0] !== end($coordonnees)) {
@@ -47,7 +47,7 @@ class RapportController extends Controller
                 (float) $parcelle->longitude,
                 (float) $parcelle->latitude,
                 $parcelle->altitude !== null ? (float) $parcelle->altitude : null,
-            ], fn ($v) => $v !== null),
+            ], fn($v) => $v !== null),
         ];
     }
 
@@ -66,10 +66,10 @@ class RapportController extends Controller
         if (is_array($polygone) && count($polygone) >= 3) {
             $altitudes = array_values(array_filter(
                 array_map(
-                    fn ($s) => isset($s['altitude']) && $s['altitude'] !== null ? (float) $s['altitude'] : null,
+                    fn($s) => isset($s['altitude']) && $s['altitude'] !== null ? (float) $s['altitude'] : null,
                     $polygone
                 ),
-                fn ($v) => $v !== null
+                fn($v) => $v !== null
             ));
 
             if (count($altitudes) > 0) {
@@ -103,31 +103,31 @@ class RapportController extends Controller
                     ->orWhereNotNull('polygone');
             })
             ->with(['menage.colline.zone.commune.province', 'menage.enqueteur:id,name'])
-            ->when($filtres['colline_id'] ?? null, fn ($q, $v) => $q->whereHas(
+            ->when($filtres['colline_id'] ?? null, fn($q, $v) => $q->whereHas(
                 'menage',
-                fn ($q) => $q->where('colline_id', $v)
+                fn($q) => $q->where('colline_id', $v)
             ))
-            ->when($filtres['zone_id'] ?? null, fn ($q, $v) => $q->whereHas(
+            ->when($filtres['zone_id'] ?? null, fn($q, $v) => $q->whereHas(
                 'menage.colline',
-                fn ($q) => $q->where('zone_id', $v)
+                fn($q) => $q->where('zone_id', $v)
             ))
-            ->when($filtres['commune_id'] ?? null, fn ($q, $v) => $q->whereHas(
+            ->when($filtres['commune_id'] ?? null, fn($q, $v) => $q->whereHas(
                 'menage.colline.zone',
-                fn ($q) => $q->where('commune_id', $v)
+                fn($q) => $q->where('commune_id', $v)
             ))
-            ->when($filtres['province_id'] ?? null, fn ($q, $v) => $q->whereHas(
+            ->when($filtres['province_id'] ?? null, fn($q, $v) => $q->whereHas(
                 'menage.colline.zone.commune',
-                fn ($q) => $q->where('province_id', $v)
+                fn($q) => $q->where('province_id', $v)
             ))
-            ->when($filtres['enqueteur_id'] ?? null, fn ($q, $v) => $q->whereHas(
+            ->when($filtres['enqueteur_id'] ?? null, fn($q, $v) => $q->whereHas(
                 'menage',
-                fn ($q) => $q->where('enqueteur_id', $v)
+                fn($q) => $q->where('enqueteur_id', $v)
             ))
-            ->when($filtres['date_debut'] ?? null, fn ($q, $v) => $q->whereDate('parcelles.created_at', '>=', $v))
-            ->when($filtres['date_fin'] ?? null, fn ($q, $v) => $q->whereDate('parcelles.created_at', '<=', $v))
-            ->when($filtres['menage'] ?? null, fn ($q, $v) => $q->whereHas(
+            ->when($filtres['date_debut'] ?? null, fn($q, $v) => $q->whereDate('parcelles.created_at', '>=', $v))
+            ->when($filtres['date_fin'] ?? null, fn($q, $v) => $q->whereDate('parcelles.created_at', '<=', $v))
+            ->when($filtres['menage'] ?? null, fn($q, $v) => $q->whereHas(
                 'menage',
-                fn ($q) => $q->where('code_menage', 'like', "%{$v}%")
+                fn($q) => $q->where('code_menage', 'like', "%{$v}%")
                     ->orWhere('nom_chef_menage', 'like', "%{$v}%")
                     ->orWhere('prenom_chef_menage', 'like', "%{$v}%")
             ));
@@ -145,13 +145,13 @@ class RapportController extends Controller
         $query = User::where('role', 'enqueteur');
 
         if ($collineId = $filtres['colline_id'] ?? null) {
-            $query->whereHas('collines', fn ($q) => $q->where('collines.id', $collineId));
+            $query->whereHas('collines', fn($q) => $q->where('collines.id', $collineId));
         } elseif ($zoneId = $filtres['zone_id'] ?? null) {
-            $query->whereHas('collines', fn ($q) => $q->where('zone_id', $zoneId));
+            $query->whereHas('collines', fn($q) => $q->where('zone_id', $zoneId));
         } elseif ($communeId = $filtres['commune_id'] ?? null) {
-            $query->whereHas('collines.zone', fn ($q) => $q->where('commune_id', $communeId));
+            $query->whereHas('collines.zone', fn($q) => $q->where('commune_id', $communeId));
         } elseif ($provinceId = $filtres['province_id'] ?? null) {
-            $query->whereHas('collines.zone.commune', fn ($q) => $q->where('province_id', $provinceId));
+            $query->whereHas('collines.zone.commune', fn($q) => $q->where('province_id', $provinceId));
         }
 
         return $query->orderBy('name')->get(['id', 'name']);
@@ -168,8 +168,8 @@ class RapportController extends Controller
             $estPolygone = is_array($polygone) && count($polygone) >= 3;
 
             if ($estPolygone) {
-                $latitude = collect($polygone)->avg(fn ($s) => (float) $s['latitude']);
-                $longitude = collect($polygone)->avg(fn ($s) => (float) $s['longitude']);
+                $latitude = collect($polygone)->avg(fn($s) => (float) $s['latitude']);
+                $longitude = collect($polygone)->avg(fn($s) => (float) $s['longitude']);
             } else {
                 $latitude = $parcelle->latitude !== null ? (float) $parcelle->latitude : null;
                 $longitude = $parcelle->longitude !== null ? (float) $parcelle->longitude : null;
@@ -184,7 +184,7 @@ class RapportController extends Controller
                 'latitude' => $latitude,
                 'longitude' => $longitude,
                 'altitude' => $this->altitudeParcelle($parcelle),
-                'polygone' => $estPolygone ? array_map(fn ($s) => [
+                'polygone' => $estPolygone ? array_map(fn($s) => [
                     'latitude' => (float) $s['latitude'],
                     'longitude' => (float) $s['longitude'],
                     'altitude' => isset($s['altitude']) && $s['altitude'] !== null ? (float) $s['altitude'] : null,
@@ -230,16 +230,16 @@ class RapportController extends Controller
             $collineSelectionnee = Colline::find($collineId, ['id', 'nom']);
 
             $statsParEnqueteurId = $parcelles
-                ->filter(fn ($p) => $p->menage->enqueteur_id !== null)
-                ->groupBy(fn ($p) => $p->menage->enqueteur_id)
-                ->map(fn ($groupe) => [
+                ->filter(fn($p) => $p->menage->enqueteur_id !== null)
+                ->groupBy(fn($p) => $p->menage->enqueteur_id)
+                ->map(fn($groupe) => [
                     'menages' => $groupe->pluck('menage_id')->unique()->count(),
                     'parcelles' => $groupe->count(),
                     'pieds' => (int) $groupe->sum('nombre_pieds'),
                 ]);
 
             $enqueteursColline = User::where('role', 'enqueteur')
-                ->whereHas('collines', fn ($q) => $q->where('collines.id', $collineId))
+                ->whereHas('collines', fn($q) => $q->where('collines.id', $collineId))
                 ->orderBy('name')
                 ->get(['id', 'name', 'actif'])
                 ->map(function ($u) use ($statsParEnqueteurId) {
@@ -306,11 +306,30 @@ class RapportController extends Controller
         $feuilleDonnees->setTitle('Données géolocalisation');
 
         $entetes = [
-            'Code ménage', 'Chef de ménage', 'Type de ménage', 'CNI', 'Téléphone',
-            'Province', 'Commune', 'Zone', 'Colline', 'Enquêteur',
-            'Latitude', 'Longitude', 'Altitude', 'Géométrie', 'Mode positionnement', 'Mode acquisition',
-            'Nombre de pieds', 'État du verger', 'Type', 'Année mise en place',
-            'Pièce justificative', 'Notes', 'Date de géolocalisation',
+            'Code ménage',
+            'Chef de ménage',
+            'Type de ménage',
+            'CNI',
+            'Téléphone',
+            'Province',
+            'Commune',
+            'Zone',
+            'Colline',
+            'Enquêteur',
+            'Latitude',
+            'Longitude',
+            'Altitude',
+            'Géométrie',
+            'Coordonnées polygone (JSON)',
+            'Mode positionnement',
+            'Mode acquisition',
+            'Nombre de pieds',
+            'État du verger',
+            'Type',
+            'Année mise en place',
+            'Pièce justificative',
+            'Notes',
+            'Date de géolocalisation',
         ];
         $feuilleDonnees->fromArray($entetes, null, 'A1');
 
@@ -335,6 +354,11 @@ class RapportController extends Controller
                 $estPolygone ? null : ((float) $parcelle->longitude),
                 $this->altitudeParcelle($parcelle),
                 $estPolygone ? ('Polygone (' . count($polygone) . ' sommets)') : 'Point',
+                $estPolygone ? json_encode(array_map(fn($s) => [
+                    'latitude' => (float) $s['latitude'],
+                    'longitude' => (float) $s['longitude'],
+                    'altitude' => isset($s['altitude']) && $s['altitude'] !== null ? (float) $s['altitude'] : null,
+                ], $polygone), JSON_UNESCAPED_UNICODE) : null,
                 $parcelle->mode_positionnement,
                 $parcelle->mode_acquisition,
                 $parcelle->nombre_pieds,
@@ -349,15 +373,15 @@ class RapportController extends Controller
         }
 
         $derniereLigne = $ligne - 1;
-        $feuilleDonnees->getStyle('A1:W1')->applyFromArray([
+        $feuilleDonnees->getStyle('A1:X1')->applyFromArray([
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'CE1126']],
         ]);
         if ($derniereLigne >= 1) {
-            $feuilleDonnees->setAutoFilter("A1:W{$derniereLigne}");
+            $feuilleDonnees->setAutoFilter("A1:X{$derniereLigne}");
         }
         $feuilleDonnees->freezePane('A2');
-        foreach (range('A', 'W') as $colonne) {
+        foreach (range('A', 'X') as $colonne) {
             $feuilleDonnees->getColumnDimension($colonne)->setAutoSize(true);
         }
 
@@ -366,7 +390,7 @@ class RapportController extends Controller
         $feuilleSynthese->setTitle('Synthèse par province');
         $feuilleSynthese->fromArray(['Province', 'Nombre de parcelles', 'Nombre de ménages', 'Total pieds de café'], null, 'A1');
 
-        $parProvince = $parcelles->groupBy(fn ($p) => $p->menage->colline?->zone?->commune?->province?->nom ?? 'Non renseigné');
+        $parProvince = $parcelles->groupBy(fn($p) => $p->menage->colline?->zone?->commune?->province?->nom ?? 'Non renseigné');
         $ligne = 2;
         foreach ($parProvince as $province => $groupe) {
             $feuilleSynthese->fromArray([
@@ -411,11 +435,30 @@ class RapportController extends Controller
             fwrite($sortie, "\xEF\xBB\xBF");
 
             fputcsv($sortie, [
-                'Code ménage', 'Chef de ménage', 'Type de ménage', 'CNI', 'Téléphone',
-                'Province', 'Commune', 'Zone', 'Colline', 'Enquêteur',
-                'Latitude', 'Longitude', 'Altitude', 'Géométrie', 'Mode positionnement', 'Mode acquisition',
-                'Nombre de pieds', 'État du verger', 'Type', 'Année mise en place',
-                'Pièce justificative', 'Notes', 'Date de géolocalisation',
+                'Code ménage',
+                'Chef de ménage',
+                'Type de ménage',
+                'CNI',
+                'Téléphone',
+                'Province',
+                'Commune',
+                'Zone',
+                'Colline',
+                'Enquêteur',
+                'Latitude',
+                'Longitude',
+                'Altitude',
+                'Géométrie',
+                'Coordonnées polygone (JSON)',
+                'Mode positionnement',
+                'Mode acquisition',
+                'Nombre de pieds',
+                'État du verger',
+                'Type',
+                'Année mise en place',
+                'Pièce justificative',
+                'Notes',
+                'Date de géolocalisation',
             ]);
 
             foreach ($parcelles as $parcelle) {
@@ -438,6 +481,11 @@ class RapportController extends Controller
                     $estPolygone ? '' : $parcelle->longitude,
                     $this->altitudeParcelle($parcelle),
                     $estPolygone ? ('Polygone (' . count($polygone) . ' sommets)') : 'Point',
+                    $estPolygone ? json_encode(array_map(fn($s) => [
+                        'latitude' => (float) $s['latitude'],
+                        'longitude' => (float) $s['longitude'],
+                        'altitude' => isset($s['altitude']) && $s['altitude'] !== null ? (float) $s['altitude'] : null,
+                    ], $polygone), JSON_UNESCAPED_UNICODE) : '',
                     $parcelle->mode_positionnement,
                     $parcelle->mode_acquisition,
                     $parcelle->nombre_pieds,
