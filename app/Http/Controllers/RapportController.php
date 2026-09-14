@@ -377,7 +377,7 @@ class RapportController extends Controller
             //$placemark->addChild('name', htmlspecialchars($menage->code_menage));
 
             $description = sprintf(
-                'Chef de ménage : %s | Province : %s | Commune : %s | Pieds de café : %s | État du verger : %s',
+                'Chef de ménage : %s | Code : %s | Province : %s | Commune : %s | Pieds de café : %s | État du verger : %s | Type : %s',
                 trim($menage->prenom_chef_menage . ' ' . $menage->nom_chef_menage),
                 $menage->code_menage,
                 $menage->colline?->zone?->commune?->province?->nom,
