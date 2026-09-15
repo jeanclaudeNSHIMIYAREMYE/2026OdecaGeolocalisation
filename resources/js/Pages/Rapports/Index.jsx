@@ -72,10 +72,16 @@ function CarteRapport({ points, menageCible }) {
                         ? `${Number(point.altitude).toFixed(0)} m`
                         : '—';
 
+                 const superficieTexte =
+                    point.superficie_ha !== null && point.superficie_ha !== undefined
+                        ? `${Number(point.superficie_ha).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} ha`
+                        : '—';
+
                 const popup =
                     `<strong>${point.code_menage}</strong> — ${point.nom_chef_menage}<br>` +
                     `${point.province}, ${point.commune}<br>` +
                     `${point.nombre_pieds ?? '—'} pieds · géolocalisé le ${point.date_geolocalisation}<br>` +
+                    `Superficie : ${superficieTexte}<br>` +
                     `Altitude : ${altitudeTexte}` +
                     (point.enqueteur ? `<br>Enquêteur : ${point.enqueteur}` : '');
 
@@ -101,14 +107,25 @@ function CarteRapport({ points, menageCible }) {
                         .filter(Boolean);
 
                     if (coordinates.length >= 3) {
-                        L.polygon(coordinates, {
+                        const polygoneLayer = L.polygon(coordinates, {
                             color: couleur,
                             fillColor: couleur,
                             fillOpacity: 0.25,
                             weight: estCible ? 3 : 2,
-                        })
-                            .bindPopup(popup)
-                            .addTo(couchePolygonesRef.current);
+                        }).bindPopup(popup);
+
+                        if (point.superficie_ha !== null && point.superficie_ha !== undefined) {
+                            polygoneLayer.bindTooltip(
+                                `${Number(point.superficie_ha).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} ha`,
+                                {
+                                    permanent: true,
+                                    direction: 'center',
+                                    className: 'etiquette-superficie',
+                                },
+                            );
+                        }
+
+                        polygoneLayer.addTo(couchePolygonesRef.current);
 
                         toutesLesCoordonnees.push(...coordinates);
                     }
@@ -152,7 +169,25 @@ function CarteRapport({ points, menageCible }) {
         carteRef.current = null;
     }, []);
 
-    return <div ref={conteneurRef} className="h-[550px] w-full rounded-lg" />;
+    return(
+        <>
+            <style>{`
+                .etiquette-superficie {
+                    background: rgba(255, 255, 255, 0.85);
+                    border: none;
+                    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+                    font-size: 11px;
+                    font-weight: 600;
+                    color: #1f2937;
+                    padding: 1px 4px;
+                }
+                .etiquette-superficie::before {
+                    display: none;
+                }
+            `}</style>
+            <div ref={conteneurRef} className="h-[550px] w-full rounded-lg" />
+        </>
+    );
 }
 
 /** Formatte un nombre avec des séparateurs de milliers (espace, style FR). */
@@ -172,6 +207,7 @@ export default function Index({
     collineSelectionnee,
     enqueteursColline,
     total,
+    superficieTotaleHa,
 }) {
     const [recherche, setRecherche] = useState(filtres.menage ?? '');
 
@@ -349,6 +385,7 @@ export default function Index({
                     <div className="rounded-lg bg-white p-4 shadow-sm">
                         <h3 className="mb-3 text-sm font-medium text-gray-700">
                             {total} parcelle(s) géolocalisée(s) correspondant aux filtres
+                            {' — '}{Number(superficieTotaleHa ?? 0).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} ha au total
                         </h3>
                         <CarteRapport points={points} menageCible={menageCible} />
                     </div>

@@ -44,6 +44,10 @@
             <div class="valeur">{{ $parcelles->pluck('menage.colline.zone.commune.province.nom')->unique()->count() }}</div>
             <div class="libelle">Provinces couvertes</div>
         </div>
+        <div class="kpi">
+            <div class="valeur">{{ number_format($totalSuperficieHa, 2, ',', ' ') }} ha</div>
+            <div class="libelle">Superficie totale (ha)</div>
+        </div>
     </div>
 
     <table>
@@ -60,6 +64,7 @@
                 <th>Longitude</th>
                 <th>Altitude</th>
                 <th>Pieds</th>
+                <th>Superficie</th>
                 <th>État verger</th>
                 <th>Type</th>
                 <th>Date géoloc.</th>
@@ -80,6 +85,7 @@
                     <td>{{ $parcelle->longitude }}</td>
                     <td>{{ $parcelle->altitude !== null ? $parcelle->altitude : '—' }}</td>
                     <td>{{ $parcelle->nombre_pieds ?? '—' }}</td>
+                    <td>{{ $parcelle->superficie_ha !== null ? number_format($parcelle->superficie_ha, 2, ',', ' ') . ' ha' : '—' }}</td>
                     <td>{{ $parcelle->etat_verger ?? '—' }}</td>
                     <td>{{ $parcelle->type ?? '—' }}</td>
                     <td>{{ $parcelle->created_at->format('d/m/Y') }}</td>

@@ -82,6 +82,7 @@ function CarteBurundi({ points }) {
             };
 
             points.forEach((point) => {
+                console.log('point', point);
                 const couleur =
                     COULEURS_STATUT[point.statut_menage] ??
                     '#6366f1';
@@ -91,10 +92,16 @@ function CarteBurundi({ points }) {
                         ? `${Number(point.altitude).toFixed(0)} m`
                         : '—';
 
+                const superficieTexte =
+                    point.superficie_ha !== null && point.superficie_ha !== undefined
+                        ? `${Number(point.superficie_ha).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} ha`
+                        : '—';
+
                 const popup =
                     `<strong>${point.code_menage}</strong><br>` +
                     `${point.nom_chef_menage ?? ''}<br>` +
                     `${point.nombre_pieds ?? '—'} pieds de café<br>` +
+                    `Superficie : ${superficieTexte}<br>` +
                     `État : ${point.etat_verger ?? '—'}<br>` +
                     `Type : ${point.type ?? '—'}<br>` +
                     `Altitude : ${altitudeTexte}`;
@@ -110,25 +117,12 @@ function CarteBurundi({ points }) {
                 ) {
                     const coordinates = point.polygone
                         .map((coord) => {
-                            if (
-                                Array.isArray(coord) &&
-                                coord.length >= 2
-                            ) {
-                                return [
-                                    Number(coord[0]),
-                                    Number(coord[1]),
-                                ];
+                            if (Array.isArray(coord) && coord.length >= 2) {
+                                return [Number(coord[0]), Number(coord[1])];
                             }
 
-                            if (
-                                coord &&
-                                coord.latitude != null &&
-                                coord.longitude != null
-                            ) {
-                                return [
-                                    Number(coord.latitude),
-                                    Number(coord.longitude),
-                                ];
+                            if (coord && coord.latitude != null && coord.longitude != null) {
+                                return [Number(coord.latitude), Number(coord.longitude)];
                             }
 
                             return null;
@@ -136,18 +130,27 @@ function CarteBurundi({ points }) {
                         .filter(Boolean);
 
                     if (coordinates.length >= 3) {
-                        L.polygon(coordinates, {
+                        const polygoneLayer = L.polygon(coordinates, {
                             color: couleur,
                             fillColor: couleur,
                             fillOpacity: 0.25,
                             weight: 2,
-                        })
-                            .bindPopup(popup)
-                            .addTo(couchePolygonesRef.current);
+                        }).bindPopup(popup);
 
-                        toutesLesCoordonnees.push(
-                            ...coordinates,
-                        );
+                        if (point.superficie_ha !== null && point.superficie_ha !== undefined) {
+                            polygoneLayer.bindTooltip(
+                                `${Number(point.superficie_ha).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} ha`,
+                                {
+                                    permanent: true,
+                                    direction: 'center',
+                                    className: 'etiquette-superficie',
+                                },
+                            );
+                        }
+
+                        polygoneLayer.addTo(couchePolygonesRef.current);
+
+                        toutesLesCoordonnees.push(...coordinates);
                     }
                 }
 
@@ -210,10 +213,27 @@ function CarteBurundi({ points }) {
     }, []);
 
     return (
-        <div
-            ref={conteneurRef}
-            className="h-[500px] w-full rounded-lg"
-        />
+        <>
+            <style>{`
+                .etiquette-superficie {
+                    background: rgba(255, 255, 255, 0.85);
+                    border: none;
+                    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+                    font-size: 11px;
+                    font-weight: 600;
+                    color: #1f2937;
+                    padding: 1px 4px;
+                }
+                .etiquette-superficie::before {
+                    display: none;
+                }
+            `}</style>
+            <div
+                ref={conteneurRef}
+                className="h-[500px] w-full rounded-lg"
+            />
+        </>
+
     );
 }
 
@@ -334,6 +354,10 @@ export default function Dashboard({ kpi, pointsCarte, filtres, provinces, commun
                         <CarteKpi titre="Total ménages" valeur={kpi.menages_total} />
                         <CarteKpi titre="Parcelles géolocalisées" valeur={kpi.nombre_parcelles} />
                         <CarteKpi titre="Pieds de café" valeur={kpi.nombre_pieds_cafe.toLocaleString('fr-FR')} />
+                        <CarteKpi
+                            titre="Superficie totale"
+                            valeur={`${kpi.superficie_totale_ha.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} ha`}
+                        />
                     </div>
 
                     {/* Carte */}
