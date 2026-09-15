@@ -7,7 +7,8 @@ import { useEffect, useRef, useState } from 'react';
 function CarteRapport({ points, menageCible }) {
     const conteneurRef = useRef(null);
     const carteRef = useRef(null);
-    const coucheRef = useRef(null);
+    const coucheMarqueursRef = useRef(null);
+    const couchePolygonesRef = useRef(null);
 
     useEffect(() => {
         let annule = false;
@@ -21,10 +22,14 @@ function CarteRapport({ points, menageCible }) {
                     attribution: '&copy; OpenStreetMap',
                     maxZoom: 18,
                 }).addTo(carteRef.current);
-                coucheRef.current = L.layerGroup().addTo(carteRef.current);
+                coucheMarqueursRef.current = L.layerGroup().addTo(carteRef.current);
+                couchePolygonesRef.current = L.layerGroup().addTo(carteRef.current);
             }
 
-            coucheRef.current.clearLayers();
+            coucheMarqueursRef.current.clearLayers();
+            couchePolygonesRef.current.clearLayers();
+
+            const toutesLesCoordonnees = [];
 
             /*
              * Plage d'altitude du jeu de points actuel, pour moduler
@@ -60,33 +65,79 @@ function CarteRapport({ points, menageCible }) {
 
             points.forEach((point) => {
                 const estCible = menageCible && point.menage_id === menageCible.id;
+                const couleur = estCible ? '#CE1126' : '#1EB53A';
 
                 const altitudeTexte =
                     point.altitude !== null && point.altitude !== undefined
                         ? `${Number(point.altitude).toFixed(0)} m`
                         : '—';
 
-                const rayonBase = estCible ? 9 : 6;
+                const popup =
+                    `<strong>${point.code_menage}</strong> — ${point.nom_chef_menage}<br>` +
+                    `${point.province}, ${point.commune}<br>` +
+                    `${point.nombre_pieds ?? '—'} pieds · géolocalisé le ${point.date_geolocalisation}<br>` +
+                    `Altitude : ${altitudeTexte}` +
+                    (point.enqueteur ? `<br>Enquêteur : ${point.enqueteur}` : '');
 
-                L.circleMarker([point.latitude, point.longitude], {
-                    radius: rayonBase + ajustementAltitude(point.altitude),
-                    color: estCible ? '#CE1126' : '#1EB53A',
-                    fillColor: estCible ? '#CE1126' : '#1EB53A',
-                    fillOpacity: 0.85,
-                    weight: estCible ? 2 : 1,
-                })
-                    .bindPopup(
-                        `<strong>${point.code_menage}</strong> — ${point.nom_chef_menage}<br>` +
-                            `${point.province}, ${point.commune}<br>` +
-                            `${point.nombre_pieds ?? '—'} pieds · géolocalisé le ${point.date_geolocalisation}<br>` +
-                            `Altitude : ${altitudeTexte}` +
-                            (point.enqueteur ? `<br>Enquêteur : ${point.enqueteur}` : ''),
-                    )
-                    .addTo(coucheRef.current);
+                /*
+                 * ============================
+                 * POLYGONE
+                 * ============================
+                 * point.polygone (quand présent) est un tableau de
+                 * sommets { latitude, longitude, altitude? } tel que
+                 * renvoyé par RapportController::index.
+                 */
+                if (Array.isArray(point.polygone) && point.polygone.length >= 3) {
+                    const coordinates = point.polygone
+                        .map((sommet) => {
+                            if (sommet && sommet.latitude != null && sommet.longitude != null) {
+                                return [Number(sommet.latitude), Number(sommet.longitude)];
+                            }
+                            if (Array.isArray(sommet) && sommet.length >= 2) {
+                                return [Number(sommet[0]), Number(sommet[1])];
+                            }
+                            return null;
+                        })
+                        .filter(Boolean);
+
+                    if (coordinates.length >= 3) {
+                        L.polygon(coordinates, {
+                            color: couleur,
+                            fillColor: couleur,
+                            fillOpacity: 0.25,
+                            weight: estCible ? 3 : 2,
+                        })
+                            .bindPopup(popup)
+                            .addTo(couchePolygonesRef.current);
+
+                        toutesLesCoordonnees.push(...coordinates);
+                    }
+                }
+
+                /*
+                 * ============================
+                 * MARQUEUR (centroïde / point GPS)
+                 * ============================
+                 */
+                if (point.latitude != null && point.longitude != null) {
+                    const rayonBase = estCible ? 9 : 6;
+
+                    L.circleMarker([point.latitude, point.longitude], {
+                        radius: rayonBase + ajustementAltitude(point.altitude),
+                        color: couleur,
+                        fillColor: couleur,
+                        fillOpacity: 0.85,
+                        weight: estCible ? 2 : 1,
+                    })
+                        .bindPopup(popup)
+                        .addTo(coucheMarqueursRef.current);
+
+                    toutesLesCoordonnees.push([point.latitude, point.longitude]);
+                }
             });
 
-            if (points.length > 0) {
-                const bornes = L.latLngBounds(points.map((p) => [p.latitude, p.longitude]));
+            if (toutesLesCoordonnees.length > 0) {
+                const bornes = L.latLngBounds(toutesLesCoordonnees);
                 carteRef.current.fitBounds(bornes, { padding: [30, 30] });
             }
         });

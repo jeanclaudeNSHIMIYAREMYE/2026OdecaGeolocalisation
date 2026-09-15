@@ -35,7 +35,9 @@ class ParcelleResource extends JsonResource
             'longitude' => $this->longitude !== null
                 ? (float) $this->longitude
                 : null,
-            'altitude' => $this->altitude !== null,
+            'altitude' => $this->altitude !== null
+    ? (float) $this->altitude
+    : null,
 
             'polygone' => $this->polygone,
 
