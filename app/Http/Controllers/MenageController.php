@@ -18,6 +18,31 @@ use App\Models\ReponseQuestionnaire;
 
 class MenageController extends Controller
 {
+
+private function altitudeParcelle(Parcelle $parcelle): ?float
+    {
+        $polygone = $parcelle->polygone;
+
+        if (is_array($polygone) && count($polygone) >= 3) {
+            $altitudes = array_values(array_filter(
+                array_map(
+                    fn($s) => isset($s['altitude']) && $s['altitude'] !== null ? (float) $s['altitude'] : null,
+                    $polygone
+                ),
+                fn($v) => $v !== null
+            ));
+
+            if (count($altitudes) > 0) {
+                return array_sum($altitudes) / count($altitudes);
+            }
+
+            return $parcelle->altitude !== null ? (float) $parcelle->altitude : null;
+        }
+
+        return $parcelle->altitude !== null ? (float) $parcelle->altitude : null;
+    }
+
+
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', Menage::class);
@@ -91,6 +116,11 @@ class MenageController extends Controller
         $this->authorize('view', $menage);
 
         $menage->load(['colline.zone.commune.province', 'enqueteur:id,name', 'parcelles', 'reponses.question']);
+
+        $menage->parcelles->each(function (Parcelle $parcelle) {
+            $parcelle->superficie_ha = $this->superficieHectares($parcelle->polygone);
+            $parcelle->altitude = $this->altitudeParcelle($parcelle);
+        });
 
         return Inertia::render('Menages/Afficher', [
             'menage' => $menage,
@@ -179,5 +209,48 @@ class MenageController extends Controller
             'statut' => ['required', Rule::in(['a_faire', 'en_attente', 'termine'])],
             'enqueteur_id' => ['nullable', 'exists:users,id'],
         ]);
+    }
+
+
+    private function superficieHectares(mixed $polygone): ?float
+    {
+        if (! is_array($polygone) || count($polygone) < 3) {
+            return null;
+        }
+
+        $coords = collect($polygone)
+            ->map(function ($point) {
+                if (is_array($point) && array_key_exists(0, $point) && array_key_exists(1, $point)) {
+                    return [(float) $point[0], (float) $point[1]];
+                }
+
+                if (is_array($point) && isset($point['latitude'], $point['longitude'])) {
+                    return [(float) $point['latitude'], (float) $point['longitude']];
+                }
+
+                return null;
+            })
+            ->filter()
+            ->values();
+
+        if ($coords->count() < 3) {
+            return null;
+        }
+
+        // Rayon équatorial WGS84 (mètres)
+        $rayonTerre = 6378137;
+        $aire = 0.0;
+        $n = $coords->count();
+
+        for ($i = 0; $i < $n; $i++) {
+            [$lat1, $lng1] = $coords[$i];
+            [$lat2, $lng2] = $coords[($i + 1) % $n];
+
+            $aire += deg2rad($lng2 - $lng1) * (2 + sin(deg2rad($lat1)) + sin(deg2rad($lat2)));
+        }
+
+        $aire = abs($aire * $rayonTerre * $rayonTerre / 2);
+
+        return round($aire / 10000, 2); // m² → hectares
     }
 }

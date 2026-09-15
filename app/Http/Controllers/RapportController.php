@@ -216,6 +216,7 @@ private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
                 'latitude' => $latitude,
                 'longitude' => $longitude,
                 'altitude' => $this->altitudeParcelle($parcelle),
+                'superficie_ha' => $this->superficieHectares($polygone),
                 'polygone' => $estPolygone ? array_map(fn($s) => [
                     'latitude' => (float) $s['latitude'],
                     'longitude' => (float) $s['longitude'],
@@ -302,6 +303,7 @@ private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
             'collineSelectionnee' => $collineSelectionnee,
             'enqueteursColline' => $enqueteursColline,
             'total' => $points->count(),
+            'superficieTotaleHa' => round($points->sum('superficie_ha'), 2),
         ]);
     }
 
@@ -312,12 +314,16 @@ private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
     public function pdf(Request $request)
     {
         $parcelles = $this->parcellesFiltrees($request)->get();
+        $parcelles->each(function (Parcelle $parcelle) {
+            $parcelle->superficie_ha = $this->superficieHectares($parcelle->polygone);
+        });
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('rapports.general-pdf', [
             'parcelles' => $parcelles,
             'genereLe' => now()->format('d/m/Y H:i'),
             'totalPieds' => $parcelles->sum('nombre_pieds'),
             'totalMenages' => $parcelles->pluck('menage_id')->unique()->count(),
+            'totalSuperficieHa' => round($parcelles->sum('superficie_ha'), 2),
         ])->setPaper('a4', 'landscape');
 
         return $pdf->download('rapport_geolocalisation_' . now()->format('Y-m-d_His') . '.pdf');
@@ -351,6 +357,7 @@ private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
             'Latitude',
             'Longitude',
             'Altitude',
+            'Superficie (ha)',
             'Géométrie',
             'Coordonnées polygone (JSON)',
             'Mode positionnement',
@@ -370,6 +377,7 @@ private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
             $menage = $parcelle->menage;
             $polygone = $parcelle->polygone;
             $estPolygone = is_array($polygone) && count($polygone) >= 3;
+            $superficieHa = $this->superficieHectares($polygone);
 
             $feuilleDonnees->fromArray([
                 $menage->code_menage,
@@ -385,6 +393,7 @@ private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
                 $estPolygone ? null : ((float) $parcelle->latitude),
                 $estPolygone ? null : ((float) $parcelle->longitude),
                 $this->altitudeParcelle($parcelle),
+                $superficieHa,
                 $estPolygone ? ('Polygone (' . count($polygone) . ' sommets)') : 'Point',
                 $estPolygone ? json_encode(array_map(fn($s) => [
                     'latitude' => (float) $s['latitude'],
@@ -405,22 +414,22 @@ private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
         }
 
         $derniereLigne = $ligne - 1;
-        $feuilleDonnees->getStyle('A1:X1')->applyFromArray([
+        $feuilleDonnees->getStyle('A1:Y1')->applyFromArray([
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'CE1126']],
         ]);
         if ($derniereLigne >= 1) {
-            $feuilleDonnees->setAutoFilter("A1:X{$derniereLigne}");
+            $feuilleDonnees->setAutoFilter("A1:Y{$derniereLigne}");
         }
         $feuilleDonnees->freezePane('A2');
-        foreach (range('A', 'X') as $colonne) {
+        foreach (range('A', 'Y') as $colonne) {
             $feuilleDonnees->getColumnDimension($colonne)->setAutoSize(true);
         }
 
         // --- Feuille 2 : synthèse par province ---
         $feuilleSynthese = $classeur->createSheet();
         $feuilleSynthese->setTitle('Synthèse par province');
-        $feuilleSynthese->fromArray(['Province', 'Nombre de parcelles', 'Nombre de ménages', 'Total pieds de café'], null, 'A1');
+        $feuilleSynthese->fromArray(['Province', 'Nombre de parcelles', 'Nombre de ménages', 'Total pieds de café', 'Superficie totale (ha)'], null, 'A1');
 
         $parProvince = $parcelles->groupBy(fn($p) => $p->menage->colline?->zone?->commune?->province?->nom ?? 'Non renseigné');
         $ligne = 2;
@@ -430,14 +439,15 @@ private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
                 $groupe->count(),
                 $groupe->pluck('menage_id')->unique()->count(),
                 $groupe->sum('nombre_pieds'),
+                round($groupe->sum(fn($p) => $this->superficieHectares($p->polygone) ?? 0), 2),
             ], null, "A{$ligne}");
             $ligne++;
         }
-        $feuilleSynthese->getStyle('A1:D1')->applyFromArray([
+        $feuilleSynthese->getStyle('A1:E1')->applyFromArray([
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '1EB53A']],
         ]);
-        foreach (range('A', 'D') as $colonne) {
+        foreach (range('A', 'E') as $colonne) {
             $feuilleSynthese->getColumnDimension($colonne)->setAutoSize(true);
         }
 
@@ -480,6 +490,7 @@ private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
                 'Latitude',
                 'Longitude',
                 'Altitude',
+                'Superficie (ha)',
                 'Géométrie',
                 'Coordonnées polygone (JSON)',
                 'Mode positionnement',
@@ -512,6 +523,7 @@ private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
                     $estPolygone ? '' : $parcelle->latitude,
                     $estPolygone ? '' : $parcelle->longitude,
                     $this->altitudeParcelle($parcelle),
+                    $this->superficieHectares($polygone),
                     $estPolygone ? ('Polygone (' . count($polygone) . ' sommets)') : 'Point',
                     $estPolygone ? json_encode(array_map(fn($s) => [
                         'latitude' => (float) $s['latitude'],
@@ -589,14 +601,18 @@ private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
         $placemark->addChild('styleUrl', '#' . $categorie['id']);
 
         $altitudeTexte = $altitude !== null ? round($altitude) . ' m' : 'non mesurée';
+        $superficieHa = $this->superficieHectares($parcelle->polygone);
+        $superficieTexte = $superficieHa !== null ? number_format($superficieHa, 2, ',', ' ') . ' ha' : 'non calculée';
+
 
         $description = sprintf(
-            'Chef de ménage : %s | Code : %s | Province : %s | Commune : %s | Pieds de café : %s | État du verger : %s | Type : %s | Altitude : %s (%s)',
+            'Chef de ménage : %s | Code : %s | Province : %s | Commune : %s | Pieds de café : %s | Superficie : %s | État du verger : %s | Type : %s | Altitude : %s (%s)',
             trim($menage->prenom_chef_menage . ' ' . $menage->nom_chef_menage),
             $menage->code_menage,
             $menage->colline?->zone?->commune?->province?->nom,
             $menage->colline?->zone?->commune?->nom,
             $parcelle->nombre_pieds ?? '—',
+            $superficieTexte,
             $parcelle->etat_verger ?? '—',
             $parcelle->type ?? '—',
             $altitudeTexte,
@@ -716,6 +732,7 @@ if (is_array($polygone) && count($polygone) >= 3) {
                     'colline' => $menage->colline?->nom,
                     'enqueteur' => $menage->enqueteur?->name,
                     'nombre_pieds' => $parcelle->nombre_pieds,
+                    'superficie_ha' => $this->superficieHectares($parcelle->polygone),
                     'etat_verger' => $parcelle->etat_verger,
                     'type' => $parcelle->type ?? '—',
                     'altitude' => $altitude,
@@ -733,4 +750,47 @@ if (is_array($polygone) && count($polygone) >= 3) {
     return response()->json($featureCollection)
         ->header('Content-Disposition', "attachment; filename=\"{$nomFichier}\"");
 }
+
+
+    private function superficieHectares(mixed $polygone): ?float
+    {
+        if (! is_array($polygone) || count($polygone) < 3) {
+            return null;
+        }
+
+        $coords = collect($polygone)
+            ->map(function ($point) {
+                if (is_array($point) && array_key_exists(0, $point) && array_key_exists(1, $point)) {
+                    return [(float) $point[0], (float) $point[1]];
+                }
+
+                if (is_array($point) && isset($point['latitude'], $point['longitude'])) {
+                    return [(float) $point['latitude'], (float) $point['longitude']];
+                }
+
+                return null;
+            })
+            ->filter()
+            ->values();
+
+        if ($coords->count() < 3) {
+            return null;
+        }
+
+        // Rayon équatorial WGS84 (mètres)
+        $rayonTerre = 6378137;
+        $aire = 0.0;
+        $n = $coords->count();
+
+        for ($i = 0; $i < $n; $i++) {
+            [$lat1, $lng1] = $coords[$i];
+            [$lat2, $lng2] = $coords[($i + 1) % $n];
+
+            $aire += deg2rad($lng2 - $lng1) * (2 + sin(deg2rad($lat1)) + sin(deg2rad($lat2)));
+        }
+
+        $aire = abs($aire * $rayonTerre * $rayonTerre / 2);
+
+        return round($aire / 10000, 2); // m² → hectares
+    }
 }

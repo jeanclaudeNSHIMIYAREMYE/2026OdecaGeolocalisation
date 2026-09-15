@@ -44,6 +44,8 @@ class User extends Authenticatable
         'is_super_admin' => 'boolean',
     ];
 }
+
+
     public function province(): BelongsTo
     {
         return $this->belongsTo(Province::class);
@@ -70,7 +72,7 @@ class User extends Authenticatable
 }
     public function collines(): BelongsToMany
     {
-        return $this->belongsToMany(Colline::class)->withTimestamps();
+        return $this->belongsToMany(Colline::class, 'colline_user')->withTimestamps();
     }
 
     public function estAdmin(): bool
@@ -115,4 +117,6 @@ class User extends Authenticatable
             default => $query->whereRaw('1 = 0'),
         };
     }
+
+
 }

@@ -67,9 +67,16 @@ function CarteMenage({ parcelles, statutMenage, codeMenage }) {
                     parcelle.altitude !== null && parcelle.altitude !== undefined
                         ? `${Number(parcelle.altitude).toFixed(0)} m`
                         : '—';
+
+                const superficieTexte =
+                    parcelle.superficie_ha !== null && parcelle.superficie_ha !== undefined
+                        ? `${Number(parcelle.superficie_ha).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} ha`
+                        : '—';
+
                 const popup =
                     `<strong>${codeMenage}</strong><br>` +
                     `${parcelle.nombre_pieds ?? '—'} pieds de café<br>` +
+                    `Superficie : ${superficieTexte}<br>` +
                     `État : ${parcelle.etat_verger ?? '—'}<br>` +
                     `Type : ${parcelle.type ?? '—'}<br>` +
                     `Altitude : ${altitudeTexte}`;
@@ -95,14 +102,25 @@ function CarteMenage({ parcelles, statutMenage, codeMenage }) {
                         .filter(Boolean);
 
                     if (coordinates.length >= 3) {
-                        L.polygon(coordinates, {
+                        const polygoneLayer = L.polygon(coordinates, {
                             color: couleur,
                             fillColor: couleur,
                             fillOpacity: 0.25,
                             weight: 2,
-                        })
-                            .bindPopup(popup)
-                            .addTo(couchePolygonesRef.current);
+                        }).bindPopup(popup);
+
+                        if (parcelle.superficie_ha !== null && parcelle.superficie_ha !== undefined) {
+                            polygoneLayer.bindTooltip(
+                                `${Number(parcelle.superficie_ha).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} ha`,
+                                {
+                                    permanent: true,
+                                    direction: 'center',
+                                    className: 'etiquette-superficie',
+                                },
+                            );
+                        }
+
+                        polygoneLayer.addTo(couchePolygonesRef.current);
 
                         toutesLesCoordonnees.push(...coordinates);
                     }
@@ -149,7 +167,25 @@ function CarteMenage({ parcelles, statutMenage, codeMenage }) {
         };
     }, []);
 
-    return <div ref={conteneurRef} className="h-[400px] w-full rounded-lg" />;
+    return (
+        <>
+            <style>{`
+                .etiquette-superficie {
+                    background: rgba(255, 255, 255, 0.85);
+                    border: none;
+                    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+                    font-size: 11px;
+                    font-weight: 600;
+                    color: #1f2937;
+                    padding: 1px 4px;
+                }
+                .etiquette-superficie::before {
+                    display: none;
+                }
+            `}</style>
+            <div ref={conteneurRef} className="h-[400px] w-full rounded-lg" />
+        </>
+    );
 }
 
 function Ligne({ libelle, valeur }) {
@@ -469,6 +505,11 @@ export default function Afficher({ menage, peutModifier }) {
                                 <div>
                                 <p className="font-medium text-gray-900">
                                     {parcelle.nombre_pieds ?? '—'} pieds de café
+                                    {parcelle.superficie_ha !== null && parcelle.superficie_ha !== undefined && (
+                                        <span className="ml-2 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                                            {Number(parcelle.superficie_ha).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} ha
+                                        </span>
+                                    )}
                                 </p>
 
                                 <p className="text-gray-500">
