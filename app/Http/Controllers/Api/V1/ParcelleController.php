@@ -8,6 +8,7 @@ use App\Http\Resources\Api\ParcelleResource;
 use App\Models\Menage;
 use App\Models\Parcelle;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class ParcelleController extends Controller
 {
@@ -32,6 +33,11 @@ class ParcelleController extends Controller
                 ->file('piece_justificative_photo')
                 ->store('parcelles/pieces-justificatives', 'public');
         }
+            Log::info('POLYGONE BEFORE CREATE', [
+                'polygone' => $data['polygone'] ?? null,
+            ]);
+
+
 
         $parcelle = $menage->parcelles()->create($data);
 

@@ -80,6 +80,11 @@ class StoreParcelleRequest extends FormRequest
                 'numeric',
                 'between:-180,180',
             ],
+            'polygone.*.altitude' => [
+                'nullable',
+                'numeric',
+                'between:-5000,9000',
+            ],
 
             'mode_positionnement' => [
                 'nullable',

@@ -13,6 +13,38 @@ use Inertia\Response;
 
 class RapportController extends Controller
 {
+
+/**
+ * Catégorie d'altitude pour la représentation visuelle (couleur) des
+ * exports KML/GeoJSON — permet de repérer en un coup d'œil les
+ * plantations de plaine/colline par rapport à celles en moyenne/haute
+ * montagne. Seuils indicatifs pour le relief burundais (café cultivé
+ * typiquement entre ~1200 et ~2000 m).
+ */
+private function categorieAltitude(?float $altitude): array
+{
+    if ($altitude === null) {
+        return ['id' => 'altitude-inconnue', 'label' => 'Altitude non mesurée', 'hex' => '95a5a6'];
+    }
+
+    return match (true) {
+        $altitude < 1400 => ['id' => 'altitude-basse', 'label' => 'Basse altitude (< 1400 m)', 'hex' => '2ecc71'],
+        $altitude < 1700 => ['id' => 'altitude-moyenne', 'label' => 'Altitude moyenne (1400–1700 m)', 'hex' => 'f1c40f'],
+        $altitude < 2000 => ['id' => 'altitude-haute', 'label' => 'Haute altitude (1700–2000 m)', 'hex' => 'e67e22'],
+        default => ['id' => 'altitude-montagne', 'label' => 'Très haute altitude / montagne (≥ 2000 m)', 'hex' => '8b4513'],
+    };
+}
+
+/** Convertit un hex 'RRGGBB' en couleur KML 'aabbggrr' (ordre inversé). */
+private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
+{
+    $rr = substr($hexRrggbb, 0, 2);
+    $gg = substr($hexRrggbb, 2, 2);
+    $bb = substr($hexRrggbb, 4, 2);
+
+    return strtolower($alphaHex . $bb . $gg . $rr);
+}
+
     /**
      * Géométrie GeoJSON d'une parcelle : Polygon si un polygone a été
      * capturé (>= 3 sommets), sinon Point. L'altitude est incluse par
@@ -508,107 +540,197 @@ class RapportController extends Controller
      * quand disponible), sinon Point.
      */
     public function kml(Request $request)
-    {
-        $parcelles = $this->parcellesFiltrees($request)->get();
+{
+    $parcelles = $this->parcellesFiltrees($request)->get();
 
-        $nomFichier = 'donnees_cartographiques_' . now()->format('Y-m-d_His') . '.kml';
+    $nomFichier = 'donnees_cartographiques_' . now()->format('Y-m-d_His') . '.kml';
 
-        $xml = new \SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"></kml>');
-        $document = $xml->addChild('Document');
-        $document->addChild('name', 'Plantations de café géolocalisées — LNC Burundi');
+    $xml = new \SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"></kml>');
+    $document = $xml->addChild('Document');
+    $document->addChild('name', 'Plantations de café géolocalisées — LNC Burundi');
 
-        foreach ($parcelles as $parcelle) {
-            $menage = $parcelle->menage;
-            $placemark = $document->addChild('Placemark');
-            $nom = trim(($menage->prenom_chef_menage ?? '') . ' ' . ($menage->nom_chef_menage ?? ''));
+    // --- Styles par catégorie d'altitude, définis une seule fois et
+    // référencés par styleUrl sur chaque Placemark (plus léger que des
+    // styles en ligne, et donne une légende cohérente dans Google Earth) ---
+    $categories = [
+        ['id' => 'altitude-basse', 'hex' => '2ecc71'],
+        ['id' => 'altitude-moyenne', 'hex' => 'f1c40f'],
+        ['id' => 'altitude-haute', 'hex' => 'e67e22'],
+        ['id' => 'altitude-montagne', 'hex' => '8b4513'],
+        ['id' => 'altitude-inconnue', 'hex' => '95a5a6'],
+    ];
 
-            $placemark->addChild('name', htmlspecialchars($nom));
+    foreach ($categories as $categorie) {
+        $style = $document->addChild('Style');
+        $style->addAttribute('id', $categorie['id']);
 
-            $description = sprintf(
-                'Chef de ménage : %s | Code : %s | Province : %s | Commune : %s | Pieds de café : %s | État du verger : %s | Type : %s',
-                trim($menage->prenom_chef_menage . ' ' . $menage->nom_chef_menage),
-                $menage->code_menage,
-                $menage->colline?->zone?->commune?->province?->nom,
-                $menage->colline?->zone?->commune?->nom,
-                $parcelle->nombre_pieds ?? '—',
-                $parcelle->etat_verger ?? '—',
-                $parcelle->type ?? '—',
-            );
-            $placemark->addChild('description', htmlspecialchars($description));
+        $iconStyle = $style->addChild('IconStyle');
+        $iconStyle->addChild('color', $this->couleurKml($categorie['hex']));
+        $iconStyle->addChild('scale', '1.1');
+        $iconStyle->addChild('Icon')->addChild('href', 'https://maps.google.com/mapfiles/kml/paddle/wht-blank.png');
 
-            $polygone = $parcelle->polygone;
+        $lineStyle = $style->addChild('LineStyle');
+        $lineStyle->addChild('color', $this->couleurKml($categorie['hex']));
+        $lineStyle->addChild('width', '2');
 
-            if (is_array($polygone) && count($polygone) >= 3) {
-                $polygonKml = $placemark->addChild('Polygon');
-                $polygonKml->addChild('altitudeMode', 'absolute');
-                $outer = $polygonKml->addChild('outerBoundaryIs')->addChild('LinearRing');
-
-                $coordsTexte = array_map(function ($sommet) {
-                    $altitude = isset($sommet['altitude']) && $sommet['altitude'] !== null
-                        ? (float) $sommet['altitude']
-                        : 0;
-                    return "{$sommet['longitude']},{$sommet['latitude']},{$altitude}";
-                }, $polygone);
-
-                if (reset($coordsTexte) !== end($coordsTexte)) {
-                    $coordsTexte[] = reset($coordsTexte);
-                }
-
-                $outer->addChild('coordinates', implode(' ', $coordsTexte));
-            } elseif ($parcelle->latitude !== null && $parcelle->longitude !== null) {
-                $point = $placemark->addChild('Point');
-                $point->addChild('altitudeMode', 'absolute');
-                $point->addChild('coordinates', "{$parcelle->longitude},{$parcelle->latitude}," . ($parcelle->altitude ?? 0));
-            }
-        }
-
-        return response($xml->asXML(), 200, [
-            'Content-Type' => 'application/vnd.google-earth.kml+xml',
-            'Content-Disposition' => "attachment; filename=\"{$nomFichier}\"",
-        ]);
+        $polyStyle = $style->addChild('PolyStyle');
+        $polyStyle->addChild('color', $this->couleurKml($categorie['hex'], '99')); // semi-transparent
     }
+
+    foreach ($parcelles as $parcelle) {
+        $menage = $parcelle->menage;
+        $placemark = $document->addChild('Placemark');
+        $nom = trim(($menage->prenom_chef_menage ?? '') . ' ' . ($menage->nom_chef_menage ?? ''));
+
+        $placemark->addChild('name', htmlspecialchars($nom));
+
+        $altitude = $this->altitudeParcelle($parcelle);
+        $categorie = $this->categorieAltitude($altitude);
+        $placemark->addChild('styleUrl', '#' . $categorie['id']);
+
+        $altitudeTexte = $altitude !== null ? round($altitude) . ' m' : 'non mesurée';
+
+        $description = sprintf(
+            'Chef de ménage : %s | Code : %s | Province : %s | Commune : %s | Pieds de café : %s | État du verger : %s | Type : %s | Altitude : %s (%s)',
+            trim($menage->prenom_chef_menage . ' ' . $menage->nom_chef_menage),
+            $menage->code_menage,
+            $menage->colline?->zone?->commune?->province?->nom,
+            $menage->colline?->zone?->commune?->nom,
+            $parcelle->nombre_pieds ?? '—',
+            $parcelle->etat_verger ?? '—',
+            $parcelle->type ?? '—',
+            $altitudeTexte,
+            $categorie['label'],
+        );
+        $placemark->addChild('description', htmlspecialchars($description));
+
+       $polygone = $parcelle->polygone;
+
+if (is_array($polygone) && count($polygone) >= 3) {
+
+    $polygon = $placemark->addChild('Polygon');
+
+    // Determine if the polygon has usable altitude values
+    $hasAltitude = collect($polygone)->every(function ($point) {
+        return isset($point['altitude'])
+            && is_numeric($point['altitude']);
+    });
+
+    if ($hasAltitude) {
+        // Google Earth: altitude is measured from sea level
+        $polygon->addChild('altitudeMode', 'absolute');
+    } else {
+        // Normal ground polygon
+        $polygon->addChild('altitudeMode', 'clampToGround');
+        $polygon->addChild('tessellate', '1');
+    }
+
+    $coordinates = [];
+
+    foreach ($polygone as $point) {
+
+        $longitude = (float) $point['longitude'];
+        $latitude  = (float) $point['latitude'];
+
+        if ($hasAltitude) {
+            $altitude = (float) $point['altitude'];
+
+            $coordinates[] = sprintf(
+                '%.7f,%.7f,%.3f',
+                $longitude,
+                $latitude,
+                $altitude
+            );
+        } else {
+            $coordinates[] = sprintf(
+                '%.7f,%.7f',
+                $longitude,
+                $latitude
+            );
+        }
+    }
+
+    // Close LinearRing
+    $coordinates[] = $coordinates[0];
+
+    $outerBoundary = $polygon->addChild('outerBoundaryIs');
+    $linearRing = $outerBoundary->addChild('LinearRing');
+
+    $linearRing->addChild(
+        'coordinates',
+        implode(' ', $coordinates)
+    );
+}
+ elseif ($parcelle->latitude !== null && $parcelle->longitude !== null) {
+    $point = $placemark->addChild('Point');
+
+    if ($parcelle->altitude !== null) {
+        $point->addChild('extrude', '1');
+        $point->addChild('altitudeMode', 'absolute');
+        $point->addChild('coordinates', "{$parcelle->longitude},{$parcelle->latitude},{$parcelle->altitude}");
+    } else {
+        $point->addChild('altitudeMode', 'clampToGround');
+        $point->addChild('coordinates', "{$parcelle->longitude},{$parcelle->latitude}");
+    }
+}
+    }
+
+    return response($xml->asXML(), 200, [
+        'Content-Type' => 'application/vnd.google-earth.kml+xml',
+        'Content-Disposition' => "attachment; filename=\"{$nomFichier}\"",
+    ]);
+}
 
     /**
      * Données géographiques — GeoJSON complet, pour SIG (QGIS) et
      * cartes web. Polygone si capturé (altitude par sommet quand
      * disponible), sinon Point.
      */
-    public function geojson(Request $request)
-    {
-        $parcelles = $this->parcellesFiltrees($request)->get();
+   public function geojson(Request $request)
+{
+    $parcelles = $this->parcellesFiltrees($request)->get();
 
-        $featureCollection = [
-            'type' => 'FeatureCollection',
-            'features' => $parcelles->map(function (Parcelle $parcelle) {
-                $menage = $parcelle->menage;
+    $featureCollection = [
+        'type' => 'FeatureCollection',
+        'features' => $parcelles->map(function (Parcelle $parcelle) {
+            $menage = $parcelle->menage;
+            $altitude = $this->altitudeParcelle($parcelle);
+            $categorie = $this->categorieAltitude($altitude);
+            $couleurHex = '#' . $categorie['hex'];
+            $estPolygone = $this->geometrieParcelle($parcelle)['type'] === 'Polygon';
 
-                return [
-                    'type' => 'Feature',
-                    'geometry' => $this->geometrieParcelle($parcelle),
-                    'properties' => [
-                        'code_menage' => $menage->code_menage,
-                        'chef_menage' => trim($menage->prenom_chef_menage . ' ' . $menage->nom_chef_menage),
-                        'type_menage' => $menage->type_menage,
-                        'province' => $menage->colline?->zone?->commune?->province?->nom,
-                        'commune' => $menage->colline?->zone?->commune?->nom,
-                        'zone' => $menage->colline?->zone?->nom,
-                        'colline' => $menage->colline?->nom,
-                        'enqueteur' => $menage->enqueteur?->name,
-                        'nombre_pieds' => $parcelle->nombre_pieds,
-                        'etat_verger' => $parcelle->etat_verger,
-                        'type' => $parcelle->type ?? '—',
-                        'altitude' => $this->altitudeParcelle($parcelle),
-                        'annee_mise_en_place' => $parcelle->annee_mise_en_place,
-                        'mode_acquisition' => $parcelle->mode_acquisition,
-                        'date_geolocalisation' => $parcelle->created_at->format('Y-m-d'),
-                    ],
-                ];
-            })->values(),
-        ];
+            $proprietesStyle = $estPolygone
+                ? ['stroke' => $couleurHex, 'stroke-width' => 2, 'stroke-opacity' => 1, 'fill' => $couleurHex, 'fill-opacity' => 0.4]
+                : ['marker-color' => $couleurHex, 'marker-symbol' => 'circle'];
 
-        $nomFichier = 'donnees_geographiques_' . now()->format('Y-m-d_His') . '.geojson';
+            return [
+                'type' => 'Feature',
+                'geometry' => $this->geometrieParcelle($parcelle),
+                'properties' => array_merge([
+                    'code_menage' => $menage->code_menage,
+                    'chef_menage' => trim($menage->prenom_chef_menage . ' ' . $menage->nom_chef_menage),
+                    'type_menage' => $menage->type_menage,
+                    'province' => $menage->colline?->zone?->commune?->province?->nom,
+                    'commune' => $menage->colline?->zone?->commune?->nom,
+                    'zone' => $menage->colline?->zone?->nom,
+                    'colline' => $menage->colline?->nom,
+                    'enqueteur' => $menage->enqueteur?->name,
+                    'nombre_pieds' => $parcelle->nombre_pieds,
+                    'etat_verger' => $parcelle->etat_verger,
+                    'type' => $parcelle->type ?? '—',
+                    'altitude' => $altitude,
+                    'categorie_altitude' => $categorie['label'],
+                    'annee_mise_en_place' => $parcelle->annee_mise_en_place,
+                    'mode_acquisition' => $parcelle->mode_acquisition,
+                    'date_geolocalisation' => $parcelle->created_at->format('Y-m-d'),
+                ], $proprietesStyle),
+            ];
+        })->values(),
+    ];
 
-        return response()->json($featureCollection)
-            ->header('Content-Disposition', "attachment; filename=\"{$nomFichier}\"");
-    }
+    $nomFichier = 'donnees_geographiques_' . now()->format('Y-m-d_His') . '.geojson';
+
+    return response()->json($featureCollection)
+        ->header('Content-Disposition', "attachment; filename=\"{$nomFichier}\"");
+}
 }
