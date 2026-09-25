@@ -22,6 +22,8 @@ class ParcelleResource extends JsonResource
 
             'annee_mise_en_place' => $this->annee_mise_en_place,
 
+            'surface_verger' => $this->surface_verger,
+
             'etat_verger' => $this->etat_verger,
             'type' => $this->type,
 

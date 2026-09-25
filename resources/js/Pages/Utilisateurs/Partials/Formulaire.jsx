@@ -3,6 +3,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { useMemo, useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 
 const ROLES_AVEC_PROVINCE = ['superviseur_provincial'];
 const ROLES_AVEC_COMMUNE = ['superviseur_communal'];
@@ -33,6 +34,7 @@ export default function Formulaire({
     const [filtreCommune, setFiltreCommune] = useState('');
     const [filtreZone, setFiltreZone] = useState('');
     const [recherche, setRecherche] = useState('');
+    const [afficherMotDePasse, setAfficherMotDePasse] = useState(false);
 
     const communesDuFiltre = useMemo(
         () => communes.filter((commune) => !filtreProvince || commune.province_id === Number(filtreProvince)),
@@ -331,20 +333,35 @@ export default function Formulaire({
             )}
 
             <div>
-                <InputLabel
-                    htmlFor="password"
-                    value={modeCreation ? 'Mot de passe' : 'Nouveau mot de passe (laisser vide pour ne pas changer)'}
-                />
-                <TextInput
-                    id="password"
-                    type="password"
-                    className="mt-1 block w-full"
-                    value={data.password}
-                    onChange={(e) => setData('password', e.target.value)}
-                    required={modeCreation}
-                />
-                <InputError message={errors.password} className="mt-2" />
-            </div>
+    <InputLabel
+        htmlFor="password"
+        value={modeCreation ? 'Mot de passe' : 'Nouveau mot de passe (laisser vide pour ne pas changer)'}
+    />
+    <div className="relative mt-1">
+        <TextInput
+            id="password"
+            type={afficherMotDePasse ? 'text' : 'password'}
+            className="block w-full pr-10"
+            value={data.password}
+            onChange={(e) => setData('password', e.target.value)}
+            required={modeCreation}
+        />
+        <button
+            type="button"
+            onClick={() => setAfficherMotDePasse((precedent) => !precedent)}
+            className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600"
+            aria-label={afficherMotDePasse ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+            tabIndex={-1}
+        >
+            {afficherMotDePasse ? (
+                <EyeOff className="h-5 w-5" />
+            ) : (
+                <Eye className="h-5 w-5" />
+            )}
+        </button>
+    </div>
+    <InputError message={errors.password} className="mt-2" />
+</div>
 
             <div className="flex items-center gap-4">
                 <PrimaryButton disabled={processing}>

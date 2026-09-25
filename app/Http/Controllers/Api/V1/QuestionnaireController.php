@@ -39,6 +39,7 @@ class QuestionnaireController extends Controller
                         'type' => $q->type,
                         'options' => $q->options,
                         'obligatoire' => $q->obligatoire,
+                        'condition' => $q->condition,
                         'autre_option' => $q->autre_option,
                         'termine_si' => $q->termine_si,
                         'ordre' => $q->ordre,
