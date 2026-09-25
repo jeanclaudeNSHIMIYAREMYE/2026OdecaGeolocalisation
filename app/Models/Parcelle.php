@@ -23,6 +23,7 @@ class Parcelle extends Model
         // Caractéristiques
         'nombre_pieds',
         'annee_mise_en_place',
+        'surface_verger',
         'etat_verger',
         'type',
 

@@ -31,6 +31,11 @@ class StoreParcelleRequest extends FormRequest
                 'max:' . (date('Y') + 1),
             ],
 
+            'surface_verger' => [
+                'nullable',
+                'string'
+            ],
+
             'etat_verger' => [
                 'nullable',
                 'string',
