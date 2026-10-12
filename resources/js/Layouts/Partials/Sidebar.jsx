@@ -36,7 +36,7 @@ function ContenuNavigation({ user }) {
                 Statistiques
             </LienNav>
 
-            {user.role === 'admin' && (
+            {user.role !== 'enqueteur' && (
                 <LienNav href={route('rapports.index')} actif={route().current('rapports.*')}>
                     Rapports
                 </LienNav>

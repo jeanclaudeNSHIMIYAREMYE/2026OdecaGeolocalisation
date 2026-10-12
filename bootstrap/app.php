@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureUserHasRole::class,
+            'exclude.enqueteur' => \App\Http\Middleware\ExcludeEnqueteur::class,
         ]);
 
         $middleware->api(prepend: [
