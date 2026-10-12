@@ -53,7 +53,7 @@ Route::middleware(['auth', 'verified'])
         Route::get('/parcelles.geojson', [ExportController::class, 'geojson'])->name('parcelles-geojson');
     });
 
-Route::middleware(['auth', 'verified', 'role:admin'])
+Route::middleware(['auth', 'verified', 'exclude.enqueteur'])
     ->prefix('rapports')
     ->name('rapports.')
     ->group(function () {
