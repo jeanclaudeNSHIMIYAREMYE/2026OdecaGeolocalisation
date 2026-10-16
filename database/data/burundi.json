@@ -2102,6 +2102,75 @@
                 "Coga",
                 "Santunda",
                 "Shore"
+            ],
+            "Gitanga": [
+                "Bigina",
+                "Cikinga",
+                "Gatwaro",
+                "Gitanga",
+                "Kazeba",
+                "Kiremba",
+                "Museno",
+                "Ntuku",
+                "Nyabikenke"
+
+            ],
+            "Kinzanza": [
+                "Cunda",
+                "Kabago",
+                "Kabanga",
+                "Kinzanza",
+                "Kivoma",
+                "Maramvya",
+                "Nyamabuye",
+                "Rukobe"
+            ],
+            "Rutana": [
+                "Gakobe",
+                "Gaseri",
+                "Gifunzo",
+                "Jomati",
+                "Karibu",
+                "Kayove",
+                "Nyarubere",
+                "Rushungura",
+                "Shoti",
+                "Quartier Gahuna",
+                "Quartier Karindo",
+                "Quartier Kigwati",
+                "Quartier Majambere",
+                "Quartier Mikurira",
+                "Quartier Mugembe",
+                "Quartier Rongero"
+            ],
+            "Kivoga": [
+                "Gitaramuka",
+                "Kivoga",
+                "Matutu",
+                "Musenyi",
+                "Nyarubimba",
+                "Ramvya"
+            ],
+            "Rongero": [
+                "Butambara",
+                "Butovyi",
+                "Karinzi",
+                "Kibinzi",
+                "Mwayi",
+                "Ntuku",
+                "Rongero",
+                "Rushemeza",
+                "Rusunu"
+            ],
+            "Nyakuguma": [
+                "Gisenyi",
+                "Musongati",
+                "Mutsindozi",
+                "Muyange",
+                "Ngoma",
+                "Nyagisambwe",
+                "Nyakuguma",
+                "Samahuge"
             ]
         }
     },
