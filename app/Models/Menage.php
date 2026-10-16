@@ -72,12 +72,12 @@ class Menage extends Model
 
             'superviseur_provincial' => $query->whereHas(
                 'colline.zone.commune',
-                fn (Builder $q) => $q->where('province_id', $utilisateur->province_id)
+                fn(Builder $q) => $q->where('province_id', $utilisateur->province_id)
             ),
 
             'superviseur_communal' => $query->whereHas(
                 'colline.zone',
-                fn (Builder $q) => $q->where('commune_id', $utilisateur->commune_id)
+                fn(Builder $q) => $q->where('commune_id', $utilisateur->commune_id)
             ),
 
             // Un enquêteur voit tous les ménages des collines qui lui sont
@@ -92,16 +92,16 @@ class Menage extends Model
             ),*/
 
             'enqueteur' => $query->whereHas(
-            'colline.enqueteurs',
-            fn (Builder $q) =>
+                'colline.enqueteurs',
+                fn(Builder $q) =>
                 $q->where('users.id', $utilisateur->id)
-        ),
+            ),
 
             default => $query->whereRaw('1 = 0'),
         };
     }
 
-    public function verifierStatutTermine(): void
+    /*public function verifierStatutTermine(): void
     {
         $aDesParcelles = $this->parcelles()->exists();
 
@@ -113,9 +113,9 @@ class Menage extends Model
                 'date_derniere_activite' => now(),
             ]);
         }
-    }
+    }*/
 
-    public function synchroniserStatut(): void
+    /*public function synchroniserStatut(): void
     {
         $aDesParcelles = $this->parcelles()->exists();
         $aDesReponses = $this->reponses()->exists();
@@ -129,6 +129,95 @@ class Menage extends Model
         if ($statut !== $this->statut) {
             $this->update([
                 'statut' => $statut,
+                'date_derniere_activite' => now(),
+            ]);
+        }
+    }*/
+
+    /**
+     * Lit la valeur d'une réponse du questionnaire à partir du code de la question.
+     * Gère les valeurs stockées en scalaire ou en JSON ({"valeur": ...}).
+     */
+    protected function valeurReponse(string $codeQuestion): mixed
+    {
+        $reponse = $this->reponses()
+            ->whereHas('question', fn(Builder $q) => $q->where('code', $codeQuestion))
+            ->first();
+
+        if (! $reponse) {
+            return null;
+        }
+
+        $valeur = $reponse->valeur;
+
+        if (is_string($valeur)) {
+            $decode = json_decode($valeur, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $valeur = $decode;
+            }
+        }
+
+        if (is_array($valeur)) {
+            $valeur = $valeur['valeur'] ?? null;
+        }
+
+        return $valeur;
+    }
+
+    /**
+     * Nombre de vergers déclarés dans le questionnaire (null si pas encore répondu).
+     */
+    public function nombreVergersDeclares(): ?int
+    {
+        $valeur = $this->valeurReponse('effectif_vergers');
+
+        return is_numeric($valeur) ? (int) $valeur : null;
+    }
+
+    public function calculerStatut(): string
+    {
+        $nombreParcelles = $this->parcelles()->count();
+        $aDesReponses = $this->reponses()->exists();
+
+        // Le ménage a répondu "Non" à "Possédez-vous des vergers de café ?" :
+        // le questionnaire s'arrête là, aucune parcelle n'est attendue.
+        if ($this->valeurReponse('possede_vergers_cafe') === 'Non') {
+            return 'termine';
+        }
+
+        $declares = $this->nombreVergersDeclares();
+
+        // Terminé uniquement quand toutes les parcelles déclarées sont enregistrées.
+        if ($aDesReponses && $declares !== null && $nombreParcelles >= $declares) {
+            return 'termine';
+        }
+
+        // Travail commencé mais incomplet (parcelles < vergers déclarés,
+        // ou questionnaire rempli sans parcelles, ou parcelles sans questionnaire).
+        if ($nombreParcelles > 0 || $aDesReponses) {
+            return 'en_attente';
+        }
+
+        return 'a_faire';
+    }
+
+    public function synchroniserStatut(): void
+    {
+        $statut = $this->calculerStatut();
+
+        if ($statut !== $this->statut) {
+            $this->update([
+                'statut' => $statut,
+                'date_derniere_activite' => now(),
+            ]);
+        }
+    }
+
+    public function verifierStatutTermine(): void
+    {
+        if ($this->calculerStatut() === 'termine' && $this->statut !== 'termine') {
+            $this->update([
+                'statut' => 'termine',
                 'date_derniere_activite' => now(),
             ]);
         }
