@@ -251,7 +251,7 @@ function formaterReponse(valeur) {
     return 'Non renseigné';
 }
 
-export default function Afficher({ menage, peutModifier }) {
+export default function Afficher({ menage, peutModifier, peutDupliquer }) {
     const { flash } = usePage().props;
 
     const reponses = menage.reponses ?? [];
@@ -290,8 +290,14 @@ export default function Afficher({ menage, peutModifier }) {
                         Ménage {menage.code_menage}
                     </h2>
 
+                    {peutDupliquer && (
+                        <Link href={route('menages.dupliquer', menage.id)} className="ml-4">
+                            <PrimaryButton type="button">Dupliquer</PrimaryButton>
+                        </Link>
+                    )}
+
                     {peutModifier && (
-                        <Link href={route('menages.edit', menage.id)}>
+                        <Link href={route('menages.edit', menage.id)} className="ml-4">
                             <PrimaryButton>
                                 Modifier
                             </PrimaryButton>

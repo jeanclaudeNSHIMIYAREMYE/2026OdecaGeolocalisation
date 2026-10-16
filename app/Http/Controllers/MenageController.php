@@ -125,6 +125,7 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
         return Inertia::render('Menages/Afficher', [
             'menage' => $menage,
             'peutModifier' => request()->user()->can('update', $menage),
+            'peutDupliquer' => request()->user()->can('create', Menage::class),
         ]);
     }
 
@@ -253,4 +254,60 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
 
         return round($aire / 10000, 2); // m² → hectares
     }
+
+
+    public function dupliquer(Menage $menage): Response
+{
+    $this->authorize('view', $menage);
+    $this->authorize('create', Menage::class);
+
+    $menage->load('colline.zone.commune');
+
+    return Inertia::render('Menages/Dupliquer', [
+        'menage' => [
+            'id' => $menage->id,
+            'code_menage' => $menage->code_menage,
+            'nom_chef_menage' => $menage->nom_chef_menage,
+            'prenom_chef_menage' => $menage->prenom_chef_menage,
+            'telephone' => $menage->telephone,
+            'cni' => $menage->cni,
+            'enqueteur_id' => $menage->enqueteur_id,
+            'colline_id' => $menage->colline_id,
+            'zone_id' => $menage->colline?->zone_id,
+            'commune_id' => $menage->colline?->zone?->commune_id,
+            'province_id' => $menage->colline?->zone?->commune?->province_id,
+        ],
+        ...$this->donneesFormulaire(),
+    ]);
+}
+
+public function enregistrerCopie(Request $request, Menage $menage): RedirectResponse
+{
+    $this->authorize('view', $menage);
+    $this->authorize('create', Menage::class);
+
+    $donnees = $request->validate([
+        'code_menage' => ['required', 'string', 'max:50', Rule::unique('menages', 'code_menage')],
+        'nom_chef_menage' => ['nullable', 'string', 'max:255'],
+        'prenom_chef_menage' => ['nullable', 'string', 'max:255'],
+        'telephone' => ['nullable', 'string', 'max:30'],
+        'cni' => ['nullable', 'string', 'max:50'],
+        'colline_id' => ['required', 'exists:collines,id'],
+        'enqueteur_id' => ['nullable', 'exists:users,id'],
+    ]);
+
+    $copie = Menage::create([
+        ...$donnees,
+        'type_menage' => $menage->type_menage,
+        'photo_proprietaire' => $menage->photo_proprietaire,
+        'photo_piece_identification' => $menage->photo_piece_identification,
+        'statut' => 'a_faire',
+        'source' => 'pre_enregistre',
+        'cree_par_id' => $request->user()->id,
+    ]);
+
+    return redirect()
+        ->route('menages.show', $copie)
+        ->with('succes', "Ménage copié depuis {$menage->code_menage}.");
+}
 }
