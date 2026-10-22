@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 class Menage extends Model
 {
@@ -56,7 +57,7 @@ class Menage extends Model
 
     public function reponses(): HasMany
     {
-        return $this->hasMany(ReponseQuestionnaire::class);
+        return $this->hasMany(ReponseQuestionnaire::class, 'menage_id');
     }
 
     /**
@@ -65,161 +66,213 @@ class Menage extends Model
      * Appliqué au niveau back-end pour garantir qu'aucune donnée hors
      * périmètre ne soit accessible, même via manipulation du front-end.
      */
-    public function scopeVisiblePour(Builder $query, User $utilisateur): Builder
-    {
-        return match ($utilisateur->role) {
-            'admin', 'superviseur_national' => $query,
+public function scopeVisiblePour(Builder $query, User $utilisateur): Builder
+{
+    return match ($utilisateur->role) {
+        'admin', 'superviseur_national' => $query,
 
-            'superviseur_provincial' => $query->whereHas(
-                'colline.zone.commune',
-                fn(Builder $q) => $q->where('province_id', $utilisateur->province_id)
-            ),
+        'superviseur_provincial' => $query->whereHas(
+            'colline.zone.commune',
+            fn (Builder $q) => $q->where(
+                'province_id',
+                $utilisateur->province_id
+            )
+        ),
 
-            'superviseur_communal' => $query->whereHas(
-                'colline.zone',
-                fn(Builder $q) => $q->where('commune_id', $utilisateur->commune_id)
-            ),
+        'superviseur_communal' => $query->whereHas(
+            'colline.zone',
+            fn (Builder $q) => $q->where(
+                'commune_id',
+                $utilisateur->commune_id
+            )
+        ),
 
-            // Un enquêteur voit tous les ménages des collines qui lui sont
-            // affectées (table pivot colline_user), plus tout ménage
-            // qui lui serait assigné individuellement en dehors de ses
-            // collines affectées.
-            /*'enqueteur' => $query->where(
-                fn (Builder $q) => $q->whereHas(
+        'enqueteur' => $query->where(
+            function (Builder $q) use ($utilisateur) {
+                $q->whereHas(
                     'colline.enqueteurs',
-                    fn (Builder $q) => $q->where('users.id', $utilisateur->id)
-                )->orWhere('enqueteur_id', $utilisateur->id)
-            ),*/
+                    fn (Builder $collineQuery) =>
+                        $collineQuery->where('users.id', $utilisateur->id)
+                )->orWhere(
+                    'enqueteur_id',
+                    $utilisateur->id
+                );
+            }
+        ),
 
-            'enqueteur' => $query->whereHas(
-                'colline.enqueteurs',
-                fn(Builder $q) =>
-                $q->where('users.id', $utilisateur->id)
-            ),
+        default => $query->whereRaw('1 = 0'),
+    };
+}
 
-            default => $query->whereRaw('1 = 0'),
-        };
+
+
+
+
+
+
+/**
+ * Récupère la valeur d'une réponse à partir du code de la question.
+ *
+ * Exemple :
+ * valeurReponse('possede_vergers_cafe')
+ */
+public function valeurReponse(string $codeQuestion): mixed
+{
+    // Rechercher l'identifiant de la question à partir de son code.
+    $questionId = DB::table('questions')
+        ->where('code', $codeQuestion)
+        ->value('id');
+
+    // La question n'existe pas ou n'a pas encore de réponse.
+    if ($questionId === null) {
+        return null;
     }
 
-    /*public function verifierStatutTermine(): void
-    {
-        $aDesParcelles = $this->parcelles()->exists();
+    // Récupérer la réponse associée à ce ménage et à cette question.
+    return $this->reponses()
+        ->where('question_id', $questionId)
+        ->value('valeur');
+}
 
-        $aDesReponses = $this->reponses()->exists();
 
-        if ($aDesParcelles && $aDesReponses) {
-            $this->update([
-                'statut' => 'termine',
-                'date_derniere_activite' => now(),
-            ]);
-        }
-    }*/
 
-    /*public function synchroniserStatut(): void
-    {
-        $aDesParcelles = $this->parcelles()->exists();
-        $aDesReponses = $this->reponses()->exists();
 
-        $statut = match (true) {
-            $aDesParcelles && $aDesReponses => 'termine',
-            $aDesParcelles || $aDesReponses => 'en_attente',
-            default => 'a_faire',
-        };
 
-        if ($statut !== $this->statut) {
-            $this->update([
-                'statut' => $statut,
-                'date_derniere_activite' => now(),
-            ]);
-        }
-    }*/
 
-    /**
-     * Lit la valeur d'une réponse du questionnaire à partir du code de la question.
-     * Gère les valeurs stockées en scalaire ou en JSON ({"valeur": ...}).
-     */
-    protected function valeurReponse(string $codeQuestion): mixed
-    {
-        $reponse = $this->reponses()
-            ->whereHas('question', fn(Builder $q) => $q->where('code', $codeQuestion))
-            ->first();
 
-        if (! $reponse) {
-            return null;
-        }
 
-        $valeur = $reponse->valeur;
 
-        if (is_string($valeur)) {
-            $decode = json_decode($valeur, true);
-            if (json_last_error() === JSON_ERROR_NONE) {
-                $valeur = $decode;
+
+   
+/**
+ * Récupère le nombre de parcelles déclaré dans le questionnaire.
+ */
+public function nombreVergersDeclares(): ?int
+{
+    $valeur = $this->valeurReponse('effectif_vergers');
+
+    return is_numeric($valeur) && (int) $valeur >= 0
+        ? (int) $valeur
+        : null;
+}
+
+/**
+ * Vérifie si toutes les questions obligatoires du questionnaire actif
+ * ont reçu une réponse, en tenant compte des questions conditionnelles.
+ */
+public function questionnaireEstComplet(): bool
+{
+    $questionnaire = DB::table('reponses_questionnaire')
+        ->where('actif', true)
+        ->first();
+
+    if (!$questionnaire) {
+        return false;
+    }
+
+    // La réponse Non termine le questionnaire selon la règle métier.
+    if ($this->valeurReponse('possede_vergers_cafe') === 'Non') {
+        return true;
+    }
+
+    $questions = DB::table('questions')
+        ->where('questionnaire_id', $questionnaire->id)
+        ->where('obligatoire', true)
+        ->get();
+
+    if ($questions->isEmpty()) {
+        return false;
+    }
+
+    foreach ($questions as $question) {
+        // Question conditionnelle : nom de la coopérative.
+        if ($question->code === 'nom_cooperative') {
+            if (
+                $this->valeurReponse('appartenance_cooperative') !== 'Oui'
+            ) {
+                continue;
             }
         }
 
-        if (is_array($valeur)) {
-            $valeur = $valeur['valeur'] ?? null;
-        }
+        // Si la réponse obligatoire manque ou est vide,
+        // le questionnaire est incomplet.
+        $reponse = $this->reponses()
+            ->where('question_id', $question->id)
+            ->value('valeur');
 
-        return $valeur;
+        if ($reponse === null || trim((string) $reponse) === '') {
+            return false;
+        }
     }
 
-    /**
-     * Nombre de vergers déclarés dans le questionnaire (null si pas encore répondu).
-     */
-    public function nombreVergersDeclares(): ?int
-    {
-        $valeur = $this->valeurReponse('effectif_vergers');
+    return true;
+}
 
-        return is_numeric($valeur) ? (int) $valeur : null;
-    }
+/**
+ * Calcule le statut réel du ménage.
+ */
+public function calculerStatut(): string
+{
+    $nombreParcelles = $this->parcelles()->count();
+    $aDesReponses = $this->reponses()->exists();
 
-    public function calculerStatut(): string
-    {
-        $nombreParcelles = $this->parcelles()->count();
-        $aDesReponses = $this->reponses()->exists();
-
-        // Le ménage a répondu "Non" à "Possédez-vous des vergers de café ?" :
-        // le questionnaire s'arrête là, aucune parcelle n'est attendue.
-        if ($this->valeurReponse('possede_vergers_cafe') === 'Non') {
-            return 'termine';
-        }
-
-        $declares = $this->nombreVergersDeclares();
-
-        // Terminé uniquement quand toutes les parcelles déclarées sont enregistrées.
-        if ($aDesReponses && $declares !== null && $nombreParcelles >= $declares) {
-            return 'termine';
-        }
-
-        // Travail commencé mais incomplet (parcelles < vergers déclarés,
-        // ou questionnaire rempli sans parcelles, ou parcelles sans questionnaire).
-        if ($nombreParcelles > 0 || $aDesReponses) {
-            return 'en_attente';
-        }
-
+    // Aucune activité : ménage à faire.
+    if (!$aDesReponses && $nombreParcelles === 0) {
         return 'a_faire';
     }
 
-    public function synchroniserStatut(): void
-    {
-        $statut = $this->calculerStatut();
-
-        if ($statut !== $this->statut) {
-            $this->update([
-                'statut' => $statut,
-                'date_derniere_activite' => now(),
-            ]);
-        }
+    // Le questionnaire n'est pas encore terminé.
+    if (!$this->questionnaireEstComplet()) {
+        return 'deja_commence';
     }
 
-    public function verifierStatutTermine(): void
-    {
-        if ($this->calculerStatut() === 'termine' && $this->statut !== 'termine') {
-            $this->update([
-                'statut' => 'termine',
-                'date_derniere_activite' => now(),
-            ]);
-        }
+    // Le ménage ne possède pas de vergers : questionnaire terminé.
+    if ($this->valeurReponse('possede_vergers_cafe') === 'Non') {
+        return 'termine';
     }
+
+    $declares = $this->nombreVergersDeclares();
+
+    // Impossible de confirmer la fin sans connaître le nombre déclaré.
+    if ($declares === null) {
+        return 'deja_commence';
+    }
+
+    // Toutes les parcelles déclarées doivent être enregistrées.
+    if ($nombreParcelles >= $declares) {
+        return 'termine';
+    }
+
+    return 'deja_commence';
+}
+
+/**
+ * Met à jour le statut uniquement si nécessaire.
+ */
+public function synchroniserStatut(): void
+{
+    $statut = $this->calculerStatut();
+
+    if ($statut !== $this->statut) {
+        $this->update([
+            'statut' => $statut,
+            'date_derniere_activite' => now(),
+        ]);
+    }
+}
+
+/**
+ * Conserve cette méthode pour la compatibilité avec les contrôleurs.
+ * Elle synchronise désormais tous les statuts.
+ */
+public function verifierStatutTermine(): void
+{
+    $this->synchroniserStatut();
+}
+
+
+
+
+
+
 }

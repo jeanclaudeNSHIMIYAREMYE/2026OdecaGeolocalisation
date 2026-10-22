@@ -26,10 +26,10 @@ function ContenuNavigation({ user }) {
             </LienNav>
 
             <LienNav href={route('menages.index')} actif={route().current('menages.*')}>
-                Ménages
+                Caféiculteurs
             </LienNav>
             <LienNav href={route('suivi-menages.index')} actif={route().current('suivi-menages.*')}>
-                Suivi ménages
+                Suivi  Caféiculteurs
             </LienNav>
 
             <LienNav href={route('statistiques.index')} actif={route().current('statistiques.*')}>

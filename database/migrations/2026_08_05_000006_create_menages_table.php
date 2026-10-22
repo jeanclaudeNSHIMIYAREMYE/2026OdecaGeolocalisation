@@ -17,7 +17,7 @@ return new class extends Migration
 
             $table->foreignId('colline_id')->constrained('collines')->restrictOnDelete();
 
-            $table->enum('statut', ['a_faire', 'en_attente', 'termine'])->default('a_faire');
+            $table->enum('statut', ['a_faire',"deja_commence", 'en_attente', 'termine'])->default('a_faire');
             $table->enum('source', ['pre_enregistre', 'terrain'])->default('pre_enregistre');
 
             $table->foreignId('enqueteur_id')->nullable()->constrained('users')->nullOnDelete();

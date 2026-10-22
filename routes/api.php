@@ -7,7 +7,9 @@ use App\Http\Controllers\Api\V1\MenageController;
 use App\Http\Controllers\Api\V1\ParcelleController;
 use App\Http\Controllers\Api\V1\QuestionnaireController;
 use App\Http\Controllers\Api\V1\ReponseController;
-use App\Http\Controllers\Api\V1\SyncController;
+use App\Http\Controllers\Api\V1\SyncPushController;
+use App\Http\Controllers\Api\V1\SyncPullController;
+//use App\Http\Controllers\Api\V1\TestController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -30,6 +32,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::get('/ping', function () {
         return response()->json(['status' => 'ok'], 200);
     });
+
+    //Route::get('/test',[TestController::class])->name("hello");
 
     // --- Données de référence géographiques (à mettre en cache côté mobile) ---
     Route::prefix('geo')->name('geo.')->group(function () {
@@ -64,11 +68,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // --- Réponses au questionnaire ---
         Route::post('/reponses', [ReponseController::class, 'store'])->name('reponses.store');
         Route::post('/reponses/lot', [ReponseController::class, 'storeLot'])->name('reponses.lot');
+        Route::get('/arborescence/connected', [GeoReferenceController::class, 'arborescence'])->name('arborescence');
 
         // --- Synchronisation offline-first ---
         Route::prefix('sync')->name('sync.')->group(function () {
-            Route::post('/push', [SyncController::class, 'push'])->name('push');
-            Route::get('/pull', [SyncController::class, 'pull'])->name('pull');
+            Route::post('/push', [SyncPushController::class, 'push'])->name('push');
+            Route::get('/pull', [SyncPullController::class, 'pull'])->name('pull');
         });
     });
 });
