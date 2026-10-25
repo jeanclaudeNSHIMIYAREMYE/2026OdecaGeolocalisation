@@ -162,7 +162,7 @@ public function nombreVergersDeclares(): ?int
  */
 public function questionnaireEstComplet(): bool
 {
-    $questionnaire = DB::table('reponses_questionnaire')
+    $questionnaire = DB::table('questionnaire_versions')
         ->where('actif', true)
         ->first();
 
@@ -176,7 +176,7 @@ public function questionnaireEstComplet(): bool
     }
 
     $questions = DB::table('questions')
-        ->where('questionnaire_id', $questionnaire->id)
+        ->where('questionnaire_version_id', $questionnaire->id)
         ->where('obligatoire', true)
         ->get();
 
