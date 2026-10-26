@@ -81,6 +81,29 @@ class QuestionnaireSeeder extends Seeder
             ],
 
             [
+                'code' => 'effectif_sous_vergers',
+
+                'libelle' =>
+                    'Combien de sous-vergers de café le ménage possède-t-il ?',
+
+                'section' => 'Exploitation caféicole',
+
+                'type' => 'numerique',
+
+                'options' => null,
+
+                'obligatoire' => true,
+
+                'autre_option' => false,
+
+                'condition' => null,
+
+                'termine_si' => null,
+
+                'ordre' => 3,
+            ],
+
+            [
                 'code' => 'pratiques_agricoles',
 
                 'libelle' =>
@@ -106,7 +129,7 @@ class QuestionnaireSeeder extends Seeder
 
                 'termine_si' => null,
 
-                'ordre' => 3,
+                'ordre' => 4,
             ],
 
             [
@@ -146,7 +169,7 @@ class QuestionnaireSeeder extends Seeder
 
                 'termine_si' => null,
 
-                'ordre' => 4,
+                'ordre' => 5,
             ],
 
             [
@@ -173,7 +196,7 @@ class QuestionnaireSeeder extends Seeder
 
                 'termine_si' => null,
 
-                'ordre' => 5,
+                'ordre' => 6,
             ],
 
             [
@@ -204,7 +227,7 @@ class QuestionnaireSeeder extends Seeder
 
                 'termine_si' => null,
 
-                'ordre' => 6,
+                'ordre' => 7,
             ],
 
             [
@@ -236,7 +259,7 @@ class QuestionnaireSeeder extends Seeder
 
                 'termine_si' => null,
 
-                'ordre' => 7,
+                'ordre' => 8,
             ],
 
             [
@@ -263,7 +286,7 @@ class QuestionnaireSeeder extends Seeder
 
                 'termine_si' => null,
 
-                'ordre' => 8,
+                'ordre' => 9,
             ],
         ];
 

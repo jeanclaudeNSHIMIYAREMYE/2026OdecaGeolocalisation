@@ -1455,6 +1455,12 @@
             ]
         },
         "MAKAMBA": {
+            "Mugeni": [
+
+            ],
+            "Nyange": [
+
+            ],
             "Bukeye": [
                 "Bukeye",
                 "Busoro",
@@ -1504,7 +1510,9 @@
                 "Mpinga",
                 "Mugutu",
                 "Murambi",
-                "Murango"
+                "Murango",
+                "Muvumu",
+                "Nyabangwe"
             ],
             "Gisenyi": [
                 "Gasaka",
@@ -2008,7 +2016,8 @@
                 "Gitaba",
                 "Kinganda",
                 "Maramvya",
-                "Mika"
+                "Mika",
+                "Nyamure"
             ],
             "Busoni": [
                 "Burara",
@@ -3605,7 +3614,8 @@
                 "Rudaraza",
                 "Rutonganikwa",
                 "Ruyaga",
-                "Shanga"
+                "Shanga",
+                "Mayenzi"
             ],
             "Mubaragaza": [
                 "Kigoma",
@@ -3702,7 +3712,8 @@
                 "Mushikamo",
                 "Nkonyovu",
                 "Nyakararo",
-                "Nyamitwenzi"
+                "Nyamitwenzi",
+                "Murinzi"
             ],
             "Renga": [
                 "Kayange",
@@ -3722,7 +3733,8 @@
                 "Nyarunazi",
                 "Rutegama",
                 "Quartier Buryohe",
-                "Quartier Gasange"
+                "Quartier Gasange",
+                "Gashingwa"
             ]
         },
         "MURAMVYA": {
