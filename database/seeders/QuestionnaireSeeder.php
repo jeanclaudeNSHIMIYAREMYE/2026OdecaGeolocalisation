@@ -61,7 +61,7 @@ class QuestionnaireSeeder extends Seeder
                 'code' => 'effectif_vergers',
 
                 'libelle' =>
-                    'Combien de vergers de café le ménage possède-t-il ?',
+                    'Combien de vergers de café le caféiculteur possède-t-il ?',
 
                 'section' => 'Exploitation caféicole',
 

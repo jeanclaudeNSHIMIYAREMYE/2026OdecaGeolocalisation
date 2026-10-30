@@ -22,9 +22,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('parcelles', function (Blueprint $table) {
-       
+
             $table->dropColumn('surface_verger');
         });
-       
+
     }
 };
