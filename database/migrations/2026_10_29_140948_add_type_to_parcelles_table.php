@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('parcelles', function (Blueprint $table) {
-             $table->string('type');
+             $table->string('type_parcelle');
         });
     }
 
@@ -23,7 +23,7 @@ return new class extends Migration
     {
         Schema::table('parcelles', function (Blueprint $table) {
 
-            $table->dropColumn('surface_verger');
+            $table->dropColumn('type_parcelle');
         });
 
     }
