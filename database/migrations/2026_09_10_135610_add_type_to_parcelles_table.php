@@ -8,15 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('parcelles', function (Blueprint $table) {
-            $table->string('type')->nullable()->after('etat_verger');
-        });
+        if (! Schema::hasColumn('parcelles', 'type_parcelle')) {
+            Schema::table('parcelles', function (Blueprint $table) {
+                $table->string('type_parcelle')->nullable()->after('type_verger');
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('parcelles', function (Blueprint $table) {
-            $table->dropColumn('type');
-        });
+        if (Schema::hasColumn('parcelles', 'type_parcelle')) {
+            Schema::table('parcelles', function (Blueprint $table) {
+                $table->dropColumn('type_parcelle');
+            });
+        }
     }
 };

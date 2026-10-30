@@ -47,7 +47,7 @@ export default function Dupliquer({ menage, provinces, communes, zones, collines
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Dupliquer le ménage {menage.code_menage}
+                    Dupliquer le caféiculteur {menage.code_menage}
                 </h2>
             }
         >

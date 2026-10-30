@@ -84,7 +84,7 @@ class QuestionnaireSeeder extends Seeder
                 'code' => 'effectif_sous_vergers',
 
                 'libelle' =>
-                    'Combien de sous-vergers de café le ménage possède-t-il ?',
+                    'Combien de sous-vergers de café le Caféiculteur possède-t-il ?',
 
                 'section' => 'Exploitation caféicole',
 
@@ -176,7 +176,7 @@ class QuestionnaireSeeder extends Seeder
                 'code' => 'appartenance_cooperative',
 
                 'libelle' =>
-                    'Le ménage appartient-il à une coopérative café ou une association de caféiculteurs ?',
+                    'Le Caféiculteur appartient-il à une coopérative café ou une association de caféiculteurs ?',
 
                 'section' =>
                     'Appartenance associative et commercialisation',
@@ -234,7 +234,7 @@ class QuestionnaireSeeder extends Seeder
                 'code' => 'lieux_vente',
 
                 'libelle' =>
-                    'Où le ménage vend-il principalement son café ? (plusieurs choix possibles)',
+                    'Où le caféiculteur vend-il principalement son café ? (plusieurs choix possibles)',
 
                 'section' =>
                     'Appartenance associative et commercialisation',
@@ -266,7 +266,7 @@ class QuestionnaireSeeder extends Seeder
                 'code' => 'connaissance_eudr',
 
                 'libelle' =>
-                    'Le ménage connaît-il le règlement européen EUDR interdisant la vente de café issu de la déforestation ?',
+                    'Le Caféiculteur connaît-il le règlement européen EUDR interdisant la vente de café issu de la déforestation ?',
 
                 'section' =>
                     'Appartenance associative et commercialisation',

@@ -372,7 +372,7 @@ export default function Index({
                     {menageCible && (
                         <div className="rounded-lg border-l-4 border-burundi-rouge bg-white p-4 shadow-sm">
                             <p className="text-sm font-semibold text-gray-800">
-                                Ménage {menageCible.code_menage} — {[menageCible.prenom_chef_menage, menageCible.nom_chef_menage].filter(Boolean).join(' ')}
+                                caféiculteur {menageCible.code_menage} — {[menageCible.prenom_chef_menage, menageCible.nom_chef_menage].filter(Boolean).join(' ')}
                             </p>
                             <p className="text-xs text-gray-500">
                                 {menageCible.colline?.nom}, {menageCible.colline?.zone?.nom}, {menageCible.colline?.zone?.commune?.nom}, {menageCible.colline?.zone?.commune?.province?.nom}

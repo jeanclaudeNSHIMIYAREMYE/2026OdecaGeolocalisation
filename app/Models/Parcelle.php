@@ -26,7 +26,7 @@ class Parcelle extends Model
         'surface_verger',
         'etat_verger',
         'type',
-
+        "type_parcelle",
         // Localisation
         'latitude',
         'longitude',

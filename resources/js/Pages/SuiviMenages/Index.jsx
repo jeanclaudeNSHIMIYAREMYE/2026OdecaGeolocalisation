@@ -72,7 +72,7 @@ export default function Index({
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Suivi des ménages
+                    Suivi des caféiculteur
                 </h2>
             }
         >
@@ -190,7 +190,7 @@ export default function Index({
                     <div className="overflow-hidden rounded-lg bg-white shadow-sm">
                         <div className="flex flex-wrap items-center justify-between gap-4 p-6">
                             <p className="text-sm text-gray-600">
-                                {menages?.total ?? 0} ménage(s)
+                                {menages?.total ?? 0} caféiculteur(s)
                             </p>
 
                             <div className="flex flex-wrap items-center gap-4">

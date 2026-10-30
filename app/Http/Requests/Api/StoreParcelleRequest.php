@@ -48,6 +48,13 @@ class StoreParcelleRequest extends FormRequest
                 'max:255',
             ],
 
+            'type_parcelle' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
+
             /*
              * Localisation
              */
