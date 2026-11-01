@@ -1,0 +1,151 @@
+# name: Build and Deploy to cPanel
+
+# on:
+#   push:
+#     branches:
+#       - main  # Trigger only on push/merge to main
+
+#   # Also trigger on PRs targeting main, but only for specific actions
+#   pull_request:
+#     branches:
+#       - main  # Trigger when PR targets main (e.g., master → main)
+#     types:
+#       - opened
+#       - synchronize
+#       - reopened
+
+# permissions:
+#   contents: read
+#   issues: write
+#   pull-requests: write
+
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: 🧩 Checkout code
+#         uses: actions/checkout@v4
+
+#       - name: 🧰 Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: '20'
+#           cache: 'npm'
+
+#       - name: 📦 Install dependencies
+#         run: npm install
+
+#       - name: ⚙️ Build frontend assets
+#         run: npm run build
+
+#       - name: 📤 Upload build artifacts
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: production-build
+#           path: |
+#             public/build
+#           retention-days: 30
+
+#   deploy:
+#     needs: build
+#     runs-on: ubuntu-latest
+#     #this is to ensure that deploy only runs on push to main or when a PR is opened/synchronized/reopened targeting main from master
+#     #if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.base_ref == 'main' && github.head_ref == 'master')
+#     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.head_ref == 'master')
+#     steps:
+#       - name: 🧩 Checkout code
+#         uses: actions/checkout@v4
+
+#       - name: 📥 Download build artifacts
+#         uses: actions/download-artifact@v4
+#         with:
+#           name: production-build
+#           path: public/build
+
+#       - name: 🧹 Prepare deployment files locally
+#         run: |
+#           rm -rf .git .github node_modules tests
+#           mkdir -p storage/framework/{sessions,views,cache/data}
+#           mkdir -p bootstrap/cache
+
+#       # 🧨 Fully clean remote folder before new deploy
+#       - name: 🧨 Remove all existing files on server
+#         uses: appleboy/ssh-action@v1.0.3
+#         with:
+#           host: ${{ secrets.SSH_HOST }}
+#           username: ${{ secrets.SSH_USERNAME }}
+#           key: ${{ secrets.SSH_PRIVATE_KEY }}
+#           passphrase: ${{ secrets.SSH_PASSPHRASE }}
+#           port: ${{ secrets.SSH_PORT || 22 }}
+#           script: |
+#             echo "⚠️ Removing all files from deployment directory..."
+#             rm -rf ${{ secrets.SERVER_DIR }}/*
+#             mkdir -p ${{ secrets.SERVER_DIR }}
+
+
+
+#       # 🚀 Upload everything to cPanel
+#       - name: 🚀 Deploy new files to cPanel via SCP
+#         uses: appleboy/scp-action@v0.1.4
+#         with:
+#           host: ${{ secrets.SSH_HOST }}
+#           username: ${{ secrets.SSH_USERNAME }}
+#           key: ${{ secrets.SSH_PRIVATE_KEY }}
+#           passphrase: ${{ secrets.SSH_PASSPHRASE }}
+#           port: ${{ secrets.SSH_PORT || 22 }}
+#           source: "./"
+#           target: "${{ secrets.SERVER_DIR }}"
+#           overwrite: true
+#           rm: false
+#           recursive: true
+#           strip_components: 0
+#           exclude: |
+#             .git*
+#             .github
+#             node_modules
+#             tests
+#             storage/logs
+#             .env
+
+#       # ⚙️ Post-deployment setup
+#       - name: ⚙️ Run Laravel setup on server
+#         uses: appleboy/ssh-action@v1.0.3
+#         with:
+#           host: ${{ secrets.SSH_HOST }}
+#           username: ${{ secrets.SSH_USERNAME }}
+#           key: ${{ secrets.SSH_PRIVATE_KEY }}
+#           passphrase: ${{ secrets.SSH_PASSPHRASE }}
+#           port: ${{ secrets.SSH_PORT || 22 }}
+#           script: |
+#             cd ${{ secrets.SERVER_DIR }}
+#             echo "Installing Composer dependencies..."
+#             composer update
+#             echo "Running migrations..."
+#             php artisan migrate --force
+#             echo "Linking storage..."
+#             php artisan storage:link
+#             echo "Cleaning Cache"
+#             php artisan filament:assets
+#             php artisan cache:clear
+#             php artisan route:clear
+#             php artisan config:clear
+#             php artisan view:clear
+#             php artisan event:clear
+#             php artisan optimize:clear
+#             echo "Caching config/routes/views..."
+#             php artisan optimize
+
+
+#       - name: 💬 Comment deployment status (optional)
+#         uses: actions/github-script@v7
+#         if: github.event_name == 'pull_request'
+#         with:
+#           script: |
+#             const status = '${{ job.status }}' === 'success' ? '✅ Deployment successful!' : '❌ Deployment failed!';
+#             await github.rest.issues.createComment({
+#               issue_number: context.issue.number,
+#               owner: context.repo.owner,
+#               repo: context.repo.repo,
+#               body: `${status}\n\nDeployed to cPanel and Laravel setup completed.`
+#             });
