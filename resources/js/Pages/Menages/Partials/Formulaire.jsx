@@ -18,24 +18,39 @@ export default function Formulaire({
 }) {
     // La colline_id est la seule valeur réellement envoyée au serveur ;
     // ces sélecteurs en cascade ne servent qu'à la retrouver facilement.
-    const collineActuelle = collines.find((c) => c.id === Number(data.colline_id));
-    const zoneActuelle = zones.find((z) => z.id === collineActuelle?.zone_id);
-    const communeActuelle = communes.find((c) => c.id === zoneActuelle?.commune_id);
+    const collineActuelle = collines.find(
+        (c) => Number(c.id) === Number(data.colline_id),
+    );
+    const zoneActuelle = zones.find(
+        (z) => Number(z.id) === Number(collineActuelle?.zone_id),
+    );
+    const communeActuelle = communes.find(
+        (c) => Number(c.id) === Number(zoneActuelle?.commune_id),
+    );
 
     const [provinceId, setProvinceId] = useState(communeActuelle?.province_id ?? '');
     const [communeId, setCommuneId] = useState(communeActuelle?.id ?? '');
     const [zoneId, setZoneId] = useState(zoneActuelle?.id ?? '');
 
     const communesFiltrees = useMemo(
-        () => communes.filter((c) => !provinceId || c.province_id === Number(provinceId)),
+        () =>
+            communes.filter(
+                (c) => !provinceId || Number(c.province_id) === Number(provinceId),
+            ),
         [communes, provinceId],
     );
     const zonesFiltrees = useMemo(
-        () => zones.filter((z) => !communeId || z.commune_id === Number(communeId)),
+        () =>
+            zones.filter(
+                (z) => !communeId || Number(z.commune_id) === Number(communeId),
+            ),
         [zones, communeId],
     );
     const collinesFiltrees = useMemo(
-        () => collines.filter((c) => !zoneId || c.zone_id === Number(zoneId)),
+        () =>
+            collines.filter(
+                (c) => !zoneId || Number(c.zone_id) === Number(zoneId),
+            ),
         [collines, zoneId],
     );
 
@@ -84,6 +99,17 @@ export default function Formulaire({
                     value={data.telephone ?? ''}
                     onChange={(e) => setData('telephone', e.target.value)}
                 />
+            </div>
+
+            <div>
+                <InputLabel htmlFor="cni" value="Carte nationale d'identité (CNI)" />
+                <TextInput
+                    id="cni"
+                    className="mt-1 block w-full"
+                    value={data.cni ?? ''}
+                    onChange={(e) => setData('cni', e.target.value)}
+                />
+                <InputError message={errors.cni} className="mt-2" />
             </div>
 
             <fieldset className="space-y-4 rounded-md border p-4">
@@ -147,6 +173,7 @@ export default function Formulaire({
                             value={data.colline_id ?? ''}
                             onChange={(e) => setData('colline_id', e.target.value)}
                             disabled={!zoneId}
+                            required
                         >
                             <option value="">— Sélectionner —</option>
                             {collinesFiltrees.map((c) => <option key={c.id} value={c.id}>{c.nom}</option>)}
@@ -167,6 +194,7 @@ export default function Formulaire({
                     >
                         <option value="a_faire">À faire</option>
                         <option value="en_attente">En attente</option>
+                        <option value="deja_commence">Déjà commencé</option>
                         <option value="termine">Terminé</option>
                     </select>
                 </div>

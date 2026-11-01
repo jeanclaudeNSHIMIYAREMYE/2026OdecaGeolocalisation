@@ -8,6 +8,7 @@ export default function Modifier({ menage, provinces, communes, zones, collines,
         nom_chef_menage: menage.nom_chef_menage ?? '',
         prenom_chef_menage: menage.prenom_chef_menage ?? '',
         telephone: menage.telephone ?? '',
+        cni: menage.cni ?? '',
         colline_id: menage.colline_id,
         statut: menage.statut,
         enqueteur_id: menage.enqueteur_id ?? '',
@@ -15,7 +16,9 @@ export default function Modifier({ menage, provinces, communes, zones, collines,
 
     const soumettre = (e) => {
         e.preventDefault();
-        put(route('menages.update', menage.id));
+        put(route('menages.update', menage.id), {
+            preserveScroll: true,
+        });
     };
 
     return (

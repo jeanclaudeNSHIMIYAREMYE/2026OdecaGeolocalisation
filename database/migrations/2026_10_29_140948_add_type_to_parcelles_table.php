@@ -6,25 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::table('parcelles', function (Blueprint $table) {
-             $table->string('type');
-        });
+        if (!Schema::hasColumn('parcelles', 'type')) {
+            Schema::table('parcelles', function (Blueprint $table) {
+                $table->string('type')->nullable();
+            });
+        }
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::table('parcelles', function (Blueprint $table) {
-       
-            $table->dropColumn('surface_verger');
-        });
-       
+        if (Schema::hasColumn('parcelles', 'type')) {
+            Schema::table('parcelles', function (Blueprint $table) {
+                $table->dropColumn('type');
+            });
+        }
     }
 };

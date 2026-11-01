@@ -136,7 +136,7 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
         return Inertia::render('Menages/Modifier', [
             'menage' => $menage->only([
                 'id', 'code_menage', 'nom_chef_menage', 'prenom_chef_menage',
-                'telephone', 'colline_id', 'statut', 'enqueteur_id',
+                'telephone', 'cni', 'colline_id', 'statut', 'enqueteur_id',
             ]),
             ...$this->donneesFormulaire(),
         ]);
@@ -147,7 +147,6 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
         $this->authorize('update', $menage);
 
         $donnees = $this->valider($request, $menage->id);
-
         $menage->update($donnees);
 
         return redirect()->route('menages.show', $menage)->with('succes', 'Ménage mis à jour.');
@@ -206,8 +205,12 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
             'nom_chef_menage' => ['nullable', 'string', 'max:255'],
             'prenom_chef_menage' => ['nullable', 'string', 'max:255'],
             'telephone' => ['nullable', 'string', 'max:30'],
+            'cni' => ['nullable', 'string', 'max:50'],
             'colline_id' => ['required', 'exists:collines,id'],
-            'statut' => ['required', Rule::in(['a_faire', 'en_attente', 'termine'])],
+            'statut' => [
+                'required',
+                Rule::in(['a_faire', 'en_attente', 'deja_commence', 'termine']),
+            ],
             'enqueteur_id' => ['nullable', 'exists:users,id'],
         ]);
     }

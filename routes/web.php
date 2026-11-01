@@ -88,8 +88,12 @@ Route::middleware(['auth', 'verified'])
     ->except(['destroy'])
     ->parameters(['menages' => 'menage']);
 
-Route::get('menages/{menage}/dupliquer', [MenageController::class, 'dupliquer'])->middleware(['auth', 'verified', 'role:admin'])->name('menages.dupliquer');
-Route::post('menages/{menage}/dupliquer', [MenageController::class, 'enregistrerCopie'])->middleware(['auth', 'verified', 'role:admin'])->name('menages.dupliquer.store');
+Route::get('menages/{menage}/dupliquer', [MenageController::class, 'dupliquer'])
+    ->middleware(['auth', 'verified'])
+    ->name('menages.dupliquer');
+Route::post('menages/{menage}/dupliquer', [MenageController::class, 'enregistrerCopie'])
+    ->middleware(['auth', 'verified'])
+    ->name('menages.dupliquer.store');
 
 Route::delete('/menages/{menage}', [MenageController::class, 'destroy'])
     ->middleware(['auth', 'verified', 'role:admin'])
