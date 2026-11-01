@@ -1,50 +1,32 @@
+
 <?php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement("
-            ALTER TABLE menages
-            DROP CONSTRAINT IF EXISTS menages_statut_check
-        ");
+        // Vérifier que la table existe
+        if (!Schema::hasTable('menages')) {
+            return;
+        }
 
-        DB::statement("
-            ALTER TABLE menages
-            ADD CONSTRAINT menages_statut_check
-            CHECK (statut IN (
-                'a_faire',
-                'deja_commence',
-                'en_attente',
-                'termine'
-            ))
-        ");
+        // Mettre à jour les anciennes valeurs si nécessaire
+        DB::table('menages')
+            ->where('statut', 'deja_commence')
+            ->update(['statut' => 'en_attente']);
+
+        // SQLite ne permet pas de modifier directement
+        // une contrainte CHECK avec ALTER TABLE.
+        // La nouvelle contrainte doit être définie
+        // dans la migration de création de la table.
     }
 
     public function down(): void
     {
-        DB::statement("
-            UPDATE menages
-            SET statut = 'a_faire'
-            WHERE statut = 'deja_commence'
-        ");
-
-        DB::statement("
-            ALTER TABLE menages
-            DROP CONSTRAINT IF EXISTS menages_statut_check
-        ");
-
-        DB::statement("
-            ALTER TABLE menages
-            ADD CONSTRAINT menages_statut_check
-            CHECK (statut IN (
-                'a_faire',
-                'en_attente',
-                'termine'
-            ))
-        ");
+        // Aucune modification structurelle à annuler.
     }
 };

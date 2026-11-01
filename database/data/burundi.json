@@ -2,62 +2,45 @@
     "BUHUMUZA": {
         "BUTAGANZWA": {
             "Bisinde": [
-                "Bisinde",
-                "Bugarama",
-                "Karambi",
-                "Kazimya",
-                "Nyabigugo",
-                "Rutimbura",
-                "Rutonganyikwa"
+                "Bisinde"
             ],
             "Biyorwa": [
                 "Biyorwa",
-                "Burenza",
-                "Masazi",
                 "Mihama",
                 "Mpame",
-                "Nyamugari",
-                "Nyarubabi",
-                "Rugata",
-                "Taba"
+                "Rugata"
             ],
             "Mugege": [
                 "Bigera",
                 "Caragata",
                 "Gakonko",
-                "Kivumu",
-                "Mpungwe",
                 "Mugege",
                 "Muhene",
-                "Musenga",
                 "Nyangurube",
                 "Nyankende",
                 "Rubambagire"
             ],
             "Muriza": [
-                "Bartye",
                 "Gasasa",
                 "Gikwiye",
-                "Gishubi",
-                "Kanyinya",
-                "Kirambi",
-                "Kiyabu",
                 "Muriza",
-                "Nyaburondwe",
                 "Nyamiyaga",
                 "Nyarurambi"
             ],
             "Rugongo": [
-                "Kirangara",
-                "Kivoga",
-                "Kizigama",
-                "Maramvya",
-                "Nyagashubi",
                 "Nyange",
                 "Rugongo"
             ]
         },
         "BUTIHINDA": {
+            "Burambira": [
+                "Burambira",
+                "Burenza",
+                "Gikingo",
+                "Gisabazuba",
+                "Migwa",
+                "Nyarushanga"
+            ],
             "Butarugera": [
                 "Buhorana",
                 "Kavumu",
@@ -76,14 +59,6 @@
                 "Ngara",
                 "Rukira",
                 "Rushombo"
-            ],
-            "Burambira": [
-                "Burambira",
-                "Burenza",
-                "Gikingo",
-                "Gisabazuba",
-                "Migwa",
-                "Nyarushanga"
             ],
             "Buvumbi": [
                 "Buvumbi",
@@ -116,13 +91,11 @@
                 "Bisiga",
                 "Gasenyi",
                 "Giteranyi",
-                "Karugunda",
+                "Karungunda",
                 "Nonwe",
                 "Rugese",
                 "Rukungere",
-                "Rumandari",
-                "Shoza"
-
+                "Rumandari"
             ],
             "Kamaramagambo": [
                 "Cagizo",
@@ -134,6 +107,52 @@
                 "Mugongo",
                 "Murehe",
                 "Rwamfu"
+            ],
+            "Masaka": [
+                "Cagakori",
+                "Kayove",
+                "Kijumbura",
+                "Masaka",
+                "Ngomo",
+                "Nzove",
+                "Rukusha"
+            ],
+            "Mugano": [
+                "Kabogo",
+                "Mangoma",
+                "Mika",
+                "Mugano",
+                "Mukoni",
+                "Ndava",
+                "Rubenga"
+            ],
+            "Nyagatovu": [
+                "Bavambi",
+                "Bunyarukiga",
+                "Butaramuka",
+                "Kobero",
+                "Murama",
+                "Musama",
+                "Nyagatovu"
+            ],
+            "Ruzo": [
+                "Bugoma",
+                "Kabira",
+                "Kagugo",
+                "Kidasha",
+                "Rusenyi",
+                "Ruzo",
+                "Vumasi"
+            ],
+            "Tura": [
+                "Buhangara",
+                "Gakoni",
+                "Kibakwe",
+                "Kinanira",
+                "Kinyami",
+                "Mihigo",
+                "Murama",
+                "Tura"
             ]
         },
         "CANKUZO": {
@@ -142,7 +161,6 @@
                 "Gatungurwe",
                 "Kabeza",
                 "Kabuga",
-                "Kavumu",
                 "Mugenda",
                 "Mugongo",
                 "Mugozi",
@@ -157,41 +175,26 @@
             "Gitanga": [
                 "Gitanga",
                 "Kibungo",
-                "Kigaga",
                 "Mashiga",
-                "Nyamatongo",
-                "Rujungu",
-                "Saswe",
-                "Shinge"
+                "Nyamatongo"
             ],
             "Kigamba": [
                 "Gatunguru",
-                "Gisenga",
                 "Humure",
                 "Kazibaziba",
                 "Kigamba",
-                "Kivumu",
-                "Nyarurambi",
                 "Rusagara",
                 "Rwamvura"
             ],
             "Minyare": [
-                "Karago",
-                "Murehe",
-                "Nyakerera",
-                "Nyarutiti",
+                "Nyarubti",
+                "Nyekerera",
                 "Rutoke"
             ]
         },
         "GISAGARA": {
             "Bumba": [
-                "Budega",
-                "Bumba",
-                "Bunyerere",
-                "Muka",
-                "Nkoro",
-                "Nyamwiyanike",
-                "Rusigabangazi"
+                "Budega"
             ],
             "Camazi": [
                 "Camazi",
@@ -202,7 +205,6 @@
                 "Ruramba"
             ],
             "Cendajuru": [
-                "Cendajuru",
                 "Gahoko",
                 "Kabageni",
                 "Kibande",
@@ -232,138 +234,56 @@
                 "Mugera",
                 "Musemo"
             ],
-            "Mishiha": [
-                "Buyongwe",
-                "Gikonko",
-                "Mishiha",
-                "Munzenze",
-                "Rutsindu"
-            ],
             "Mwiruzi": [
                 "Kibimba",
-                "Mwiruzi",
-                "Rugerero",
-                "Rukwega",
-                "Runihira"
+                "Rugerero"
             ],
             "Nyamugari": [
-                "Busyana",
-                "Gashigwe",
                 "Gitaramuka",
-                "Nyamugari",
                 "Rukoyoyo"
             ],
             "Twinkwavu": [
                 "Gisoro",
-                "Misugi",
-                "Nyagisovu",
                 "Nyakuguma",
                 "Twinkwavu"
             ]
         },
         "GISURU": {
             "Gisuru": [
-                "Bugama",
-                "Bunyambo",
+                "Cisuru",
                 "Gahinga",
-                "Gisuru",
-                "Itahe",
-                "Kabingo",
-                "Kinama",
-                "Kireka",
-                "Muhindo",
-                "Murehe",
-                "Ntende",
-                "Nyabigabiro",
-                "Rusange",
-                "Ruyaga",
                 "Rwerambere"
             ],
-            "Kabanga": [
-                "Kabanga",
-                "Kigangabuko",
-                "Munazi",
-                "Musumba",
-                "Nyamigina",
-                "Nyamusasa",
-                "Ruveri"
-            ],
-            "Kinyinya": [
-                "Bugongo",
-                "Gasunu",
-                "Gataba",
-                "Karindo",
-                "Kibari",
-                "Kinyinya",
-                "Mayanza",
-                "Muvumu",
-                "Nyakibere",
-                "Nyamunazi",
-                "Vumwe"
-            ],
             "Muhwazi": [
-                "Bwome",
-                "Gatare",
-                "Kivoga",
-                "Nyakibingo",
                 "Nyakiyonga",
                 "Nyamasenga",
-                "Nyamitanga",
-                "Nyaruganda",
-                "Nyarumuri",
-                "Remba",
-                "Ruharo",
-                "Titi"
-            ],
-            "Ndemeka": [
-                "Butarangira",
-                "Gacokwe",
-                "Gakangaga",
-                "Itaba",
-                "Kabuyenge",
-                "Kavumwe",
-                "Musha",
-                "Ndemeka"
+                "Nyatuganda"
             ],
             "Nyabitare": [
-                "Caga",
-                "Kigamba",
-                "Migende",
-                "Muvumu",
-                "Mwegereza",
-                "Nyabigozi",
-                "Nyabitaka",
-                "Nyabitare",
-                "Nyakirunga",
-                "Nyakivumu",
-                "Rubanga",
+                "Muvunu",
                 "Ruhuni"
             ],
             "Nyabitsinda": [
-                "Bihembe",
-                "Kirungu",
-                "Mago",
-                "Muramba",
-                "Mureba",
-                "Murehe",
                 "Ndago",
                 "Nyabitsinda",
                 "Nyagahanda",
-                "Nyagitika",
-                "Nyamitukwe"
+                "Nyagitika"
             ],
             "Rukobe": [
                 "Iteka",
-                "Iyogero",
-                "Kinanira",
-                "Munyinya",
-                "Nkurubuye",
-                "Nyarumanga",
-                "Rukobe",
-                "Rutonde"
+                "Munyinya"
             ]
         },
         "MUYINGA": {
+            "Buhinyuza": [
+                "Buhinyuza",
+                "Karehe",
+                "Kibimba",
+                "Mabago",
+                "Nyaruhengeri",
+                "Nyarunazi",
+                "Rugazi"
+            ],
             "Bwasare": [
                 "Butirabura",
                 "Bwasare",
@@ -373,16 +293,6 @@
                 "Kaguhu",
                 "Karama",
                 "Rukinzo"
-            ],
-            "Buhinyuza": [
-                "Buhinyuza",
-                "Karehe",
-                "Kibimba",
-                "Mabago",
-                "Nyabucugu",
-                "Nyaruhengeri",
-                "Nyarunazi",
-                "Rugazi"
             ],
             "Cumba": [
                 "Burenza",
@@ -396,25 +306,22 @@
                 "Ruganigwa"
             ],
             "Gasave": [
-                "Bugungu",
+                "Bugurigu",
                 "Bunywana",
                 "Butihinda",
-                "Gasave",
-                "Gitaramuka",
                 "Karongwe",
-                "Kiyange",
-                "Muramba",
+                "Murarnba",
                 "Ntobwe"
             ],
             "Gasorwe": [
                 "Bihogo",
+                "Busimbuka",
                 "Gikwiye",
                 "Karambo",
                 "Karira",
                 "Kinama",
                 "Kiryama",
-                "Masasu",
-                "Rusimbuko"
+                "Masasu"
             ],
             "Higiro": [
                 "Higiro",
@@ -431,27 +338,11 @@
                 "Kara",
                 "Nyagishiru",
                 "Nyankurazo",
-                "Rugongo",
+                "Ragongo",
                 "Ruvumu"
-            ],
-            "Kiyanza": [
-                "Bonero",
-                "Bubaji",
-                "Ciyando",
-                "Gahekenya",
-                "Gasenyi",
-                "Gitaba",
-                "Kibongera",
-                "Kigajo",
-                "Kiyanza",
-                "Mukungu",
-                "Musenga",
-                "Rutyazo"
             ],
             "Kayenzi": [
                 "Kayenzi",
-                "Kibongera",
-                "Mageni",
                 "Musenga",
                 "Nkoyoyo",
                 "Rusengo"
@@ -462,7 +353,20 @@
                 "Kiremba",
                 "Kivubo",
                 "Kizi",
-                "Martyazo"
+                "Matyazo"
+            ],
+            "Kiyanza": [
+                "Bonero",
+                "Bubaji",
+                "Ciyando",
+                "Gahekenya",
+                "Gasenyi",
+                "Kibongera",
+                "Kigajo",
+                "Kiyanza",
+                "Mukungu",
+                "Musenga",
+                "Rutyazo"
             ],
             "Munagano": [
                 "Buhurana",
@@ -475,12 +379,25 @@
             ],
             "Murama": [
                 "Gasasa",
-                "Kavumu",
-                "Mubuga",
                 "Murama",
                 "Mwurire",
-                "Rusumo",
                 "Ryabihira"
+            ],
+            "Muyinga": [
+                "Bugomora",
+                "Burtma",
+                "Cibari",
+                "Gahororo",
+                "Gitongwe",
+                "Gwimbogo",
+                "Karemera",
+                "Kiryama",
+                "Kivoga",
+                "Quartier Kibogoye",
+                "Quartier Kinyota",
+                "Quartier Kwibuye",
+                "Quartier Mukoni",
+                "Quartier Muvinga"
             ],
             "Mwakiro": [
                 "Bugonza",
@@ -493,22 +410,6 @@
                 "Kibwirwa",
                 "Muyange",
                 "Mwakiro"
-            ],
-            "Muyinga": [
-                "Bugomora",
-                "Burima",
-                "Cibari",
-                "Gahororo",
-                "Gitongwe",
-                "Karemera",
-                "Kiryama",
-                "Kivoga",
-                "Rwimbogo",
-                "Quartier Kibogoye",
-                "Quartier Kinyota",
-                "Quartier Kwibuye",
-                "Quartier Mukoni",
-                "Quartier Muyinga"
             ],
             "Rugabano": [
                 "Bukwanzi",
@@ -529,51 +430,22 @@
                 "Migogo",
                 "Rugari",
                 "Rutoke",
-                "Ruyiyi"
+                "Ruyivyi"
             ]
         },
         "RUYIGI": {
             "Busoro": [
-                "Busoro",
                 "Gasenyi",
                 "Kigusu",
                 "Rubavu"
             ],
             "Butezi": [
                 "Kirasira",
-                "Nkongwe",
-                "Rugoti",
-                "Sorero"
+                "Mpogwe",
+                "Rugoti"
             ],
             "Bwagiriza": [
-                "Bwagiriza",
-                "Gashurushuru",
-                "Munyinya",
-                "Nombe",
-                "Rubaragaza",
-                "Rutegama",
                 "Senga"
-            ],
-            "Kayongozi": [
-                "Busuma",
-                "Caga",
-                "Kanisha",
-                "Mibanga",
-                "Nkanda"
-            ],
-            "Kirambi": [
-                "Bigombo",
-                "Gatwaro",
-                "Kirambi",
-                "Nyamugari",
-                "Nyarunazi",
-                "Ruvyagira"
-            ],
-            "Mubira": [
-                "Gitwa",
-                "Mubira",
-                "Mugogo",
-                "Muyange"
             ],
             "Bweru": [
                 "Bweru",
@@ -583,8 +455,23 @@
                 "Ntunda",
                 "Nzozi"
             ],
+            "Kayongozi": [
+                "Busuma"
+            ],
+            "Kirambi": [
+                "Bigombo",
+                "Gatwaro",
+                "Kirambi",
+                "Nyarunazi",
+                "Ruvyagira"
+            ],
+            "Mubira": [
+                "Gitwa",
+                "Mubira",
+                "Mugogo",
+                "Muyange"
+            ],
             "Rusengo": [
-                "Bunogera",
                 "Buruhukiro",
                 "Gisoro",
                 "Kirambi",
@@ -594,49 +481,30 @@
             ],
             "Ruyigi": [
                 "Dutwe",
-                "Gahemba",
-                "Kigamba",
-                "Ngarama",
-                "Nyarunazi",
-                "Ruhwago",
-                "Rukaragata",
-                "Ruyigi",
                 "Quartier Gasanda",
-                "Quartier Kinyabakecuru",
-                "Quartier Sanzu"
+                "Ruyigi"
             ]
         }
     },
     "BUJUMBURA": {
         "BUBANZA": {
             "Bubanza": [
-                "Quartier Bubanza",
-                "Quartier Buhororo",
+                "Bubanza",
+                "Buhororo",
                 "Quartier Giko",
                 "Quartier Matonge",
-                "Quartier Ruvumvu"
+                "Quartier Ruvumyu"
             ],
             "Buvyuko": [
                 "Cimbizi",
-                "Muhanza",
                 "Muhenga",
-                "Nyabitaka",
-                "Rugunga",
-                "Rurabo",
                 "Zina"
             ],
             "Kivyuka": [
                 "Busiga",
-                "Gashinge",
                 "Gatare",
                 "Kiziba",
                 "Munanira"
-            ],
-            "Mitakataka": [
-                "Gahongore",
-                "Gatura",
-                "Kagirigiri",
-                "Mitakataka"
             ],
             "Muramba": [
                 "Ciya",
@@ -651,13 +519,12 @@
                 "Rabiro"
             ],
             "Musigati": [
-                "Buhurika",
+                "Buhurikai",
                 "Bukinga",
                 "Dondi",
-                "Kanazi",
+                "Kanaz",
                 "Kayange",
                 "Mpishi",
-                "Mugombarima",
                 "Musigati",
                 "Nyarusange"
             ],
@@ -670,6 +537,7 @@
                 "Ruvyimvya"
             ],
             "Ntamba": [
+                "Gashinge",
                 "Mpinga",
                 "Ntamba",
                 "Rugeyo",
@@ -681,7 +549,6 @@
             "Buganda": [
                 "Cunyu",
                 "Gasenyi",
-                "Kaburantwa",
                 "Ruhagarika"
             ],
             "Buhayira": [
@@ -696,9 +563,8 @@
                 "Butara",
                 "Munyinya",
                 "Nderama",
-                "Rtyazo",
-                "Ruhembe",
-                "Runege"
+                "Runege",
+                "Tyazo"
             ],
             "Buzirasazi": [
                 "Gasheke",
@@ -722,16 +588,13 @@
                 "Sehe"
             ],
             "Ndava": [
-                "Kansega",
                 "Muremera",
                 "Mwunguzi",
-                "Ndava",
-                "Nimba",
-                "Nyamitanga"
+                "Ndava"
             ],
             "Ndora": [
+                "Bibre",
                 "Bihembe",
-                "Bitare",
                 "Burimbi",
                 "Giserama",
                 "Kabondo",
@@ -742,8 +605,8 @@
             ],
             "Rusenda": [
                 "Kabere",
-                "Nyampinda",
                 "Nyangwe",
+                "Nyempinda",
                 "Rusenda",
                 "Shimwe"
             ]
@@ -754,24 +617,22 @@
                 "Butega",
                 "Kagimbu",
                 "Kahirwa",
-                "Kajera",
+                "Kajerama",
                 "Kivumu"
             ],
             "Cibitoke": [
                 "Murambi",
                 "Quartier Cibitoke",
                 "Quartier Kagazi",
-                "Quartier Karurama",
-                "Quartier Rusiga"
+                "Quartier Karurama"
             ],
             "Kiramira": [
                 "Kiramira",
                 "Mihiza",
-                "Rusororo",
                 "Ruvumera"
             ],
             "Murwi": [
-                "Bubogora",
+                "Buhogora",
                 "Gitohera",
                 "Manege",
                 "Masha",
@@ -786,19 +647,38 @@
                 "Nyabubuye"
             ],
             "Rugombo": [
-                "Dogodogo",
                 "Mparambo",
-                "Rugeregere",
-                "Samwe",
                 "Quartier Munyika",
-                "Quartier Nyakagunda"
+                "Quartier Nyakagunda",
+                "Rugeregere",
+                "Samwe"
             ],
             "Rukana": [
                 "Gabiro",
-                "Gicaca",
                 "Musenyi",
-                "Ruhwa",
                 "Rukana"
+            ]
+        },
+        "GWIBAGA": {
+            "Kigina": [
+                "Karama",
+                "Kigina",
+                "Kinama",
+                "Mugendo"
+            ],
+            "Nyabibondo": [
+                "Gasarara",
+                "Mayemba",
+                "Mbare",
+                "Muhuha",
+                "Nyabibondo"
+            ],
+            "Nyabiraba": [
+                "Bubaji",
+                "Kinyami",
+                "Musenyi",
+                "Nyabiraba",
+                "Raro"
             ]
         },
         "ISARE": {
@@ -806,15 +686,13 @@
                 "Buyimba",
                 "Kibuye",
                 "Nyarukere",
-                "Rusha",
                 "Sagara"
             ],
             "Kirama": [
                 "Gasenyi",
                 "Gatebe",
                 "Kavya",
-                "Muturirwa",
-                "Rubaya",
+                "Muturinva",
                 "Rutunda"
             ],
             "Mageyo": [
@@ -831,7 +709,7 @@
                 "Butega",
                 "Kanyinya",
                 "Kigunga",
-                "Kinyinya",
+                "Kinynya",
                 "Magarure"
             ],
             "Mubimbi": [
@@ -848,67 +726,30 @@
                 "Nyarumpongo",
                 "Rushubi",
                 "Rutegama"
-            ],
-            "Ryarusera": [
-                "Gakenke",
-                "Gishubi",
-                "Kayoyo",
-                "Mugomere",
-                "Muhweza",
-                "Mwura",
-                "Zinga"
             ]
         },
         "MPANDA": {
-            "Buringa": [
-                "Buringa",
-                "Mpanda",
-                "Ninga",
-                "Nyeshanga",
-                "Ruhahe"
-            ],
             "Butanuka": [
                 "Butanuka",
                 "Butembe",
                 "Kanenga",
-                "Kivyibusha",
                 "Ruziba"
-            ],
-            "Gihanga": [
-                "Buramata",
-                "Gihanga",
-                "Kizina",
-                "Murira",
-                "Rumotomoto"
             ],
             "Mpanda": [
                 "Gahwazi",
                 "Gatagura",
                 "Gifurwe",
-                "Masha",
                 "Nyomvyi"
             ],
             "Mudubugu": [
-                "Busongo",
-                "Cabiza",
                 "Gihungwe",
-                "Kagwema",
-                "Muyange",
                 "Rugunga"
             ],
             "Musenyi": [
-                "Murengeza",
-                "Musenyi",
-                "Nyamabere",
-                "Rubira",
-                "Rugenge"
+                "Musenyi"
             ],
             "Muzinda": [
-                "Butanuka",
-                "Kibenga",
-                "Kirengane",
-                "Mutara",
-                "Muzinda"
+                "Kibenga"
             ],
             "Ruce": [
                 "Giseza",
@@ -919,7 +760,6 @@
             ],
             "Rugazi": [
                 "Bugume",
-                "Karambira",
                 "Kayange",
                 "Kibuye",
                 "Nyenkarange",
@@ -934,12 +774,11 @@
                 "Nyankere",
                 "Nyarwedeka",
                 "Rukingiro",
-                "Ruvyagira"
+                "Ruvya Ira"
             ],
             "Gomvyi": [
                 "Bubanza",
                 "Burima",
-                "Gakara",
                 "Gomvyi",
                 "Kayengwe",
                 "Murambi",
@@ -948,84 +787,45 @@
                 "Rutovu"
             ],
             "Kabezi": [
-                "Kabezi",
                 "Masama",
                 "Migera",
                 "Mwaza"
             ],
-            "Kanyosha": [
-                "Quartier Busoro",
-                "Quartier Gisyo",
-                "Quartier Kajiji",
-                "Quartier Musama",
-                "Quartier Nkenga"
-            ],
-            "Kinindo": [
-                "Quartier Kibenga",
-                "Quartier Kinindo",
-                "Quartier Rukamo"
-            ],
             "Kiyenzi": [
                 "Buhina",
-                "Gisovu",
                 "Musugi",
-                "Nyamaboko",
-                "Rukuba",
-                "Ruvumu"
+                "Rukuba"
             ],
             "Mubone": [
                 "Gitenga",
-                "Kimina",
                 "Mubone",
                 "Rugembe"
             ],
             "Musaga": [
-                "Quartier Gasekebuye",
-                "Quartier Gitaramuka",
-                "Quartier Kamesa",
-                "Quartier Kinanira",
-                "Quartier Mpimba",
-                "Quartier Muzenga",
-                "Quartier Urumuri"
+                "Quartier Kamesa"
             ],
             "Ramba": [
-                "Gakungwe",
-                "Kiremba",
-                "Mena",
-                "Ramba"
+                "Kiremba"
             ],
             "Ruyaga": [
-                "Bigwa",
-                "Buhonga",
                 "Buzige",
-                "Kabumba",
                 "Mboza",
-                "Mwico",
-                "Ruyaga"
+                "Mwico"
             ],
             "Ruziba": [
-                "Kizingwe",
-                "Mugere",
-                "Ngabwe",
-                "Nyabugete",
                 "Ruziba"
             ]
         },
         "MUGINA": {
             "Buhoro": [
-                "Buhoro",
-                "Busesa",
-                "Mayuki",
-                "Mukaka",
-                "Nyarusebeyi",
-                "Rumvya"
+                "Nyarusebeyi"
             ],
             "Butahana": [
                 "Gafumbegeti",
                 "Gahoma",
                 "Gakerekwa",
                 "Mageyo",
-                "Muhungo",
+                "Muhungu",
                 "Nyabungere",
                 "Rungogo",
                 "Rutorero"
@@ -1049,13 +849,6 @@
                 "Nyamakarabo",
                 "Nyempundu"
             ],
-            "Rubona": [
-                "Gisumo",
-                "Kagurutsi",
-                "Ngoma",
-                "Nyamihana",
-                "Rubona"
-            ],
             "Rugajo": [
                 "Gitebe",
                 "Kirinzi",
@@ -1067,9 +860,7 @@
                 "Rusagara"
             ],
             "Ruhororo": [
-                "Gasebeyi",
-                "Miremera",
-                "Ruhororo"
+                "Gasebeyi"
             ],
             "Ruziba": [
                 "Camakombe",
@@ -1098,15 +889,14 @@
                 "Kibingo",
                 "Mubanga",
                 "Mubone",
-                "Rutunga"
+                "Rutun A"
             ],
             "Magara": [
                 "Burangwa",
                 "Cashi",
                 "Kazigo",
                 "Magara",
-                "Mugendo",
-                "Vuma"
+                "Mugendo"
             ],
             "Muhuta": [
                 "Buringa",
@@ -1116,55 +906,26 @@
                 "Muhuta"
             ],
             "Ruteme": [
-                "Bambo",
-                "Mihororo",
-                "Nyaruyaga",
-                "Ruteme"
+                "Mihororo"
             ],
             "Rutongo": [
-                "Higiro",
-                "Kanzaganya",
-                "Kizuga",
-                "Masara",
-                "Murago",
-                "Rutongo",
-                "Ruyobera",
-                "Sakonga"
+                "Higiro"
             ]
         },
         "MUKAZA": {
             "Buyenzi": [
-                "Quartier Kanzigiri",
-                "Quartier Ruvumera",
-                "Quartier Swahili"
-            ],
-            "Bwiza": [
-                "Quartier Bwiza",
-                "Quartier Jabe"
+                "Quartier Ruvumera"
             ],
             "Mukaza": [
                 "Quartier Kabondo",
                 "Quartier Kiriri",
-                "Quartier Mukaza",
-                "Quartier Ngendandumwe",
-                "Quartier Ratiro",
-                "Quartier Rohero",
                 "Quartier Rweza"
             ],
             "Muyira": [
-                "Bigoma",
-                "Coga",
-                "Kavumu",
-                "Kirombwe",
-                "Mirama",
-                "Muyira",
-                "Rubizi"
+                "Mirama"
             ],
             "Nyakabiga": [
-                "Quartier Mugoboka",
-                "Quartier Mutanga",
-                "Quartier Nyakabiga",
-                "Quartier Rumuri"
+                "Quartier Mugoboka"
             ]
         },
         "NTAHANGWA": {
@@ -1173,224 +934,50 @@
                 "Karunga",
                 "Kwigere"
             ],
-            "Buterere": [
-                "Quartier Bumwe",
-                "Quartier Kabusa",
-                "Quartier Kiyange",
-                "Quartier Mubone",
-                "Quartier Mugaruro",
-                "Quartier Muhuza",
-                "Quartier Mwezi",
-                "Quartier Mwizero"
-            ],
-            "Cibitoke": [
-                "Quartier Buhuriro",
-                "Quartier Humuriza",
-                "Quartier Mahoro",
-                "Quartier Muhuza",
-                "Quartier Mutakura",
-                "Quartier Mwizero",
-                "Quartier Nyamwiza"
-            ],
-            "Gatumba": [
-                "Quartier Cuhiro",
-                "Quartier Gaharawe",
-                "Quartier Keza",
-                "Quartier Mahotera",
-                "Quartier Murinzi",
-                "Quartier Mushasha",
-                "Quartier Rusizi",
-                "Quartier Vugizo",
-                "Quartier Warubondo"
-            ],
             "Gihosha": [
-                "Quartier Gitare",
-                "Quartier Huriro",
                 "Quartier Kigobe",
                 "Quartier Muyaga",
                 "Quartier Nyabagere",
-                "Quartier Sanganiro",
                 "Quartier Sangwe",
-                "Quartier Taba",
                 "Quartier Winterekwa"
             ],
             "Kamenge": [
-                "Quartier Gikizi",
-                "Quartier Gituro",
-                "Quartier Heha",
-                "Quartier Kavumu",
-                "Quartier Mirango",
-                "Quartier Mukozi",
-                "Quartier Songa",
-                "Quartier Teza",
-                "Quartier Twinyoni",
-                "Quartier Twizerane"
+                "Quartier Mirango"
             ],
             "Kinama": [
                 "Quartier Bubanza",
-                "Quartier Buhinyuza",
-                "Quartier Bururi",
                 "Quartier Carama",
-                "Quartier Gitega",
-                "Quartier Kanga",
                 "Quartier Muco",
-                "Quartier Muramvya",
-                "Quartier Mutaga",
-                "Quartier Muyinga",
-                "Quartier Ngozi",
-                "Quartier Ruyigi"
+                "Quartier Muramvya"
             ],
             "Kirekura": [
-                "Budahirwa",
-                "Bugoma",
-                "Kivogero",
-                "Mikangara",
-                "Nyaruhama"
+                "Kivogero"
             ],
             "Mutimbuzi": [
                 "Quartier Bigwati",
-                "Quartier Buhomba",
-                "Quartier Masanganzira",
-                "Quartier Mugirigiri",
-                "Quartier Mutimbuzi",
-                "Quartier Muzazi",
-                "Quartier Samariro"
+                "Quartier Mutimbuzi"
             ],
             "Ngagara": [
-                "Quartier Gateka",
-                "Quartier Mahinguriro",
-                "Quartier Majambere",
-                "Quartier Mubano",
-                "Quartier Mugisha",
-                "Quartier Muhinga",
-                "Quartier Muhizi",
-                "Quartier Ngagara",
-                "Quartier Rukundo"
+                "Quartier Ngagara"
             ],
             "Nyambuye": [
-                "Gishingano",
-                "Nyakibande",
-                "Nyambuye"
+                "Nyakibande"
             ],
             "Rubirizi": [
                 "Gahahe",
-                "Gahwama",
-                "Gasenyi",
                 "Gatunguru",
-                "Karama",
-                "Muyange",
-                "Nyabunyegeri",
-                "Rubirizi",
-                "Tenga"
-            ],
-            "Rukaramu": [
-                "Quartier Gakumbu",
-                "Quartier Kagera",
-                "Quartier Kajaga",
-                "Quartier Kinyinya",
-                "Quartier Ruvyagira"
-            ]
-        },
-        "RWIBAGA": {
-            "Bikanka": [
-                "Bikanka",
-                "Kigozi",
-                "Ndayi"
-            ],
-            "Jenda": [
-                "Buhoro",
-                "Jenda",
-                "Kanyunya",
-                "Mugoyi",
-                "Nyarushanga",
-                "Rwibaga",
-                "Vyuya"
-            ],
-            "Kankima": [
-                "Kibira",
-                "Nyamugari",
-                "Rutambiro"
-            ],
-            "Kigina": [
-                "Karama",
-                "Kigina",
-                "Kinama",
-                "Mugendo"
-            ],
-            "Matara": [
-                "Kizunga",
-                "Matara",
-                "Mukonko",
-                "Mwumba"
-            ],
-            "Mugongo": [
-                "Butagazwa",
-                "Gisarwe",
-                "Mugongo",
-                "Murunga"
-            ],
-            "Mukike": [
-                "Mayuyu",
-                "Nyarumanga",
-                "Rurambira",
-                "Ruzibazi"
-            ],
-            "Nyabibondo": [
-                "Gasarara",
-                "Mayemba",
-                "Mbare",
-                "Muhuha",
-                "Nyabibondo"
-            ],
-            "Nyabiraba": [
-                "Bubaji",
-                "Kinyami",
-                "Musenyi",
-                "Nyabiraba",
-                "Raro"
-            ],
-            "Rukina": [
-                "Mutobo",
-                "Ruhororo",
-                "Rukina"
+                "Rubirizi"
             ]
         }
     },
     "BURUNGA": {
         "BURURI": {
-            "Bamba": [
-                "Jungwe",
-                "Kagwa",
-                "Nyamiyaga",
-                "Nyarwaga",
-                "Ruvumu"
-            ],
             "Binyuro": [
                 "Bugeni",
                 "Bwatemba",
                 "Gihinga",
                 "Gitwaro",
-                "Mubuga",
                 "Ntunda"
-            ],
-            "Bururi": [
-                "Gisanze",
-                "Mahonda",
-                "Mudahandwa",
-                "Mugozi",
-                "Murago",
-                "Tongwe",
-                "Quartier Bururi",
-                "Quartier Kigwati",
-                "Quartier Rumonyi"
-            ],
-            "Condi": [
-                "Gikwazo",
-                "Kagimbu",
-                "Kivubo",
-                "Nyabucokwe",
-                "Rutoke",
-                "Sanzu"
             ],
             "Burunga": [
                 "Burunga",
@@ -1398,50 +985,41 @@
                 "Mubuga",
                 "Rukanda"
             ],
+            "Bururi": [
+                "Mugozi",
+                "Quartier Bururi",
+                "Tongwe"
+            ],
+            "Condi": [
+                "Gikwazo",
+                "Kagimbu",
+                "Kivubo",
+                "Nyabucokwe",
+                "Sanzu"
+            ],
             "Gitsiro": [
                 "Kabwayi",
-                "Kigutu",
-                "Kirungu",
                 "Mirango",
                 "Mushishi"
             ],
             "Kajondi": [
-                "Gihanga",
-                "Gikizi",
-                "Kajondi",
-                "Musenyi",
-                "Ruringanizo"
+                "Kajondi"
             ],
             "Muhweza": [
-                "Gikana",
-                "Gitobo",
-                "Muhweza",
-                "Musongati",
-                "Mwarusi"
+                "Muhweza"
             ],
             "Munini": [
                 "Buhinga",
-                "Burenza",
-                "Gahago",
-                "Gasenyi",
-                "Gatanga",
-                "Munini",
-                "Muyange",
-                "Nyarugera"
+                "Gahago"
             ],
             "Muzenga": [
-                "Burarana",
                 "Muzima",
-                "Nyavyamo",
-                "Rushemeza",
-                "Rwankona",
-                "Quartier Kiremba"
+                "Rushemeza"
             ],
             "Rutovu": [
                 "Kijima",
                 "Kinyonzo",
                 "Munyinya",
-                "Mutangaro",
                 "Muzenga",
                 "Ruhando"
             ],
@@ -1455,41 +1033,14 @@
             ]
         },
         "MAKAMBA": {
-            "Mugeni": [
-                "Buhema",
-                "Bujondi",
-                "Kigomagoma",
-                "Kiyange",
-                "Mugeni"
-            ],
-            "Nyange": [
-                "Mihongo",
-                "Ndago",
-                "Ruremba"
+            "Bigina": [
+                "Mayange",
+                "Sampeke"
             ],
             "Bukeye": [
                 "Bukeye",
                 "Busoro",
-                "Gikama",
-                "Murambi",
-                "Nyakazi",
                 "Nyarubanga"
-            ],
-            "Bigina": [
-                "Bigina",
-                "Gasenga",
-                "Kibara",
-                "Mayange",
-                "Mudaturwa",
-                "Mukingo",
-                "Musasa",
-                "Sampeke"
-            ],
-            "Nyantakara": [
-                "Gitaba",
-                "Mugeregere",
-                "Muguruka",
-                "Nyantakara"
             ],
             "Canda": [
                 "Canda",
@@ -1497,16 +1048,18 @@
                 "Nyankara"
             ],
             "Dunga": [
-                "Dunga",
                 "Kigaza",
                 "Rusovu",
                 "Shaka"
             ],
-            "Gatabo": [
-                "Buga",
-                "Gatabo",
-                "Nkaramanyenye",
-                "Rutenderi"
+            "Gisenyi": [
+                "Gasaka",
+                "Gisenyi",
+                "Kanzege",
+                "Munonotsi",
+                "Musanga",
+                "Rabiro",
+                "Siza"
             ],
             "Gitaba": [
                 "Cunamwe",
@@ -1515,21 +1068,10 @@
                 "Mahembe",
                 "Mpinga",
                 "Mugutu",
+                "Murago",
                 "Murambi",
-                "Murango",
                 "Muvumu",
                 "Nyabangwe"
-            ],
-            "Gisenyi": [
-                "Gasaka",
-                "Gisenyi",
-                "Kanzege",
-                "Munonotsi",
-                "Musanga",
-                "Muvumu",
-                "Nyabangwe",
-                "Rabiro",
-                "Siza"
             ],
             "Kabuye": [
                 "Gihero",
@@ -1538,23 +1080,16 @@
                 "Nyabigina"
             ],
             "Kayogoro": [
-                "Borera",
                 "Butare",
                 "Kabizi",
                 "Kibimba",
-                "Muyaga",
                 "Quartier Buhirwe",
-                "Quartier Gitaramuka",
-                "Quartier Mushasha",
-                "Quartier Swahili"
+                "Quartier Gitaramuka"
             ],
             "Kibago": [
                 "Jimbi",
                 "Kibago",
-                "Kivoga",
-                "Mbizi",
-                "Rubimba",
-                "Ruyange"
+                "Rubimba"
             ],
             "Kiyange": [
                 "Kabanga",
@@ -1570,98 +1105,40 @@
                 "Muresi",
                 "Quartier Gitwa",
                 "Quartier Kigarama",
-                "Quartier Kigwati",
                 "Quartier Kirama",
-                "Quartier Mukenke",
-                "Quartier Muyogo",
                 "Quartier Nyaburumba",
                 "Quartier Nyankoni",
                 "Quartier Rugarama",
-                "Quartier Rukanko",
                 "Quartier Swahili"
+            ],
+            "Mugeni": [
+                "Buhema",
+                "Kiyange"
+            ],
+            "Nyange": [
+                "Mihongo",
+                "Ndago",
+                "Ruremba"
+            ],
+            "Nyantakara": [
+                "Nyantakara"
             ]
         },
         "MATANA": {
-            "Gasibe": [
-                "Bitezi",
-                "Gitanga",
-                "Kinyinya",
-                "Ntega",
-                "Sakinyonga"
-            ],
-            "Gisarenda": [
-                "Butwe",
-                "Gisarenda",
-                "Mahango",
-                "Ruzira"
-            ],
-            "Kibezi": [
-                "Donge",
-                "Kibezi",
-                "Mpota",
-                "Musho",
-                "Mutobo"
-            ],
-            "Kivumu": [
-                "Gakaranka",
-                "Kivumu",
-                "Munini"
-            ],
-            "Kiryama": [
-                "Gahanda",
-                "Kinwa",
-                "Kiryama",
-                "Mutsinda",
-                "Rutundwe",
-                "Rwego"
-            ],
-            "Mahwa": [
-                "Kampezi",
-                "Mahwa",
-                "Ndava",
-                "Nyabikenke"
-            ],
             "Matana": [
                 "Bihanga",
-                "Gisisye",
-                "Matana",
-                "Mugano"
+                "Matana"
+            ],
+            "Mugamba": [
+                "Taba"
             ],
             "Muheka": [
                 "Muheka",
                 "Musenyi",
                 "Taba"
             ],
-            "Mugamba": [
-                "Burasira",
-                "Coma",
-                "Ntentamaza",
-                "Nyatubuye",
-                "Rukere",
-                "Taba"
-            ],
             "Mwumba": [
-                "Gitara",
-                "Gitaramuka",
-                "Gozi",
-                "Mwumba"
-            ],
-            "Ndago": [
-                "Jenda",
-                "Ndago"
-            ],
-            "Nyagasasa": [
-                "Mubira",
-                "Ndengo",
-                "Nyakigano",
-                "Nyamugari",
-                "Ruhinga",
-                "Ruko"
-            ],
-            "Ruvumvu": [
-                "Rusama",
-                "Tara",
-                "Yengero"
+                "Gozi"
             ],
             "Songa": [
                 "Kigabiro",
@@ -1669,51 +1146,21 @@
                 "Songa"
             ],
             "Vyuya": [
-                "Gataka",
-                "Kirinzi",
-                "Mugomera",
-                "Nyakimonyi",
                 "Vyuya"
             ]
         },
         "MUSONGATI": {
             "Butezi": [
-                "Buhogo",
-                "Butezi",
-                "Kabingo",
-                "Kibimba",
-                "Mutwana",
-                "Mwebeya",
-                "Nkanka",
-                "Rubanga",
-                "Shasha"
+                "Butezi"
             ],
             "Gakungu": [
-                "Gakungu",
-                "Mugombwa",
-                "Murara",
-                "Murembera",
-                "Mwango",
-                "Ngomante",
-                "Nyabakara",
-                "Nyamateke"
+                "Murara"
             ],
             "Gatakazi": [
                 "Gatakazi",
                 "Kagunga",
-                "Maganahe",
                 "Rusunu",
                 "Yove"
-            ],
-            "Giharo": [
-                "Bayaga",
-                "Bukeno",
-                "Giharo",
-                "Gitanga",
-                "Kanyererwe",
-                "Mura",
-                "Musenyi",
-                "Nkurye"
             ],
             "Kayero": [
                 "Gihera",
@@ -1723,13 +1170,10 @@
                 "Munyika",
                 "Musotera",
                 "Ngarama",
-                "Nyamiyaga",
                 "Rorero"
             ],
             "Kiguhu": [
-                "Buranga",
                 "Gasasa",
-                "Kiguhu",
                 "Mbuye",
                 "Mihama",
                 "Nyakabanda",
@@ -1740,15 +1184,12 @@
                 "Butamya",
                 "Gihinga",
                 "Kagoma",
-                "Kibanda",
                 "Kigamba",
-                "Maganahe",
                 "Mpinga",
-                "Muganza"
+                "Muaanza"
             ],
             "Mugondo": [
                 "Bayumbu",
-                "Gasenga",
                 "Gasozi",
                 "Mugondo",
                 "Ngara",
@@ -1763,14 +1204,6 @@
                 "Nyabigozi",
                 "Nyabisindu",
                 "Runyoni"
-            ],
-            "Muzye": [
-                "Buyaga",
-                "Gatonga",
-                "Murehe",
-                "Muzye",
-                "Nyembuye",
-                "Shembe"
             ],
             "Ngoma": [
                 "Cero",
@@ -1795,25 +1228,9 @@
         "NYANZA": {
             "Gishiha": [
                 "Jongwe",
-                "Kiyazi",
                 "Mutobo",
                 "Nyarubano",
-                "Rurambira",
-                "Rutegama"
-            ],
-            "Gitara": [
-                "Bikobe",
-                "Budaketwa",
-                "Musenyi",
-                "Nyamugari",
-                "Ruvuga"
-            ],
-            "Kabonga": [
-                "Gasaba",
-                "Gisenga",
-                "Kabonga",
-                "Mukerezi",
-                "Nyabigina"
+                "Rurambira"
             ],
             "Kayogoro": [
                 "Bukunda",
@@ -1826,30 +1243,17 @@
             ],
             "Kayove": [
                 "Gahandu",
-                "Gikuzi",
                 "Martyazo",
                 "Mazuru",
                 "Murinda",
                 "Ndoba"
             ],
-            "Kazirabageni": [
-                "Biniganyi",
-                "Buheka",
-                "Kazirabageni",
-                "Kiderege"
-            ],
             "Mabanda": [
-                "Gikombe",
                 "Gikurazo",
                 "Kibimba",
                 "Mabanda",
                 "Mara",
-                "Mutwazi",
                 "Nkondo",
-                "Quartier Mudaturwa",
-                "Quartier Mushasha",
-                "Quartier Nyabusunzu",
-                "Quartier Sagara",
                 "Quartier Samvura"
             ],
             "Mpinga": [
@@ -1860,40 +1264,12 @@
                 "Rubanda"
             ],
             "Mukubano": [
-                "Kabo",
-                "Mugumure",
-                "Mukubano",
                 "Ruvumera"
             ],
-            "Mukungu": [
-                "Mukimba",
-                "Mukungu",
-                "Rimbo",
-                "Rubindi"
-            ],
             "Muyange": [
-                "Muyange",
-                "Mwimbiro",
-                "Nyabutare",
-                "Rangi",
-                "Ruvyagira"
-            ],
-            "Nyanza": [
-                "Bukeye",
-                "Kabondo",
-                "Mugerama",
-                "Mvugo",
-                "Quartier Bogorwa",
-                "Quartier Bukeye",
-                "Quartier Gitunda",
-                "Quartier Isanganiro",
-                "Quartier Kigembezi",
-                "Quartier Ngoro",
-                "Quartier Nyamirongo",
-                "Quartier Swahili"
+                "Muyange"
             ],
             "Vugizo": [
-                "Higiro",
                 "Karonge",
                 "Kigombe",
                 "Mbizi",
@@ -1903,13 +1279,6 @@
             ]
         },
         "RUMONGE": {
-            "Buruhukiro": [
-                "Gitwe",
-                "Karagara",
-                "Muhanda",
-                "Murambi",
-                "Nyagasaka"
-            ],
             "Burambi": [
                 "Bisaka",
                 "Busaga",
@@ -1917,32 +1286,26 @@
                 "Gitaramuka",
                 "Rwaniro"
             ],
+            "Buruhukiro": [
+                "Karagara",
+                "Muhanda",
+                "Murambi",
+                "Nyagasaka"
+            ],
             "Buyengero": [
                 "Kanyinya",
                 "Mabanza",
-                "Mujigo",
                 "Nkizi",
                 "Runyinya"
             ],
             "Gatete": [
-                "Busebwa",
-                "Gatete",
-                "Mugara",
                 "Mutambara"
             ],
             "Kigwena": [
-                "Cabara",
-                "Gashasha",
-                "Kanenge",
-                "Mayengo",
-                "Nyakuguma"
+                "Gashasha"
             ],
             "Kizuka": [
-                "Gatwe",
-                "Kagongo",
-                "Kizuka",
-                "Mibanda",
-                "Mwange"
+                "Kizuka"
             ],
             "Maramvya": [
                 "Busura",
@@ -1960,9 +1323,7 @@
             ],
             "Minago": [
                 "Karonke",
-                "Minago",
                 "Muhuzu",
-                "Muturirwa",
                 "Rutumo"
             ],
             "Mudende": [
@@ -1981,18 +1342,12 @@
                 "Rubirizi"
             ],
             "Rumonge": [
-                "Quartier Birimba",
                 "Quartier Gihwanya",
-                "Quartier Iteba",
-                "Quartier Kanyenkoko",
                 "Quartier Mugomere",
-                "Quartier Nkayamba",
-                "Quartier Rukinga",
                 "Quartier Swahili"
             ],
             "Rusabagi": [
                 "Gakonko",
-                "Gatobo",
                 "Gitaba",
                 "Gitongwe",
                 "Murara",
@@ -2001,13 +1356,9 @@
         },
         "RUTANA": {
             "Bukemba": [
-                "Bukemba",
-                "Gihofi",
-                "Kabanga",
-                "Murama"
+                "Bukemba"
             ],
             "Butare": [
-                "Bugiga",
                 "Butare",
                 "Muyombwe",
                 "Rubanga",
@@ -2023,101 +1374,10 @@
                 "Kinganda",
                 "Maramvya",
                 "Mika",
-                "Nyamure"
-            ],
-            "Busoni": [
-                "Burara",
-                "Gatare",
-                "Gatete",
-                "Kigoma",
-                "Kivo",
-                "Munazi",
-                "Nyakizu"
-            ],
-            "Bwambarangwe": [
-                "Budahunga",
-                "Butegana",
-                "Kabirizi",
-                "Kabuyenge",
-                "Mukenke"
-            ],
-            "Cumba": [
-                "Burwana",
-                "Cumba",
-                "Nkomero",
-                "Tonga"
-            ],
-            "Gisenyi": [
-                "Gisenyi",
-                "Higiro",
-                "Kibonde",
-                "Marembo",
-                "Muhuzu",
-                "Murambi",
-                "Nyabisindu",
-                "Rugarama",
-                "Rwibikara"
-            ],
-            "Gitobe": [
-                "Butahana",
-                "Butihinda",
-                "Gahosha",
-                "Gasuga",
-                "Rungazi"
-            ],
-            "Kabanga": [
-                "Buhimba",
-                "Buringa",
-                "Kabanga",
-                "Karambo",
-                "Kididiri",
-                "Rurende"
-            ],
-            "Kimeza": [
-                "Gasave",
-                "Kibazi",
-                "Kimeza",
-                "Mugongo",
-                "Ruyenzi"
-            ],
-            "Mukerwa": [
-                "Kagege",
-                "Kiravumba",
-                "Mugobe",
-                "Mukerwa",
-                "Munyinya",
-                "Renga",
-                "Runyinya"
-            ],
-            "Murore": [
-                "Gatemere",
-                "Murore",
-                "Nyabugeni",
-                "Rutabo",
-                "Ruyaga",
-                "Rurira"
-            ],
-            "Nyagisozi": [
-                "Gitete",
-                "Kumana",
-                "Muvyuko",
-                "Muyange",
-                "Nyagisozi",
-                "Nyange",
-                "Ruheha",
-                "Sigu"
-            ],
-            "Nyenzi": [
-                "Mubuga",
-                "Ngoma",
-                "Nyenzi",
-                "Ruhongore"
-            ],
-            "Shore": [
-                "Bigombo",
-                "Coga",
-                "Santunda",
-                "Shore"
+                "Mungwa",
+                "Nyamure",
+                "Nyanzuki",
+                "Ruregeya"
             ],
             "Gitanga": [
                 "Bigina",
@@ -2129,7 +1389,6 @@
                 "Museno",
                 "Ntuku",
                 "Nyabikenke"
-
             ],
             "Kinzanza": [
                 "Cunda",
@@ -2141,24 +1400,6 @@
                 "Nyamabuye",
                 "Rukobe"
             ],
-            "Rutana": [
-                "Gakobe",
-                "Gaseri",
-                "Gifunzo",
-                "Jomati",
-                "Karibu",
-                "Kayove",
-                "Nyarubere",
-                "Rushungura",
-                "Shoti",
-                "Quartier Gahuna",
-                "Quartier Karindo",
-                "Quartier Kigwati",
-                "Quartier Majambere",
-                "Quartier Mikurira",
-                "Quartier Mugembe",
-                "Quartier Rongero"
-            ],
             "Kivoga": [
                 "Gitaramuka",
                 "Kivoga",
@@ -2167,26 +1408,38 @@
                 "Nyarubimba",
                 "Ramvya"
             ],
-            "Rongero": [
-                "Butambara",
-                "Butovyi",
-                "Karinzi",
-                "Kibinzi",
-                "Mwayi",
-                "Ntuku",
-                "Rongero",
-                "Rushemeza",
-                "Rusunu"
-            ],
             "Nyakuguma": [
                 "Gisenyi",
-                "Musongati",
                 "Mutsindozi",
                 "Muyange",
                 "Ngoma",
                 "Nyagisambwe",
                 "Nyakuguma",
                 "Samahuge"
+            ],
+            "Rongero": [
+                "Butambara",
+                "Karinzi",
+                "Kibinzi",
+                "Ntuku",
+                "Rongero",
+                "Rushemeza"
+            ],
+            "Rutana": [
+                "Gakobe",
+                "Gaseri",
+                "Gifunzo",
+                "Karibu",
+                "Kayove",
+                "Nyarubere",
+                "Quartier Gahuna",
+                "Quartier Karindo",
+                "Quartier Kigwati",
+                "Quartier Mikurira",
+                "Quartier Mugembe",
+                "Quartier Rongero",
+                "Rushungura",
+                "Shoti"
             ]
         }
     },
@@ -2217,7 +1470,6 @@
             "Busoni": [
                 "Burara",
                 "Gatare",
-                "Gatete",
                 "Kigoma",
                 "Kivo",
                 "Munazi",
@@ -2241,11 +1493,9 @@
                 "Higiro",
                 "Kibonde",
                 "Marembo",
-                "Muhuzu",
                 "Murambi",
                 "Nyabisindu",
-                "Rugarama",
-                "Rwibikara"
+                "Rugarama"
             ],
             "Gitobe": [
                 "Butahana",
@@ -2267,7 +1517,7 @@
                 "Kibazi",
                 "Kimeza",
                 "Mugongo",
-                "Ruyenzi"
+                "Rugenzi"
             ],
             "Mukerwa": [
                 "Kagege",
@@ -2281,10 +1531,9 @@
             "Murore": [
                 "Gatemere",
                 "Murore",
-                "Nyabugeni",
+                "Rurira",
                 "Rutabo",
-                "Ruyaga",
-                "Rurira"
+                "Ruyaga"
             ],
             "Nyagisozi": [
                 "Gitete",
@@ -2293,8 +1542,7 @@
                 "Muyange",
                 "Nyagisozi",
                 "Nyange",
-                "Ruheha",
-                "Sigu"
+                "Ruheha"
             ],
             "Nyenzi": [
                 "Mubuga",
@@ -2324,15 +1572,13 @@
                 "Yandaro"
             ],
             "Kabarore": [
-                "Caguka",
                 "Gikingo",
                 "Kidunduri",
                 "Kirehe",
                 "Kivuvu",
                 "Mugera",
                 "Mugongo",
-                "Munege",
-                "Nyamisagara"
+                "Munege"
             ],
             "Kabuye": [
                 "Benga",
@@ -2400,7 +1646,7 @@
                 "Yanza"
             ],
             "Nkonge": [
-                "Campazi",
+                "Campan",
                 "Gishubi",
                 "Mikuba",
                 "Mutana",
@@ -2416,14 +1662,7 @@
                 "Ruhande"
             ],
             "Rugazi": [
-                "Buvumo",
-                "Buyumpu",
-                "Dusasa",
-                "Gashiru",
-                "Gisagara",
-                "Kibati",
-                "Tondero",
-                "Yanza"
+                "Gashiru"
             ],
             "Rukere": [
                 "Caratsi",
@@ -2454,8 +1693,6 @@
                 "Kigina",
                 "Kinyovu",
                 "Masama",
-                "Martyazo",
-                "Muremera",
                 "Mushonge",
                 "Rurama",
                 "Shinge",
@@ -2581,8 +1818,8 @@
                 "Gahe",
                 "Muramba",
                 "Muyebe",
-                "Nyagatovu",
                 "Nyabihanga",
+                "Nyagatovu",
                 "Rwisuri"
             ],
             "Cendajuru": [
@@ -2590,7 +1827,10 @@
                 "Cendajuru",
                 "Kabirizi",
                 "Kigobe",
-                "Kiziba"
+                "Kiziba",
+                "Ngere",
+                "Nyamisagara",
+                "Rwamikore"
             ],
             "Cewe": [
                 "Ceru",
@@ -2616,8 +1856,7 @@
                 "Kinyangurube",
                 "Mutara",
                 "Mwenya",
-                "Rugero",
-                "Shinge"
+                "Rugero"
             ],
             "Gikuyo": [
                 "Bugera",
@@ -2648,7 +1887,6 @@
                 "Muyange",
                 "Nyamata",
                 "Rugando",
-                "Rugasa",
                 "Saruduha",
                 "Shenga"
             ],
@@ -2666,8 +1904,7 @@
                 "Quartier Bushaza",
                 "Quartier Kavogero",
                 "Quartier Kumahoro",
-                "Quartier Rupfunda",
-                "Quartier Windora"
+                "Quartier Rupfunda"
             ],
             "Kiyonza": [
                 "Cindonyi",
@@ -2687,7 +1924,6 @@
                 "Makombe",
                 "Mariza",
                 "Mugendo",
-                "Ntango",
                 "Rutagara",
                 "Sasa"
             ],
@@ -2715,8 +1951,7 @@
                 "Kamwayi",
                 "Muyumpu",
                 "Nyamabuye",
-                "Rukondokondo",
-                "Ryagihana"
+                "Rukondokondo"
             ],
             "Runyankezi": [
                 "Bugorora",
@@ -2732,8 +1967,7 @@
                 "Muyinza",
                 "Nkorwe",
                 "Nyakibingo",
-                "Rushubije",
-                "Rwimbogo"
+                "Rushubije"
             ],
             "Vumbi": [
                 "Butsimba",
@@ -2749,15 +1983,11 @@
         },
         "MATONGO": {
             "Banga": [
-                "Banga",
                 "Bihunge",
                 "Matongo",
                 "Mpemba",
-                "Munini",
                 "Murambi",
-                "Mutarure",
-                "Nyakibingo",
-                "Rudehe"
+                "Nyakibingo"
             ],
             "Burarana": [
                 "Burarana",
@@ -2771,11 +2001,9 @@
             "Busangana": [
                 "Burarana",
                 "Busangana",
-                "Busekera",
                 "Gashishima",
                 "Kigereka",
                 "Nyambo",
-                "Rwantsinda",
                 "Rusha"
             ],
             "Butaganzwa": [
@@ -2853,7 +2081,11 @@
                 "Gasare",
                 "Kibavu",
                 "Kivumu",
-                "Muganza"
+                "Muganza",
+                "Mvumvu",
+                "Ngoro",
+                "Nyarumanga",
+                "Ruganza"
             ]
         },
         "MUHANGA": {
@@ -2888,7 +2120,7 @@
                 "Kiyange",
                 "Mikoni",
                 "Rukago",
-                "Ruzingati"
+                "Ruzingaati"
             ],
             "Gikomero": [
                 "Gikomero",
@@ -2898,18 +2130,6 @@
                 "Musagara",
                 "Rubungu",
                 "Rusave"
-            ],
-            "Muhanga": [
-                "Gaharo",
-                "Gashibuka",
-                "Kibimba",
-                "Mbaba",
-                "Muhanga",
-                "Musama",
-                "Mwendo",
-                "Ngoma",
-                "Rugamba",
-                "Rushenza"
             ],
             "Mibazi": [
                 "Ceyerezi",
@@ -2934,6 +2154,18 @@
                 "Nyarurambi",
                 "Rubanga",
                 "Rushubi"
+            ],
+            "Muhanga": [
+                "Gaharo",
+                "Gashibuka",
+                "Kibimba",
+                "Mbaba",
+                "Muhanga",
+                "Musama",
+                "Mwendo",
+                "Ngoma",
+                "Rugamba",
+                "Rushenza"
             ],
             "Nzewe": [
                 "Bigugo",
@@ -2978,7 +2210,7 @@
                 "Nyange",
                 "Rubari",
                 "Rugori",
-                "Rwanyege"
+                "Rwanyange"
             ],
             "Buye": [
                 "Buye",
@@ -3052,7 +2284,7 @@
                 "Quartier Gabiro",
                 "Quartier Gisagara",
                 "Quartier Kanyami",
-                "Quartier Kinyami",
+                "Quartier Kmyami",
                 "Quartier Muremera",
                 "Quartier Rubuye",
                 "Quartier Rusuguti",
@@ -3089,8 +2321,7 @@
                 "Gashikanwa",
                 "Kivumu",
                 "Maruri",
-                "Nini",
-                "Rwizingwe"
+                "Nini"
             ],
             "Gatobo": [
                 "Buhoro",
@@ -3137,7 +2368,7 @@
                 "Musenyi",
                 "Nyagasebeyi",
                 "Rushoka",
-                "Ruyaga"
+                "Ruyaya"
             ],
             "Ngoma": [
                 "Butaha",
@@ -3240,8 +2471,8 @@
                 "Quartier Kigwati"
             ],
             "Mutoyi": [
-                "Mutoyi",
                 "Kivuvu",
+                "Mutoyi",
                 "Nyagisenyi",
                 "Nyakeru"
             ],
@@ -3365,7 +2596,7 @@
                 "Kigufi",
                 "Musenga",
                 "Ndago",
-                "Nyakazi",
+                "Nyakinazi",
                 "Nyamirama",
                 "Nyamugari",
                 "Rurimbi"
@@ -3381,7 +2612,6 @@
             ],
             "Ryansoro": [
                 "Mirango",
-                "Murenge",
                 "Ngaruzwa",
                 "Ntunda",
                 "Nyentambwe",
@@ -3493,14 +2723,14 @@
             "Mungwa": [
                 "Bihanga",
                 "Kibiri",
-                "Rutoke",
-                "Rweza",
                 "Quartier Butamuheba",
                 "Quartier Jimbi",
                 "Quartier Karera",
                 "Quartier Mugoboka",
                 "Quartier Mungwa",
-                "Quartier Ntobwe"
+                "Quartier Ntobwe",
+                "Rutoke",
+                "Rweza"
             ],
             "Murenda": [
                 "Butobwe",
@@ -3523,12 +2753,11 @@
                 "Quartier Nyabututsi",
                 "Quartier Nyamugari",
                 "Quartier Rango",
-                "Quartier Shatanya",
                 "Quartier Yoba"
             ],
             "Rutegama": [
-                "Higiro",
                 "Gitamo",
+                "Higiro",
                 "Nyakibingo",
                 "Quartier Birohe",
                 "Quartier Ceru",
@@ -3613,20 +2842,19 @@
                 "Nyakabugu"
             ],
             "Mayenzi": [
-                "burenza",
+                "Burenza",
                 "Cigati",
                 "Gasenyi",
                 "Karamba",
+                "Mayenzi",
                 "Rudaraza",
                 "Rutonganikwa",
                 "Ruyaga",
-                "Shanga",
-                "Mayenzi"
+                "Shanga"
             ],
             "Mubaragaza": [
                 "Kigoma",
                 "Mubaragaza",
-                "Musenga",
                 "Sagara",
                 "Yagizo"
             ],
@@ -3653,8 +2881,6 @@
             ],
             "Nyamugari": [
                 "Quartier Kigoma",
-                "Quartier Kigwati",
-                "Quartier Nyamugari",
                 "Quartier Rubimba"
             ],
             "Nyaruhinda": [
@@ -3668,7 +2894,7 @@
                 "Bonero",
                 "Burenza",
                 "Mubaya",
-                "Munyanira",
+                "Munyinya",
                 "Rugazi",
                 "Rusengo",
                 "Tambi"
@@ -3700,7 +2926,6 @@
             ],
             "Kanyami": [
                 "Gahweza",
-                "Kanyami",
                 "Musongati",
                 "Ngara"
             ],
@@ -3713,13 +2938,12 @@
             "Mushikamo": [
                 "Bupfunda",
                 "Munyinya",
-                "Murinzi",
+                "Murina",
                 "Musave",
                 "Mushikamo",
                 "Nkonyovu",
                 "Nyakararo",
-                "Nyamitwenzi",
-                "Murinzi"
+                "Nyamitwenzi"
             ],
             "Renga": [
                 "Kayange",
@@ -3731,23 +2955,21 @@
                 "Bubanda",
                 "Camumandu",
                 "Cumba",
-                "Gashingwa",
+                "Gashmgwa",
                 "Kinyoni",
                 "Marumane",
                 "Munanira",
                 "Nyarukere",
                 "Nyarunazi",
-                "Rutegama",
                 "Quartier Buryohe",
                 "Quartier Gasange",
-                "Gashingwa"
+                "Rutegama"
             ]
         },
         "MURAMVYA": {
             "Bugarama": [
                 "Busimba",
                 "Kibogoye",
-                "Mpehe",
                 "Quartier Bugarama"
             ],
             "Bukeye": [
@@ -3761,8 +2983,8 @@
                 "Birwana",
                 "Buyaga",
                 "Kirika",
-                "Rabiro",
-                "Quartier Kibumbu"
+                "Quartier Kibumbu",
+                "Rabiro"
             ],
             "Mbuye": [
                 "Kigina",
@@ -3780,12 +3002,9 @@
             ],
             "Muramvya": [
                 "Biganda",
-                "Burambana",
                 "Masango",
-                "Murambi",
                 "Muramvya",
                 "Musagara",
-                "Quartier Mubarazi",
                 "Quartier Muramvya"
             ],
             "Nyarucamo": [
@@ -3800,13 +3019,11 @@
                 "Mirinzi",
                 "Mubira",
                 "Remera",
-                "Ruhinga",
                 "Shombo"
             ]
         },
         "MWARO": {
             "Bisoro": [
-                "Buburu",
                 "Gitaramuka",
                 "Kiganda",
                 "Mabaya",
@@ -3820,17 +3037,6 @@
                 "Nyagitongati",
                 "Nyamugari",
                 "Rwuya"
-            ],
-            "Gisozi": [
-                "Buburu",
-                "Gisozi",
-                "Kibimba",
-                "Musivya",
-                "Ndava",
-                "Nyamiyaga",
-                "Rweza",
-                "Quartier Nyarukinya",
-                "Quartier Ruyange"
             ],
             "Kanka": [
                 "Buhabwa",
@@ -3849,17 +3055,8 @@
                 "Ruvumu",
                 "Saswe"
             ],
-            "Makamba": [
-                "Gasenyi",
-                "Kirambi",
-                "Makamba",
-                "Nyamiyaga",
-                "Nyamurenge",
-                "Rwintare"
-            ],
             "Muyebe": [
                 "Bisoro",
-                "Gitunga",
                 "Migende",
                 "Murehe",
                 "Muyebe",
@@ -3867,24 +3064,7 @@
                 "Rwankangoma"
             ],
             "Mwaro": [
-                "Bisha",
-                "Gatare",
-                "Gihinga",
-                "Kizi",
-                "Ngara",
-                "Nkundusi",
-                "Rurtyazo",
-                "Quartier Gasumo",
-                "Quartier Kagoma",
-                "Quartier Ruvumera"
-            ],
-            "Nyakararo": [
-                "Butegana",
-                "Kiyange",
-                "Mugero",
-                "Musimbwe",
-                "Nyagahwabare",
-                "Nyakirwa"
+                "Ngara"
             ],
             "Rorero": [
                 "Kirika",
@@ -3895,11 +3075,8 @@
         },
         "NYABIHANGA": {
             "Fota": [
-                "Fota",
-                "Gahondo",
                 "Gatsinga",
-                "Kigarama",
-                "Ngorore"
+                "Kigarama"
             ],
             "Kibungere": [
                 "Buhogo",
@@ -3945,7 +3122,6 @@
                 "Gisirtye",
                 "Iteka",
                 "Kirambi",
-                "Musama",
                 "Nyamibanga"
             ],
             "Ndava": [
@@ -3962,34 +3138,6 @@
                 "Mubuga",
                 "Murama",
                 "Taba"
-            ],
-            "Nyarucamo": [
-                "Bugorora",
-                "Bunyange",
-                "Kiga",
-                "Nkurunzi",
-                "Nyamigogo"
-            ],
-            "Rusaka": [
-                "Gikebuka",
-                "Kibimba",
-                "Kiyege",
-                "Martyazo",
-                "Mpumbu",
-                "Mureba",
-                "Nyagashanga",
-                "Nyamugari",
-                "Rusaka",
-                "Shana",
-                "Quartier Gasekebuye",
-                "Quartier Gihini"
-            ],
-            "Yanza": [
-                "Kinyovu",
-                "Mahonda",
-                "Murambi",
-                "Namande",
-                "Rucunda"
             ]
         },
         "SHOMBO": {
@@ -4048,18 +3196,16 @@
                 "Bukirasazi",
                 "Gatabo",
                 "Gitaramuka",
-                "Kiryama",
-                "Nyabibuye"
+                "Kiryama"
             ],
             "Nyabikere": [
                 "Maramvya",
                 "Mbabazi",
                 "Mubanga",
-                "Ngugu",
+                "Ngugo",
                 "Nyarunazi",
                 "Ruyogoro",
-                "Rwandagaro",
-                "Quartier Gatamba"
+                "Rwandagaro"
             ],
             "Nyarurambi": [
                 "Kigora",
