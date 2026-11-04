@@ -112,9 +112,54 @@ public function scopeVisiblePour(Builder $query, User $utilisateur): Builder
 }
 
 
+/**
+ * Ramène une valeur de réponse à sa forme simple :
+ *   {"valeur":"Non","indexOption":1}   → "Non"
+ *   {"valeurs":["A","B"]}              → ["A","B"]
+ *   "Oui" / "2" / ["A","B"]            → inchangé
+ */
+private function normaliserValeur(mixed $valeur): mixed
+{
+    if (is_string($valeur)) {
+        $texte = trim($valeur);
+        if ($texte !== '' && in_array($texte[0], ['{', '['], true)) {
+            $decode = json_decode($texte, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $valeur = $decode;
+            }
+        }
+    }
 
+    if (is_array($valeur)) {
+        if (array_key_exists('valeur', $valeur)) {
+            return $this->normaliserValeur($valeur['valeur']);
+        }
+        if (array_key_exists('valeurs', $valeur)) {
+            return $this->normaliserValeur($valeur['valeurs']);
+        }
+    }
 
+    return $valeur;
+}
 
+private function valeurEstVide(mixed $valeur): bool
+{
+    if ($valeur === null) {
+        return true;
+    }
+    if (is_array($valeur)) {
+        foreach ($valeur as $element) {
+            if (! $this->valeurEstVide($element)) {
+                return false;
+            }
+        }
+        return true; // tableau vide ou sans élément renseigné
+    }
+    if (is_string($valeur)) {
+        return trim($valeur) === '';
+    }
+    return false;
+}
 
 
 /**
@@ -125,30 +170,20 @@ public function scopeVisiblePour(Builder $query, User $utilisateur): Builder
  */
 public function valeurReponse(string $codeQuestion): mixed
 {
-    // Rechercher l'identifiant de la question à partir de son code.
     $questionId = DB::table('questions')
         ->where('code', $codeQuestion)
         ->value('id');
 
-    // La question n'existe pas ou n'a pas encore de réponse.
     if ($questionId === null) {
         return null;
     }
 
-    // Récupérer la réponse associée à ce ménage et à cette question.
-    return $this->reponses()
+    $valeur = $this->reponses()
         ->where('question_id', $questionId)
         ->value('valeur');
+
+    return $this->normaliserValeur($valeur);   // ← changed
 }
-
-
-
-
-
-
-
-
-
 
 
 /**
@@ -221,11 +256,13 @@ public function questionnaireEstComplet(): bool
 
         // Si la réponse obligatoire manque ou est vide,
         // le questionnaire est incomplet.
-        $reponse = $this->reponses()
-            ->where('question_id', $question->id)
-            ->value('valeur');
+        $reponse = $this->normaliserValeur(
+            $this->reponses()
+                ->where('question_id', $question->id)
+                ->value('valeur')
+        );
 
-        if ($reponse === null || trim((string) $reponse) === '') {
+        if ($this->valeurEstVide($reponse)) {
             return false;
         }
     }
