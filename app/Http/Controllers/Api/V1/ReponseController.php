@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Menage;
 use App\Models\Parcelle;
 use App\Models\ReponseQuestionnaire;
+use App\Support\AccesTerritorial;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -24,7 +26,7 @@ class ReponseController extends Controller
     public function store(Request $request): JsonResponse
     {
         $donnees = $request->validate([
-            'menage_id' => ['required', 'exists:menages,id'],
+            'menage_id' => ['nullable'],
 
             // La parcelle doit exister ET appartenir au ménage indiqué.
             'parcelle_id' => [
@@ -37,13 +39,24 @@ class ReponseController extends Controller
             'valeur' => ['required'],
         ]);
 
+        $donnees['menage_id'] = $this->resoudreMenageId(
+            $request->user(),
+            $donnees['menage_id'],
+            $request->input('_menage_local_id')
+        );
+
+        AccesTerritorial::verifierMenage(
+            $request->user(),
+            (int) $donnees['menage_id']
+        );
+
         // Transaction : la réponse et la mise à jour du ménage sont enregistrées
         // ensemble, ou pas du tout.
         $reponse = DB::transaction(function () use ($donnees, $request) {
             $reponse = ReponseQuestionnaire::updateOrCreate(
                 [
                     'menage_id' => $donnees['menage_id'],
-                    'parcelle_id' => $donnees['parcelle_id'] ?? null,
+                    // 'parcelle_id' => $donnees['parcelle_id'] ?? null,
                     'question_id' => $donnees['question_id'],
                 ],
                 [
@@ -77,14 +90,34 @@ class ReponseController extends Controller
     {
         $donnees = $request->validate([
             'reponses' => ['required', 'array', 'min:1'],
-            'reponses.*.menage_id' => ['required', 'exists:menages,id'],
-            'reponses.*.parcelle_id' => ['nullable', 'exists:parcelles,id'],
+            'reponses.*.menage_id' => ['nullable'],
+            // 'reponses.*.parcelle_id' => ['nullable', 'exists:parcelles,id'],
             'reponses.*.question_id' => ['required', 'exists:questions,id'],
             'reponses.*.valeur' => ['required'],
         ]);
 
+        foreach ($donnees['reponses'] as $index => $reponse) {
+            $donnees['reponses'][$index]['menage_id'] = $this->resoudreMenageId(
+                $request->user(),
+                $reponse['menage_id'] ?? null,
+                $reponse['_menage_local_id'] ?? null
+            );
+        }
+
         // Chaque parcelle indiquée doit appartenir au ménage de sa réponse.
         $this->verifierParcellesDesMenages($donnees['reponses']);
+
+        // Vérifier tous les ménages du lot avant toute écriture.
+        $menageIds = collect($donnees['reponses'])
+            ->pluck('menage_id')
+            ->unique();
+
+        foreach ($menageIds as $menageId) {
+            AccesTerritorial::verifierMenage(
+                $request->user(),
+                (int) $menageId
+            );
+        }
 
         $enregistrees = DB::transaction(function () use ($donnees, $request) {
             // 1) Enregistrer toutes les réponses.
@@ -92,7 +125,7 @@ class ReponseController extends Controller
                 fn (array $reponse) => ReponseQuestionnaire::updateOrCreate(
                     [
                         'menage_id' => $reponse['menage_id'],
-                        'parcelle_id' => $reponse['parcelle_id'] ?? null,
+                        // 'parcelle_id' => $reponse['parcelle_id'] ?? null,
                         'question_id' => $reponse['question_id'],
                     ],
                     [
@@ -118,6 +151,26 @@ class ReponseController extends Controller
         ], 201);
     }
 
+    public function diagnosticSqlite()
+    {
+        try {
+            $db = DB::connection();
+            $db->select('SELECT 1');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Connexion a la base de donnees reussie',
+                'driver' => $db->getDriverName(),
+                'database' => $db->getDatabaseName(),
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     /**
      * Met à jour le ménage après une saisie : date de dernière activité,
      * enquêteur et statut « terminé ».
@@ -126,11 +179,19 @@ class ReponseController extends Controller
      * Un superviseur ou un administrateur qui corrige une réponse ne doit pas
      * devenir l'enquêteur du ménage.
      */
-    private function mettreAJourMenage(int $menageId, $utilisateur): void
-    {
-        $menage = Menage::findOrFail($menageId);
+    private function mettreAJourMenage(
+        int $menageId,
+        $utilisateur
+    ): void {
 
-        $champs = ['date_derniere_activite' => now()];
+        $menage = AccesTerritorial::verifierMenage(
+            $utilisateur,
+            $menageId
+        );
+
+        $champs = [
+            'date_derniere_activite' => now(),
+        ];
 
         if ($utilisateur && $utilisateur->role === 'enqueteur') {
             $champs['enqueteur_id'] = $utilisateur->id;
@@ -138,7 +199,6 @@ class ReponseController extends Controller
 
         $menage->update($champs);
 
-        // Recalcule le statut du ménage une fois les réponses enregistrées.
         $menage->verifierStatutTermine();
     }
 
@@ -171,6 +231,31 @@ class ReponseController extends Controller
                 ]);
             }
         }
+    }
+
+    private function resoudreMenageId(
+        $utilisateur,
+        mixed $menageId,
+        ?string $menageLocalId = null
+    ): int {
+        $idServeur = is_numeric($menageId)
+            && Menage::withoutGlobalScopes()->whereKey((int) $menageId)->exists()
+            ? (int) $menageId
+            : null;
+
+        if (!$idServeur && $menageLocalId) {
+            $idServeur = Cache::get(
+                "sync:menage:{$utilisateur->id}:{$menageLocalId}"
+            );
+        }
+
+        if (!$idServeur || !Menage::withoutGlobalScopes()->whereKey($idServeur)->exists()) {
+            throw ValidationException::withMessages([
+                'menage_id' => 'Le ménage local doit être synchronisé avant son questionnaire.',
+            ]);
+        }
+
+        return (int) $idServeur;
     }
 
     /**

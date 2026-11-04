@@ -2,6 +2,7 @@ import FiltresTerritoriaux from '@/Components/FiltresTerritoriaux';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
+import { detailsStatutMenage } from '@/Constants/statutsMenage';
 
 // ============================================================
 // STATUTS
@@ -22,11 +23,6 @@ const LIBELLES_STATUT = {
         texte: 'À faire',
         classe: 'bg-gray-100 text-gray-600 ring-1 ring-gray-200',
         point: 'bg-gray-400',
-    },
-    deja_commence: {
-        texte: 'Déjà commencé',
-        classe: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200',
-        point: 'bg-blue-500',
     },
 };
 
@@ -405,9 +401,6 @@ export default function Index({
                                     <option value="en_attente">
                                         En attente
                                     </option>
-                                    <option value="deja_commence">
-                                        Déjà commencé
-                                    </option>
                                     <option value="termine">Terminé</option>
                                 </select>
                             </Etiquette>
@@ -498,7 +491,7 @@ export default function Index({
                                             Questionnaire
                                         </th>
                                         <th className="px-6 py-3 font-semibold">
-                                            Chef de ménage
+                                            caféiculteur
                                         </th>
                                         <th className="px-6 py-3 font-semibold">
                                             Localisation
@@ -512,8 +505,7 @@ export default function Index({
                                         // Évite l'erreur si le statut est inconnu
                                         // ou si sa valeur est null.
                                         const statut =
-                                            LIBELLES_STATUT[menage.statut] ??
-                                            STATUT_PAR_DEFAUT;
+                                            detailsStatutMenage(menage.statut);
 
                                         const chefMenage = [
                                             menage.prenom_chef_menage,
@@ -639,7 +631,7 @@ export default function Index({
                                                         Aucun résultat
                                                     </p>
                                                     <p className="text-sm">
-                                                        Aucun ménage ne correspond aux
+                                                        Aucun Caféiculteur ne correspond aux
                                                         critères.
                                                     </p>
                                                 </div>

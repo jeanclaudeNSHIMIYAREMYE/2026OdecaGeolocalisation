@@ -6,8 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\Menage;
 use App\Models\Parcelle;
 use App\Models\ReponseQuestionnaire;
+use App\Models\User;
+use App\Support\AccesTerritorial;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 /**
  * POST /v1/sync/push
@@ -65,6 +69,17 @@ class SyncPushController extends Controller
 
         DB::beginTransaction();
 
+        $user = $request->user();
+        $collinesOk = $user->role === 'enqueteur'
+            ? $user->collines()->pluck('collines.id')->map(fn ($id) => (int) $id)->all()
+            : null; // null = pas de restriction (admin, superviseurs)
+
+        Log::info('Sync push sent data', [
+            'menages' => $menages,
+            'parcelles' => $parcelles,
+            'reponses' => $reponses,
+        ]);
+
         try {
             /*
              * ================================================================
@@ -77,6 +92,39 @@ class SyncPushController extends Controller
                 if (!$localId) continue;
 
                 try {
+                    if ($collinesOk !== null) {
+
+                        $collineId = (int) ($m['colline_id'] ?? 0);
+
+                        AccesTerritorial::verifierColline(
+                            $user,
+                            $collineId
+                        );
+
+                        $existant = Menage::withoutGlobalScopes()
+                            ->where('code_menage', $m['code_menage'] ?? '')
+                            ->first();
+
+                        if (
+                            $existant &&
+                            !in_array(
+                                (int) $existant->colline_id,
+                                $collinesOk,
+                                true
+                            )
+                        ) {
+                            $affecteACetteColline = $existant->collines()
+                                ->whereIn('collines.id', $collinesOk)
+                                ->exists();
+
+                            if (! $affecteACetteColline) {
+                                throw new \Illuminate\Auth\Access\AuthorizationException(
+                                    "Ménage hors de votre périmètre."
+                                );
+                            }
+                        }
+                    }
+
                     $menage = Menage::updateOrCreate(
                         ['code_menage' => $m['code_menage']],
                         [
@@ -88,15 +136,28 @@ class SyncPushController extends Controller
                             'photo_proprietaire'         => $m['photo_proprietaire'] ?? null,
                             'photo_piece_identification' => $m['photo_piece_identification'] ?? null,
                             'colline_id'                 => $m['colline_id'] ?? null,
-                            'statut'                     => $m['statut'] ?? 'a_faire',
-                            'source'                     => $m['source'] ?? 'terrain',
-                            'enqueteur_id'               => $m['enqueteur_id'] ?? null,
-                            'cree_par_id'                => $m['cree_par_id'] ?? null,
+                            'statut'                     => ($m['statut'] ?? 'a_faire') === 'deja_commence'
+                                ? 'en_attente'
+                                : ($m['statut'] ?? 'a_faire'),
+                            'source'                     => in_array(
+                                $m['source'] ?? null,
+                                ['pre_enregistre', 'terrain'],
+                                true
+                            )
+                                ? $m['source']
+                                : 'terrain',
+                            'enqueteur_id' => $collinesOk !== null ? $user->id : ($m['enqueteur_id'] ?? null),
+                            'cree_par_id'  => $m['cree_par_id'] ?? $user->id,
                             'date_derniere_activite'     => $m['date_derniere_activite'] ?? now(),
                         ]
                     );
 
-                    $mappingMenages[$localId] = $menage->id;
+                    if ($collinesOk !== null) {
+                        $menage->collines()->syncWithoutDetaching([$collineId]);
+                    }
+
+                    $mappingMenages[(string) $localId] = $menage->id;
+                    Cache::put($this->cleMappingMenage($user, $localId), $menage->id, now()->addDays(30));
                 } catch (\Throwable $e) {
                     $errors[] = [
                         '_local_id' => $localId,
@@ -126,12 +187,18 @@ class SyncPushController extends Controller
                     $menageId      = $p['menage_id'] ?? null;
 
                     if (!$menageId && $menageLocalId) {
-                        $menageId = $mappingMenages[$menageLocalId] ?? null;
+                        $menageId = $mappingMenages[(string) $menageLocalId] ?? null;
+                    }
+
+                    if (!$menageId && $menageLocalId) {
+                        $menageId = Cache::get($this->cleMappingMenage($user, $menageLocalId));
                     }
 
                     if (!$menageId) {
                         throw new \Exception("menage_id introuvable pour la parcelle (local: {$menageLocalId}).");
                     }
+
+                    Menage::findOrFail($menageId);
 
                     $polygone = null;
                     if (!empty($p['polygone'])) {
@@ -147,6 +214,7 @@ class SyncPushController extends Controller
                         'surface_verger'             => $p['surface_verger'] ?? null,
                         'etat_verger'                => $p['etat_verger'] ?? null,
                         'type'                       => $p['type'] ?? null,
+                        'type_parcelle'              => $p['type_parcelle'] ?? $p['type'] ?? null,
                         'latitude'                   => $p['latitude'] ?? null,
                         'longitude'                  => $p['longitude'] ?? null,
                         'altitude'                   => $p['altitude'] ?? null,
@@ -168,7 +236,7 @@ class SyncPushController extends Controller
                         $parcelle = Parcelle::create($donneesCommunes);
                     }
 
-                    $mappingParcelles[$localId] = $parcelle->id;
+                    $mappingParcelles[(string) $localId] = $parcelle->id;
                 } catch (\Throwable $e) {
                     $errors[] = [
                         '_local_id' => $localId,
@@ -193,12 +261,18 @@ class SyncPushController extends Controller
                     $menageId      = $r['menage_id'] ?? null;
 
                     if (!$menageId && $menageLocalId) {
-                        $menageId = $mappingMenages[$menageLocalId] ?? null;
+                        $menageId = $mappingMenages[(string) $menageLocalId] ?? null;
+                    }
+
+                    if (!$menageId && $menageLocalId) {
+                        $menageId = Cache::get($this->cleMappingMenage($user, $menageLocalId));
                     }
 
                     if (!$menageId) {
                         throw new \Exception("menage_id introuvable pour la réponse (local: {$menageLocalId}).");
                     }
+
+                    Menage::findOrFail($menageId);
 
                     $questionId = $r['question_id'] ?? null;
 
@@ -208,8 +282,8 @@ class SyncPushController extends Controller
 
                     // Sérialiser la valeur si c'est un tableau/objet
                     $valeur = $r['valeur'] ?? null;
-                    if (is_array($valeur)) {
-                        $valeur = json_encode($valeur);
+                    if (is_object($valeur)) {
+                        $valeur = get_object_vars($valeur);
                     }
 
                     $reponse = ReponseQuestionnaire::updateOrCreate(
@@ -222,7 +296,7 @@ class SyncPushController extends Controller
                         ]
                     );
 
-                    $mappingReponses[$localId] = $reponse->id;
+                    $mappingReponses[(string) $localId] = $reponse->id;
                 } catch (\Throwable $e) {
                     $errors[] = [
                         '_local_id' => $localId,
@@ -250,5 +324,10 @@ class SyncPushController extends Controller
             ],
             'errors' => $errors,
         ]);
+    }
+
+    private function cleMappingMenage(User $user, string $localId): string
+    {
+        return "sync:menage:{$user->id}:{$localId}";
     }
 }

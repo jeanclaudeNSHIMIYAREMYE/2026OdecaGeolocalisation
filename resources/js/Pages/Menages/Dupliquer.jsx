@@ -52,7 +52,7 @@ export default function Dupliquer({
     enqueteurs,
 }) {
     const { data, setData, post, processing, errors } = useForm({
-        code_menage: '',
+        code_menage: menage.code_menage ?? '',
         nom_chef_menage: menage.nom_chef_menage ?? '',
         prenom_chef_menage: menage.prenom_chef_menage ?? '',
         telephone: menage.telephone ?? '',
@@ -113,11 +113,11 @@ export default function Dupliquer({
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                         <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
-                            Gestion des ménages
+                            Gestion des Caféiculteurs
                         </p>
 
                         <h2 className="mt-1 break-words text-lg font-bold text-gray-800 sm:text-xl">
-                            Dupliquer le ménage {menage.code_menage}
+                            Dupliquer le Caféiculteur {menage.code_menage}
                         </h2>
                     </div>
 
@@ -126,7 +126,7 @@ export default function Dupliquer({
                         className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-gray-600 shadow-sm transition-all duration-200 hover:border-green-200 hover:bg-green-50 hover:text-green-700 sm:w-fit"
                     >
                         <span aria-hidden="true">←</span>
-                        Retour au ménage
+                        Retour au Caféiculteur
                     </Link>
                 </div>
             }
@@ -165,18 +165,19 @@ export default function Dupliquer({
 
                             <div className="min-w-0">
                                 <h3 className="text-sm font-semibold text-blue-800">
-                                    Duplication du ménage
+                                    Affectation du Caféiculteur
                                 </h3>
 
                                 <p className="mt-1 text-xs leading-5 text-blue-700 sm:text-sm">
-                                    Les informations du ménage d'origine sont
-                                    préremplies. Vous devez choisir un nouveau
-                                    code et une nouvelle localisation.
+                                    Le ménage conserve son code unique, ses
+                                    données, ses parcelles et ses réponses.
+                                    Cette opération ajoute une nouvelle colline
+                                    à ses affectations.
                                 </p>
 
                                 <p className="mt-2 text-xs leading-5 text-blue-700">
-                                    Les réponses au questionnaire et les
-                                    parcelles ne seront pas copiées.
+                                    Les enquêteurs associés à cette colline
+                                    pourront consulter le même ménage.
                                 </p>
                             </div>
                         </div>
@@ -190,12 +191,11 @@ export default function Dupliquer({
                         {/* En-tête */}
                         <div className="border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white px-4 py-5 sm:px-6">
                             <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600">
-                                Informations du nouveau ménage
+                                Nouvelle affectation territoriale
                             </h3>
 
                             <p className="mt-1 text-xs text-gray-400">
-                                Vérifiez les informations et complétez les
-                                champs nécessaires.
+                                Vérifiez le code et choisissez la colline.
                             </p>
                         </div>
 
@@ -205,28 +205,21 @@ export default function Dupliquer({
                             <section className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-5 lg:p-6">
                                 <TitreSection
                                     titre="Identification"
-                                    description="Définissez le nouveau code et les informations du chef de ménage."
+                                    description="Le code unique du ménage reste inchangé."
                                 />
 
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <div className="sm:col-span-2">
                                         <Champ
                                             id="code_menage"
-                                            label="Nouveau code ménage *"
+                                            label="Code ménage unique"
                                             error={errors.code_menage}
                                         >
                                             <TextInput
                                                 id="code_menage"
                                                 className="mt-1 block min-h-[44px] w-full rounded-xl text-base sm:text-sm"
                                                 value={data.code_menage}
-                                                onChange={(e) =>
-                                                    setData(
-                                                        'code_menage',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                placeholder={`Ex. ${menage.code_menage}-2`}
-                                                required
+                                                disabled
                                                 autoComplete="off"
                                             />
                                         </Champ>
@@ -513,7 +506,7 @@ export default function Dupliquer({
                                 >
                                     {processing
                                         ? 'Création en cours...'
-                                        : 'Créer la copie'}
+                                        : 'Affecter à cette colline'}
                                 </PrimaryButton>
                             </div>
                         </div>

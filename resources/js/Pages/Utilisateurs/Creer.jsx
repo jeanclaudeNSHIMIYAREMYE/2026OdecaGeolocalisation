@@ -22,7 +22,7 @@ export default function Creer({ roles, provinces, communes, zones, collines }) {
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Nouveau compte utilisateur
+                    Nouveau compte Caféiculteur
                 </h2>
             }
         >

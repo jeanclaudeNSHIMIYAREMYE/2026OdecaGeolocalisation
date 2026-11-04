@@ -35,6 +35,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
     //Route::get('/test',[TestController::class])->name("hello");
 
+    Route::get('/diagnostic-database', [ReponseController::class, 'diagnosticSqlite' ]);
+
     // --- Données de référence géographiques (à mettre en cache côté mobile) ---
     Route::prefix('geo')->name('geo.')->group(function () {
             Route::get('/provinces', [GeoReferenceController::class, 'provinces'])->name('provinces');

@@ -49,13 +49,14 @@ class SyncPullController extends Controller
     $depuis = $valide['since'] ?? null;
     $maintenant = now();
 
-    // Ménages accessibles à l'utilisateur connecté.
+    // Ménages accessibles par leur colline principale ou par une affectation pivot.
     $idsMenagesVisibles = Menage::query()->pluck('id');
 
     // Récupérer les ménages avec leurs réponses et les questions associées.
    $menages = Menage::query()
     ->with([
         'colline.zone.commune.province',
+        'collines.zone.commune.province',
         'reponses.question',
         'parcelles',
     ])

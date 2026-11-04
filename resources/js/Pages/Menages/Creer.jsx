@@ -35,11 +35,11 @@ export default function Creer({
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
-                            Gestion des ménages
+                            Gestion des Caféiculteurs
                         </p>
 
                         <h2 className="mt-1 text-lg font-bold text-gray-800 sm:text-xl">
-                            Nouveau ménage
+                            Nouveau Caféiculteur
                         </h2>
                     </div>
 
@@ -80,11 +80,11 @@ export default function Creer({
 
                             <div className="min-w-0">
                                 <h3 className="text-sm font-semibold text-green-800">
-                                    Enregistrement d'un nouveau ménage
+                                    Enregistrement d'un nouveau Caféiculteur
                                 </h3>
 
                                 <p className="mt-1 text-xs leading-5 text-green-700 sm:text-sm">
-                                    Renseignez les informations du chef de ménage,
+                                    Renseignez les informations du Caféiculteur,
                                     sa localisation et l'enquêteur responsable.
                                     Les champs obligatoires doivent être complétés
                                     avant l'enregistrement.
@@ -97,7 +97,7 @@ export default function Creer({
                     <div className="overflow-hidden rounded-xl bg-white shadow-sm">
                         <div className="border-b border-gray-100 px-4 py-4 sm:px-6">
                             <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600">
-                                Informations du ménage
+                                Informations du Caféiculteur
                             </h3>
 
                             <p className="mt-1 text-xs text-gray-400">

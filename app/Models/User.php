@@ -6,6 +6,7 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -35,16 +36,15 @@ class User extends Authenticatable
      *
      * @return array<string, string>
      */
- protected function casts(): array
-{
-    return [
-        'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-        'actif' => 'boolean',
-        'is_super_admin' => 'boolean',
-    ];
-}
-
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+            'actif' => 'boolean',
+            'is_super_admin' => 'boolean',
+        ];
+    }
 
     public function province(): BelongsTo
     {
@@ -66,13 +66,14 @@ class User extends Authenticatable
      * Un enquêteur peut être affecté à une ou plusieurs collines,
      * potentiellement réparties sur plusieurs zones/communes.
      */
-    public function estSuperAdmin(): bool
-{
-    return $this->is_super_admin === true;
-}
     public function collines(): BelongsToMany
     {
         return $this->belongsToMany(Colline::class, 'colline_user')->withTimestamps();
+    }
+
+    public function estSuperAdmin(): bool
+    {
+        return $this->is_super_admin === true;
     }
 
     public function estAdmin(): bool
@@ -97,26 +98,36 @@ class User extends Authenticatable
     /**
      * Restreint la liste des comptes visibles pour la page "Gestion des
      * utilisateurs" selon la portée territoriale du superviseur connecté.
-     * Les enquêteurs restent visibles à tous les superviseurs habilités à
-     * consulter cette page, indépendamment de leurs collines d'affectation
-     * (celles-ci ne servent qu'à restreindre leur périmètre de saisie).
      */
-    public function scopeVisiblePour(\Illuminate\Database\Eloquent\Builder $query, self $utilisateur): \Illuminate\Database\Eloquent\Builder
+    public function scopeVisiblePour(Builder $query, self $utilisateur): Builder
     {
         return match ($utilisateur->role) {
             'admin', 'superviseur_national' => $query,
 
-            'superviseur_provincial' => $query->where(
-                fn ($q) => $q->where('province_id', $utilisateur->province_id)->orWhere('role', 'enqueteur')
-            ),
+            'superviseur_provincial' => $query->where(function ($q) use ($utilisateur) {
+                $q->where('province_id', $utilisateur->province_id)
+                    ->orWhereHas('commune', function ($commune) use ($utilisateur) {
+                        $commune->where('province_id', $utilisateur->province_id);
+                    })
+                    ->orWhere(function ($q) use ($utilisateur) {
+                        $q->where('role', 'enqueteur')
+                            ->whereHas('collines.zone.commune', function ($commune) use ($utilisateur) {
+                                $commune->where('province_id', $utilisateur->province_id);
+                            });
+                    });
+            }),
 
-            'superviseur_communal' => $query->where(
-                fn ($q) => $q->where('commune_id', $utilisateur->commune_id)->orWhere('role', 'enqueteur')
-            ),
+            'superviseur_communal' => $query->where(function ($q) use ($utilisateur) {
+                $q->where('commune_id', $utilisateur->commune_id)
+                    ->orWhere(function ($q) use ($utilisateur) {
+                        $q->where('role', 'enqueteur')
+                            ->whereHas('collines.zone', function ($zone) use ($utilisateur) {
+                                $zone->where('commune_id', $utilisateur->commune_id);
+                            });
+                    });
+            }),
 
             default => $query->whereRaw('1 = 0'),
         };
     }
-
-
 }

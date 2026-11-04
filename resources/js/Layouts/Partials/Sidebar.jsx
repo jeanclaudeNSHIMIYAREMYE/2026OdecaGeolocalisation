@@ -386,7 +386,7 @@ export default function Sidebar() {
                 aria-label="Ouvrir le menu de navigation"
                 aria-expanded={ouvert}
                 aria-controls="sidebar-navigation"
-                className="lnc-bouton-menu fixed left-3 top-3 z-40 flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-lg shadow-green-900/30 ring-1 ring-white/20 transition active:scale-95 hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700 focus-visible:ring-offset-2 sm:left-4 sm:top-4 lg:hidden"
+                className="lnc-bouton-menu fixed left-3 top-3 z-40 flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-lg shadow-gray-900/30 ring-1 ring-white/20 transition active:scale-95 hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700 focus-visible:ring-offset-2 sm:left-4 sm:top-4 lg:hidden"
             >
                 <svg
                     className="h-5 w-5"

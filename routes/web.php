@@ -125,14 +125,16 @@ Route::middleware(['auth', 'verified', 'role:admin,superviseur_national,supervis
     ->name('utilisateurs.')
     ->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('index');
+        Route::get('/creer', [UserController::class, 'create'])->name('create');
+        Route::post('/', [UserController::class, 'store'])->name('store');
 
         Route::middleware('role:admin')->group(function () {
-            Route::get('/creer', [UserController::class, 'create'])->name('create');
-            Route::post('/', [UserController::class, 'store'])->name('store');
+            Route::delete('/{utilisateur}', [UserController::class, 'destroy'])->name('destroy');
+            });
+            Route::get('/export', [UserController::class, 'exporter'])->name('export');
+            Route::patch('/{utilisateur}/basculer-statut', [UserController::class, 'basculerStatut'])->name('basculer-statut');
             Route::get('/{utilisateur}/modifier', [UserController::class, 'edit'])->name('edit');
             Route::put('/{utilisateur}', [UserController::class, 'update'])->name('update');
-            Route::patch('/{utilisateur}/basculer-statut', [UserController::class, 'basculerStatut'])->name('basculer-statut');
-        });
     });
 
 require __DIR__.'/auth.php';

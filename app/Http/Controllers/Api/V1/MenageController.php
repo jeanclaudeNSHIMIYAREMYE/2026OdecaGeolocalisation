@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreMenageRequest;
 use App\Http\Resources\Api\MenageResource;
 use App\Models\Menage;
+use App\Support\AccesTerritorial;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -15,6 +16,11 @@ class MenageController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
+
+        AccesTerritorial::verifierColline(
+            $user,
+            (int) $request->input('colline_id')
+        );
 
         $collineIds = $user->collines()->pluck('collines.id');
         $menages = Menage::query()
@@ -91,7 +97,9 @@ class MenageController extends Controller
          */
         $data['code_menage'] = $codeMenage;
         $data['source'] = 'terrain';
-        $data['statut'] = $request->input('statut', 'a_faire');
+        $data['statut'] = $request->input('statut') === 'deja_commence'
+            ? 'en_attente'
+            : $request->input('statut', 'a_faire');
         $data['enqueteur_id'] = $utilisateur->id;
         $data['cree_par_id'] = $utilisateur->id;
         $data['date_derniere_activite'] = now();
@@ -118,12 +126,18 @@ class MenageController extends Controller
             ->setStatusCode(201);
     }
 
-  public function show(Menage $menage)
+  public function show(Request $request, Menage $menage)
 {
+    AccesTerritorial::verifierMenage(
+        $request->user(),
+        (int) $menage->id
+    );
+
     return new MenageResource(
         $menage->load([
             'colline.zone.commune.province',
-            'parcelles', 'reponses'
+            'parcelles',
+            'reponses'
         ])
     );
 }
@@ -132,7 +146,17 @@ class MenageController extends Controller
         StoreMenageRequest $request,
         Menage $menage
     ) {
+        AccesTerritorial::verifierMenage(
+            $request->user(),
+            (int) $menage->id
+        );
+
         $data = $request->validated();
+
+        // Empêcher le changement de colline par un enquêteur.
+        if ($request->user()->role === 'enqueteur') {
+            unset($data['colline_id']);
+        }
 
         /*
          * Replace proprietor photo if a new one was uploaded.
@@ -232,8 +256,13 @@ class MenageController extends Controller
         return $code;
     }*/
 
-        private function genererCodeMenage(int $collineId): string
+    private function genererCodeMenage(int $collineId): string
 {
+    AccesTerritorial::verifierColline(
+        auth()->user(),
+        $collineId
+    );
+
     $colline = \App\Models\Colline::with(
         'zone.commune.province'
     )->findOrFail($collineId);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreParcelleRequest;
 use App\Http\Resources\Api\ParcelleResource;
+use App\Support\AccesTerritorial;
 use App\Models\Menage;
 use App\Models\Parcelle;
 use Illuminate\Support\Facades\Storage;
@@ -14,6 +15,11 @@ class ParcelleController extends Controller
 {
     public function index(Menage $menage)
     {
+        AccesTerritorial::verifierMenage(
+            request()->user(),
+            (int) $menage->id
+        );
+
         $parcelles = $menage->parcelles()
             ->orderByDesc('updated_at')
             ->get();
@@ -23,6 +29,11 @@ class ParcelleController extends Controller
 
     public function store(StoreParcelleRequest $request, Menage $menage)
     {
+        AccesTerritorial::verifierMenage(
+            $request->user(),
+            (int) $menage->id
+        );
+
         $data = $request->validated();
 
         /*
@@ -67,8 +78,17 @@ class ParcelleController extends Controller
         StoreParcelleRequest $request,
         Parcelle $parcelle
     ) {
+        $menage = AccesTerritorial::verifierMenage(
+            $request->user(),
+            (int) $parcelle->menage_id
+        );
+
         $data = $request->validated();
 
+        // Empêcher le déplacement d'une parcelle
+        // vers un autre ménage par modification du menage_id.
+        unset($data['menage_id']);
+        
         /*
          * Si une nouvelle photo est envoyée,
          * supprimer l'ancienne puis enregistrer la nouvelle.
@@ -88,11 +108,11 @@ class ParcelleController extends Controller
 
         $parcelle->update($data);
 
-        $parcelle->menage()->update([
+        $menage->update([
             'date_derniere_activite' => now(),
             'enqueteur_id' => auth()->id()
         ]);
-        $parcelle->menage()->verifierStatutTermine();
+        $menage->verifierStatutTermine();
 
         return new ParcelleResource(
             $parcelle->fresh()
@@ -101,6 +121,11 @@ class ParcelleController extends Controller
 
     public function destroy(Parcelle $parcelle)
     {
+        $menage = AccesTerritorial::verifierMenage(
+            $request->user(),
+            (int) $parcelle->menage_id
+        );
+
         /*
          * Supprimer la photo associée avant de supprimer
          * la parcelle.
@@ -110,9 +135,7 @@ class ParcelleController extends Controller
                 $parcelle->piece_justificative_photo
             );
         }
-
-        $menage = $parcelle->menage;
-
+        
         $parcelle->delete();
 
         if ($menage) {

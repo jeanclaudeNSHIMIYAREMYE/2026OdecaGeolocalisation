@@ -50,6 +50,30 @@ class MenageResource extends JsonResource
                     ] : null,
                 ];
             }),
+            'collines' => $this->whenLoaded('collines', function () {
+                return $this->collines->map(function ($colline) {
+                    $zone = $colline->zone;
+                    $commune = $zone?->commune;
+                    $province = $commune?->province;
+
+                    return [
+                        'id' => $colline->id,
+                        'nom' => $colline->nom,
+                        'zone' => $zone ? [
+                            'id' => $zone->id,
+                            'nom' => $zone->nom,
+                            'commune' => $commune ? [
+                                'id' => $commune->id,
+                                'nom' => $commune->nom,
+                                'province' => $province ? [
+                                    'id' => $province->id,
+                                    'nom' => $province->nom,
+                                ] : null,
+                            ] : null,
+                        ] : null,
+                    ];
+                })->values();
+            }),
 
             'statut' => $this->statut,
             'source' => $this->source,

@@ -24,6 +24,11 @@ class Colline extends Model
         return $this->hasMany(Menage::class);
     }
 
+    public function menagesAffectes(): BelongsToMany
+    {
+        return $this->belongsToMany(Menage::class, 'menage_colline')->withTimestamps();
+    }
+
 
     public function enqueteurs(): BelongsToMany
     {

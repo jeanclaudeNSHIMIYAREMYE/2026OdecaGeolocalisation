@@ -3,6 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import BoutonImporterMenages from './Partials/BoutonImporterMenages';
+import { detailsStatutMenage } from '@/Constants/statutsMenage';
 
 // ============================================================
 // STATUTS
@@ -18,11 +19,6 @@ const LIBELLES_STATUT = {
         texte: 'En attente',
         classe: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
         point: 'bg-amber-500',
-    },
-    deja_commence: {
-        texte: 'Déjà commencé',
-        classe: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200',
-        point: 'bg-blue-500',
     },
     termine: {
         texte: 'Terminé',
@@ -265,7 +261,7 @@ export default function Index({
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Ménages
+                    Caféiculteurs
                 </h2>
             }
         >
@@ -338,7 +334,7 @@ export default function Index({
                                         type="text"
                                         value={recherche}
                                         onChange={(e) => setRecherche(e.target.value)}
-                                        placeholder="Code ménage, nom du chef de ménage…"
+                                        placeholder="Code Caféiculteur, nom du Caféiculteur…"
                                         className={`${CLASSE_SELECT} py-2.5 pl-10 pr-10`}
                                         autoComplete="off"
                                     />
@@ -384,7 +380,6 @@ export default function Index({
                                     <option value="">Tous les statuts</option>
                                     <option value="a_faire">À faire</option>
                                     <option value="en_attente">En attente</option>
-                                    <option value="deja_commence">Déjà commencé</option>
                                     <option value="termine">Terminé</option>
                                 </select>
                             </Etiquette>
@@ -401,7 +396,7 @@ export default function Index({
                                         })
                                     }
                                 >
-                                    <option value="">Tous les ménages</option>
+                                    <option value="">Tous les Caféiculteurs</option>
                                     <option value="Oui">Possèdent des vergers</option>
                                     <option value="Non">Ne possèdent pas de vergers</option>
                                 </select>
@@ -461,10 +456,10 @@ export default function Index({
 
                                     <div>
                                         <h3 className="text-lg font-bold tracking-tight text-white">
-                                            Liste des ménages
+                                            Liste des Caféiculteurs
                                         </h3>
                                         <p className="text-sm text-green-100/70">
-                                            ménage(s) trouvé(s)
+                                            Caféiculteur(s) trouvé(s)
                                         </p>
                                     </div>
                                 </div>
@@ -489,7 +484,7 @@ export default function Index({
                                             className="men-bouton-principal men-brillance inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white transition duration-200 hover:-translate-y-0.5 hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 active:scale-95"
                                         >
                                             <span aria-hidden="true" className="text-base leading-none">+</span>
-                                            Nouveau ménage
+                                            Nouveau Caféiculteur
                                         </Link>
                                     )}
                                 </div>
@@ -507,7 +502,7 @@ export default function Index({
                                 <thead className="border-b border-green-100 bg-gradient-to-r from-green-50 via-white to-red-50/40 text-xs text-gray-600">
                                     <tr>
                                         <th className="px-6 py-3 font-semibold">Code</th>
-                                        <th className="px-6 py-3 font-semibold">Chef de ménage</th>
+                                        <th className="px-6 py-3 font-semibold">Caféiculteur</th>
                                         <th className="px-6 py-3 font-semibold">Localisation</th>
                                         <th className="px-6 py-3 font-semibold">Enquêteur</th>
                                         <th className="px-6 py-3 font-semibold">Statut</th>
@@ -517,8 +512,7 @@ export default function Index({
                                 <tbody className="divide-y divide-gray-100">
                                     {lignes.map((menage, index) => {
                                         const statut =
-                                            LIBELLES_STATUT[menage.statut] ??
-                                            STATUT_PAR_DEFAUT;
+                                            detailsStatutMenage(menage.statut);
 
                                         const chefMenage = [
                                             menage.prenom_chef_menage,
@@ -620,7 +614,7 @@ export default function Index({
                                                     </span>
                                                     <p className="font-medium text-gray-700">Aucun résultat</p>
                                                     <p className="text-sm">
-                                                        Aucun ménage ne correspond aux critères.
+                                                        Aucun Caféiculteur ne correspond aux critères.
                                                     </p>
                                                 </div>
                                             </td>

@@ -427,7 +427,7 @@ export default function Index({
                     {/* KPI globaux */}
                     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
                         <CarteKpi
-                            titre="Ménages"
+                            titre="Caféiculteurs"
                             valeur={kpis.total_menages}
                             fond="sta-fond-sombre"
                             icone={ICONES.menages}
@@ -539,7 +539,7 @@ export default function Index({
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                         {/* Avancement global */}
                         <div className={`${CLASSE_CARTE} overflow-hidden`} style={{ animationDelay: '120ms' }}>
-                            <TitreCarte>Avancement des ménages</TitreCarte>
+                            <TitreCarte>Avancement des Caféiculteurs</TitreCarte>
                             <div className="space-y-5 p-5">
                                 {avancement.map((a) => (
                                     <BarreProgression
@@ -618,7 +618,7 @@ export default function Index({
                         <TitreCarte>Répartition par province</TitreCarte>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left text-sm">
-                                <EnTeteTableau colonnes={['Province', 'Ménages', 'Dont terminés', 'Parcelles', 'Pieds de café']} />
+                                <EnTeteTableau colonnes={['Province', 'Caféiculteurs', 'Dont terminés', 'Parcelles', 'Pieds de café']} />
                                 <tbody className="divide-y divide-gray-100">
                                     {parProvince.map((p, index) => (
                                         <tr
@@ -648,7 +648,7 @@ export default function Index({
                         <TitreCarte>Classement par enquêteur</TitreCarte>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left text-sm">
-                                <EnTeteTableau colonnes={['Enquêteur', 'Ménages', 'Dont terminés', 'Parcelles', 'Pieds de café']} />
+                                <EnTeteTableau colonnes={['Enquêteurs', 'Caféiculteurs', 'Dont terminés', 'Parcelles', 'Pieds de café']} />
                                 <tbody className="divide-y divide-gray-100">
                                     {parEnqueteur.map((e, index) => (
                                         <tr
@@ -688,7 +688,7 @@ export default function Index({
                         </div>
 
                         <div className={`${CLASSE_CARTE} overflow-hidden`}>
-                            <TitreCarte>Type de ménage</TitreCarte>
+                            <TitreCarte>Type de Caféiculteur</TitreCarte>
                             <div className="p-5">
                                 <ListeRepartition donnees={parTypeMenage} couleur="#CE1126" />
                             </div>

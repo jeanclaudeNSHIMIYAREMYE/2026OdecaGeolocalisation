@@ -58,7 +58,10 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
             ))
             ->when($filtres['statut'] ?? null, fn ($q, $v) => $q->where('statut', $v))
             ->when($filtres['enqueteur_id'] ?? null, fn ($q, $v) => $q->where('enqueteur_id', $v))
-            ->when($filtres['colline_id'] ?? null, fn ($q, $v) => $q->where('colline_id', $v))
+            ->when($filtres['colline_id'] ?? null, fn ($q, $v) => $q->where(function ($q) use ($v) {
+                $q->where('colline_id', $v)
+                    ->orWhereHas('collines', fn ($colline) => $colline->whereKey($v));
+            }))
             ->when($filtres['zone_id'] ?? null, fn ($q, $v) => $q->whereHas('colline', fn ($q) => $q->where('zone_id', $v)))
             ->when($filtres['commune_id'] ?? null, fn ($q, $v) => $q->whereHas('colline.zone', fn ($q) => $q->where('commune_id', $v)))
             ->when($filtres['province_id'] ?? null, fn ($q, $v) => $q->whereHas('colline.zone.commune', fn ($q) => $q->where('province_id', $v)))
@@ -115,7 +118,13 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
     {
         $this->authorize('view', $menage);
 
-        $menage->load(['colline.zone.commune.province', 'enqueteur:id,name', 'parcelles', 'reponses.question']);
+        $menage->load([
+            'colline.zone.commune.province',
+            'collines.zone.commune.province',
+            'enqueteur:id,name',
+            'parcelles',
+            'reponses.question',
+        ]);
 
         $menage->parcelles->each(function (Parcelle $parcelle) {
             $parcelle->superficie_ha = $this->superficieHectares($parcelle->polygone);
@@ -209,7 +218,7 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
             'colline_id' => ['required', 'exists:collines,id'],
             'statut' => [
                 'required',
-                Rule::in(['a_faire', 'en_attente', 'deja_commence', 'termine']),
+                Rule::in(['a_faire', 'en_attente', 'termine']),
             ],
             'enqueteur_id' => ['nullable', 'exists:users,id'],
         ]);
@@ -290,27 +299,20 @@ public function enregistrerCopie(Request $request, Menage $menage): RedirectResp
     $this->authorize('create', Menage::class);
 
     $donnees = $request->validate([
-        'code_menage' => ['required', 'string', 'max:50', Rule::unique('menages', 'code_menage')],
-        'nom_chef_menage' => ['nullable', 'string', 'max:255'],
-        'prenom_chef_menage' => ['nullable', 'string', 'max:255'],
-        'telephone' => ['nullable', 'string', 'max:30'],
-        'cni' => ['nullable', 'string', 'max:50'],
         'colline_id' => ['required', 'exists:collines,id'],
         'enqueteur_id' => ['nullable', 'exists:users,id'],
     ]);
 
-    $copie = Menage::create([
-        ...$donnees,
-        'type_menage' => $menage->type_menage,
-        'photo_proprietaire' => $menage->photo_proprietaire,
-        'photo_piece_identification' => $menage->photo_piece_identification,
-        'statut' => 'a_faire',
-        'source' => 'pre_enregistre',
-        'cree_par_id' => $request->user()->id,
-    ]);
+    $menage->collines()->syncWithoutDetaching([$donnees['colline_id']]);
+
+    if (!empty($donnees['enqueteur_id'])) {
+        $menage->update([
+            'enqueteur_id' => $donnees['enqueteur_id'],
+        ]);
+    }
 
     return redirect()
-        ->route('menages.show', $copie)
-        ->with('succes', "Ménage copié depuis {$menage->code_menage}.");
+        ->route('menages.show', $menage)
+        ->with('succes', "Le ménage {$menage->code_menage} a été affecté à la colline sélectionnée.");
 }
 }

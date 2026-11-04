@@ -22,10 +22,13 @@ function CarteRapport({ points, menageCible }) {
 
             if (!carteRef.current) {
                 carteRef.current = L.map(conteneurRef.current).setView([-3.373, 29.918], 8);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; OpenStreetMap',
-                    maxZoom: 18,
-                }).addTo(carteRef.current);
+                L.tileLayer(
+                    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    {
+                        attribution: '&copy; OpenStreetMap',
+                        maxZoom: 18,
+                    },
+                ).addTo(carteRef.current);
                 coucheMarqueursRef.current = L.layerGroup().addTo(carteRef.current);
                 couchePolygonesRef.current = L.layerGroup().addTo(carteRef.current);
             }
@@ -433,7 +436,7 @@ export default function Index({
                             <form onSubmit={soumettreRecherche} className="flex items-end gap-2">
                                 <div>
                                     <label className={CLASSE_LABEL}>
-                                        Rechercher un ménage (code ou nom)
+                                        Rechercher un Caféiculteur (code ou nom)
                                     </label>
                                     <div className="group relative">
                                         <svg
@@ -490,7 +493,7 @@ export default function Index({
                                             <tr>
                                                 <th className="px-6 py-3 font-semibold">Enquêteur</th>
                                                 <th className="px-6 py-3 font-semibold">Statut</th>
-                                                <th className="px-6 py-3 font-semibold">Ménages</th>
+                                                <th className="px-6 py-3 font-semibold">Caféiculteur</th>
                                                 <th className="px-6 py-3 font-semibold">Parcelles géolocalisées</th>
                                                 <th className="px-6 py-3 font-semibold">Pieds de café</th>
                                             </tr>
@@ -599,7 +602,7 @@ export default function Index({
                                 {menageCible && (
                                     <span className="inline-flex items-center gap-1.5">
                                         <span className="h-2.5 w-2.5 rounded-full bg-[#CE1126]" />
-                                        Ménage recherché
+                                        Caféiculteur recherché
                                     </span>
                                 )}
                             </div>

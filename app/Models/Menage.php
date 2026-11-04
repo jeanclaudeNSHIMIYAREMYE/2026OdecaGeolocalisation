@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 
@@ -43,6 +44,11 @@ class Menage extends Model
     public function colline(): BelongsTo
     {
         return $this->belongsTo(Colline::class);
+    }
+
+    public function collines(): BelongsToMany
+    {
+        return $this->belongsToMany(Colline::class, 'menage_colline')->withTimestamps();
     }
 
     public function enqueteur(): BelongsTo
@@ -93,9 +99,10 @@ public function scopeVisiblePour(Builder $query, User $utilisateur): Builder
                     'colline.enqueteurs',
                     fn (Builder $collineQuery) =>
                         $collineQuery->where('users.id', $utilisateur->id)
-                )->orWhere(
-                    'enqueteur_id',
-                    $utilisateur->id
+                )->orWhereHas(
+                    'collines.enqueteurs',
+                    fn (Builder $collineQuery) =>
+                        $collineQuery->where('users.id', $utilisateur->id)
                 );
             }
         ),

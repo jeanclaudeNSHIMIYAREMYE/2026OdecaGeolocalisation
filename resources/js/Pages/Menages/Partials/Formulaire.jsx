@@ -194,7 +194,6 @@ export default function Formulaire({
                     >
                         <option value="a_faire">À faire</option>
                         <option value="en_attente">En attente</option>
-                        <option value="deja_commence">Déjà commencé</option>
                         <option value="termine">Terminé</option>
                     </select>
                 </div>

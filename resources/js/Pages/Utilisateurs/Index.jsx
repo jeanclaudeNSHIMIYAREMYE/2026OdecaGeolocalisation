@@ -140,6 +140,9 @@ const STYLES_PAGE = `
 export default function Index({
     utilisateurs,
     peutGerer,
+    peutModifier,
+    peutDesactiver,
+    peutAjouter,
     roles,
     provinces,
     communes,
@@ -252,6 +255,16 @@ export default function Index({
         );
     };
 
+    const supprimerUtilisateur = (utilisateur) => {
+        if (!confirm(`Voulez-vous vraiment supprimer définitivement le compte de ${utilisateur.name} ? Cette action est irréversible.`)) {
+            return;
+        }
+
+        router.delete(route('utilisateurs.destroy', utilisateur.id), {
+            preserveScroll: true,
+        });
+    };
+
     const pages = Array.from(
         {
             length: Math.max(
@@ -335,15 +348,30 @@ export default function Index({
                                     </div>
                                 </div>
 
-                                {peutGerer && (
+                                <div className="flex flex-wrap gap-2">
+                                    <a
+                                        href={route('utilisateurs.export')}
+                                        title="Exporter la liste Excel"
+                                        aria-label="Exporter la liste des utilisateurs au format Excel"
+                                        className="inline-flex items-center gap-2 rounded-lg border border-green-200 bg-white px-4 py-2.5 text-sm font-semibold text-green-800 shadow-sm transition hover:-translate-y-0.5 hover:bg-green-50"
+                                    >
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14" />
+                                        </svg>
+                                        <span className="sr-only sm:not-sr-only">Exporter Excel</span>
+                                    </a>
+                                {peutAjouter && (
                                     <Link
                                         href={route('utilisateurs.create')}
+                                        title="Ajouter un utilisateur"
+                                        aria-label="Ajouter un nouvel utilisateur"
                                         className="usr-bouton-principal usr-brillance inline-flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition duration-200 hover:-translate-y-0.5 hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 active:scale-95"
                                     >
                                         <span aria-hidden="true" className="text-base leading-none">+</span>
                                         Nouveau compte
                                     </Link>
                                 )}
+                                </div>
                             </div>
 
                             {/* Bande du drapeau, remplacée par une barre pendant le chargement */}
@@ -536,7 +564,7 @@ export default function Index({
                                         ))}
                                         <th className="px-6 py-3 font-semibold">Portée</th>
                                         <th className="px-6 py-3 font-semibold">Statut</th>
-                                        {peutGerer && (
+                                        {peutModifier && (
                                             <th className="px-6 py-3 text-right font-semibold">
                                                 Actions
                                             </th>
@@ -548,7 +576,7 @@ export default function Index({
                                     {utilisateurs.data.length === 0 ? (
                                         <tr>
                                             <td
-                                                colSpan={peutGerer ? 5 : 4}
+                                                colSpan={peutModifier ? 5 : 4}
                                                 className="px-6 py-16 text-center"
                                             >
                                                 <div className="anim-alerte mx-auto flex max-w-xs flex-col items-center gap-3 text-gray-500">
@@ -640,12 +668,14 @@ export default function Index({
                                                     </span>
                                                 </td>
 
-                                                {peutGerer && (
+                                                {peutModifier && (
                                                     <td className="whitespace-nowrap px-6 py-4">
                                                         <div className="flex items-center justify-end gap-2">
                                                             <Link
                                                                 href={route('utilisateurs.edit', utilisateur.id)}
-                                                                className="inline-flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm font-semibold text-green-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-green-300 hover:bg-green-100 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2"
+                                                                title="Modifier l'utilisateur"
+                                                                aria-label={`Modifier ${utilisateur.name}`}
+                                                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
                                                             >
                                                                 <svg
                                                                     xmlns="http://www.w3.org/2000/svg"
@@ -662,14 +692,15 @@ export default function Index({
                                                                         d="m16.862 4.487 1.687-1.687a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z"
                                                                     />
                                                                 </svg>
-                                                                Modifier
                                                             </Link>
 
-                                                            {!utilisateur.is_super_admin && (
+                                                            {peutDesactiver && !utilisateur.is_super_admin && (
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => basculerStatut(utilisateur)}
-                                                                    className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                                                                    title={utilisateur.actif ? "Désactiver l'utilisateur" : "Réactiver l'utilisateur"}
+                                                                    aria-label={`${utilisateur.actif ? 'Désactiver' : 'Réactiver'} ${utilisateur.name}`}
+                                                                    className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
                                                                         utilisateur.actif
                                                                             ? 'border-red-200 bg-red-50 text-red-700 hover:border-red-300 hover:bg-red-100 focus-visible:ring-red-500'
                                                                             : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-100 focus-visible:ring-emerald-500'
@@ -695,8 +726,20 @@ export default function Index({
                                                                             }
                                                                         />
                                                                     </svg>
-                                                                    {utilisateur.actif ? 'Désactiver' : 'Réactiver'}
                                                                 </button>
+                                                            )}
+                                                            {peutGerer && !utilisateur.is_super_admin && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => supprimerUtilisateur(utilisateur)}
+                                                                                                    title="Supprimer définitivement l'utilisateur"
+                                                                                                    aria-label={`Supprimer ${utilisateur.name}`}
+                                                                                                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+                                                                >
+                                                                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4" aria-hidden="true">
+                                                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 3h6m-8 4h10m-9 0 .7 13h6.6l.7-13M10 10v6m4-6v6" />
+                                                                                                    </svg>
+                                                                                                </button>
                                                             )}
                                                         </div>
                                                     </td>

@@ -10,7 +10,7 @@ return new class extends Migration
     {
         if (! Schema::hasColumn('parcelles', 'type_parcelle')) {
             Schema::table('parcelles', function (Blueprint $table) {
-                $table->string('type_parcelle')->nullable()->after('type_verger');
+                $table->string('type_parcelle')->nullable();
             });
         }
     }
