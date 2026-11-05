@@ -14,6 +14,8 @@ export default function Creer({
         code_menage: '',
         nom_chef_menage: '',
         prenom_chef_menage: '',
+        sexe: '',
+        date_naissance: '',
         telephone: '',
         cni: '',
         colline_id: '',

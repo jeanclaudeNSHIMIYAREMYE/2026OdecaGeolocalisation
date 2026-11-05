@@ -9,6 +9,7 @@ export default function Creer({ roles, provinces, communes, zones, collines }) {
         role: '',
         province_id: '',
         commune_id: '',
+        communes_ids: [],
         collines_ids: [],
         password: '',
     });
@@ -22,7 +23,7 @@ export default function Creer({ roles, provinces, communes, zones, collines }) {
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Nouveau compte Caféiculteur
+                    Nouveau compte
                 </h2>
             }
         >

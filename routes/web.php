@@ -100,11 +100,11 @@ Route::delete('/menages/{menage}', [MenageController::class, 'destroy'])
     ->name('menages.destroy');
 
 Route::delete('/menages/{menage}/parcelles/{parcelle}', [MenageController::class, 'detruireParcelle'])
-    ->middleware(['auth', 'verified', 'role:admin'])
+    ->middleware(['auth', 'verified', 'role:admin,superviseur_national,superviseur_provincial,superviseur_communal'])
     ->name('menages.parcelles.destroy');
 
 Route::delete('/menages/{menage}/reponses/{reponse}', [MenageController::class, 'detruireReponse'])
-    ->middleware(['auth', 'verified', 'role:admin'])
+    ->middleware(['auth', 'verified', 'role:admin,superviseur_national,superviseur_provincial,superviseur_communal'])
     ->name('menages.reponses.destroy');
 
 // Import / export du fichier "caféiculteurs" — routes indépendantes du

@@ -9,6 +9,7 @@ export default function Modifier({ utilisateur, roles, provinces, communes, zone
         role: utilisateur.role,
         province_id: utilisateur.province_id ?? '',
         commune_id: utilisateur.commune_id ?? '',
+        communes_ids: utilisateur.communes_ids ?? [],
         collines_ids: utilisateur.collines_ids ?? [],
         password: '',
     });

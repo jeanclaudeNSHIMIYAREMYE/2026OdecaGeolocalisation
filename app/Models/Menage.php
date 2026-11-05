@@ -25,6 +25,8 @@ class Menage extends Model
         'type_menage',
         'nom_chef_menage',
         'prenom_chef_menage',
+        'sexe',
+        'date_naissance',
         'telephone',
         'photo_proprietaire',
         'photo_piece_identification',
@@ -38,6 +40,7 @@ class Menage extends Model
     ];
 
     protected $casts = [
+        'date_naissance' => 'date',
         'date_derniere_activite' => 'datetime',
     ];
 
@@ -87,10 +90,7 @@ public function scopeVisiblePour(Builder $query, User $utilisateur): Builder
 
         'superviseur_communal' => $query->whereHas(
             'colline.zone',
-            fn (Builder $q) => $q->where(
-                'commune_id',
-                $utilisateur->commune_id
-            )
+            fn (Builder $q) => $q->whereIn('commune_id', $utilisateur->communesIds())
         ),
 
         'enqueteur' => $query->where(

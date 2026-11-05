@@ -51,6 +51,9 @@ class AuthController extends Controller
                 'role' => $utilisateur->role,
                 'province_id' => $utilisateur->province_id,
                 'commune_id' => $utilisateur->commune_id,
+                'communes_ids' => $utilisateur->role === 'superviseur_communal'
+                    ? $utilisateur->communesIds()
+                    : [],
             ],
         ]);
     }

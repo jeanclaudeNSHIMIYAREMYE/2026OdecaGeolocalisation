@@ -131,6 +131,8 @@ class SyncPushController extends Controller
                             'type_menage'                => $m['type_menage'] ?? null,
                             'nom_chef_menage'            => $m['nom_chef_menage'] ?? null,
                             'prenom_chef_menage'         => $m['prenom_chef_menage'] ?? null,
+                            'sexe'                       => $m['sexe'] ?? null,
+                            'date_naissance'             => $m['date_naissance'] ?? null,
                             'telephone'                  => $m['telephone'] ?? null,
                             'cni'                        => $m['cni'] ?? null,
                             'photo_proprietaire'         => $m['photo_proprietaire'] ?? null,

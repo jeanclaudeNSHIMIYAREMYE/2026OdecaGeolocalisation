@@ -13,6 +13,8 @@ return new class extends Migration
             $table->string('code_menage')->unique();
             $table->string('nom_chef_menage')->nullable();
             $table->string('prenom_chef_menage')->nullable();
+            $table->string('sexe')->nullable();
+            $table->date('date_naissance')->nullable();
             $table->string('telephone')->nullable();
 
             $table->foreignId('colline_id')->constrained('collines')->restrictOnDelete();

@@ -213,6 +213,8 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
             'code_menage' => ['required', 'string', 'max:50', Rule::unique('menages', 'code_menage')->ignore($idIgnore)],
             'nom_chef_menage' => ['nullable', 'string', 'max:255'],
             'prenom_chef_menage' => ['nullable', 'string', 'max:255'],
+            'sexe' => ['nullable', 'string', 'max:20'],
+            'date_naissance' => ['nullable', 'date'],
             'telephone' => ['nullable', 'string', 'max:30'],
             'cni' => ['nullable', 'string', 'max:50'],
             'colline_id' => ['required', 'exists:collines,id'],

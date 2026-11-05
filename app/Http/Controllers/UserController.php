@@ -163,12 +163,14 @@ public function index(Request $request): Response
         $donnees = $this->normaliserPorteeTerritoriale($request->user(), $donnees);
 
         $utilisateur = User::create([
-            ...$donnees,
+            ...Arr::except($donnees, ['communes_ids', 'password']),
             'password' => bcrypt($donnees['password']),
         ]);
 
         if ($donnees['role'] === 'enqueteur') {
             $utilisateur->collines()->sync($donnees['collines_ids'] ?? []);
+        } elseif ($donnees['role'] === 'superviseur_communal') {
+            $utilisateur->communes()->sync($donnees['communes_ids']);
         }
 
         return redirect()->route('utilisateurs.index')->with('succes', 'Compte créé.');
@@ -182,6 +184,7 @@ public function index(Request $request): Response
             'utilisateur' => [
                 ...$utilisateur->only(['id', 'name', 'email', 'role', 'province_id', 'commune_id']),
                 'collines_ids' => $utilisateur->collines()->pluck('collines.id'),
+                'communes_ids' => $utilisateur->communesIds(),
             ],
             ...$this->donneesFormulaire(request()->user()),
         ]);
@@ -207,6 +210,9 @@ public function index(Request $request): Response
         // ses affectations de collines ; sync([]) les retire proprement.
         $utilisateur->collines()->sync(
             $donnees['role'] === 'enqueteur' ? ($donnees['collines_ids'] ?? []) : []
+        );
+        $utilisateur->communes()->sync(
+            $donnees['role'] === 'superviseur_communal' ? ($donnees['communes_ids'] ?? []) : []
         );
 
         return redirect()->route('utilisateurs.index')->with('succes', 'Compte mis à jour.');
@@ -384,8 +390,9 @@ public function index(Request $request): Response
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($idIgnore)],
             'role' => ['required', Rule::in($rolesAutorises)],
-            'province_id' => ['nullable', 'exists:provinces,id', 'required_if:role,superviseur_provincial'],
-            'commune_id' => ['nullable', 'exists:communes,id', 'required_if:role,superviseur_communal'],
+            'province_id' => ['nullable', 'exists:provinces,id', 'required_if:role,superviseur_provincial', 'required_if:role,superviseur_communal'],
+            'communes_ids' => ['nullable', 'array', 'required_if:role,superviseur_communal'],
+            'communes_ids.*' => ['integer', 'exists:communes,id'],
             'collines_ids' => ['nullable', 'array', 'required_if:role,enqueteur'],
             'collines_ids.*' => ['integer', 'exists:collines,id'],
             'password' => [$idIgnore ? 'nullable' : 'required', 'string', 'min:8'],
@@ -409,20 +416,26 @@ public function index(Request $request): Response
         if ($utilisateur->role === 'superviseur_provincial') {
             $donnees['province_id'] = $utilisateur->province_id;
 
-            if (! empty($donnees['commune_id'])
-                && ! Commune::whereKey($donnees['commune_id'])
+            if (! empty($donnees['communes_ids'])
+                && Commune::whereIn('id', $donnees['communes_ids'])
                     ->where('province_id', $utilisateur->province_id)
-                    ->exists()) {
+                    ->count() !== count(array_unique($donnees['communes_ids']))) {
                 throw ValidationException::withMessages([
-                    'commune_id' => 'La commune sélectionnée est hors de votre province.',
+                    'communes_ids' => 'Une commune sélectionnée est hors de votre province.',
                 ]);
             }
         }
 
         if ($utilisateur->role === 'superviseur_communal') {
-            $commune = Commune::find($utilisateur->commune_id);
-            $donnees['commune_id'] = $utilisateur->commune_id;
+            $communeIds = $utilisateur->communesIds();
+            $commune = Commune::find($communeIds[0] ?? $utilisateur->commune_id);
+            $donnees['communes_ids'] = $communeIds;
+            $donnees['commune_id'] = $communeIds[0] ?? $utilisateur->commune_id;
             $donnees['province_id'] = $commune?->province_id;
+        }
+
+        if (($donnees['role'] ?? null) === 'superviseur_communal') {
+            $donnees['commune_id'] = $donnees['communes_ids'][0] ?? null;
         }
 
         return $donnees;

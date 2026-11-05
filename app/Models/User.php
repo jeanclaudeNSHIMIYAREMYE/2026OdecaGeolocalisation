@@ -56,6 +56,22 @@ class User extends Authenticatable
         return $this->belongsTo(Commune::class);
     }
 
+    public function communes(): BelongsToMany
+    {
+        return $this->belongsToMany(Commune::class, 'commune_user')->withTimestamps();
+    }
+
+    public function communesIds(): array
+    {
+        $ids = $this->communes()->pluck('communes.id')->map(fn ($id) => (int) $id)->all();
+
+        if (count($ids) === 0 && $this->commune_id) {
+            $ids[] = (int) $this->commune_id;
+        }
+
+        return array_values(array_unique($ids));
+    }
+
     public function menagesAssignes(): HasMany
     {
         return $this->hasMany(Menage::class, 'enqueteur_id');
@@ -118,11 +134,12 @@ class User extends Authenticatable
             }),
 
             'superviseur_communal' => $query->where(function ($q) use ($utilisateur) {
-                $q->where('commune_id', $utilisateur->commune_id)
-                    ->orWhere(function ($q) use ($utilisateur) {
+                $communeIds = $utilisateur->communesIds();
+                $q->whereIn('commune_id', $communeIds)
+                    ->orWhere(function ($q) use ($communeIds) {
                         $q->where('role', 'enqueteur')
-                            ->whereHas('collines.zone', function ($zone) use ($utilisateur) {
-                                $zone->where('commune_id', $utilisateur->commune_id);
+                            ->whereHas('collines.zone', function ($zone) use ($communeIds) {
+                                $zone->whereIn('commune_id', $communeIds);
                             });
                     });
             }),

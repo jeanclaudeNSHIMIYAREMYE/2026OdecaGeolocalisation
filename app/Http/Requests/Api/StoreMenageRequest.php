@@ -58,6 +58,17 @@ class StoreMenageRequest extends FormRequest
                 'max:255',
             ],
 
+            'sexe' => [
+                'nullable',
+                'string',
+                'max:20',
+            ],
+
+            'date_naissance' => [
+                'nullable',
+                'date',
+            ],
+
             'telephone' => [
                 'nullable',
                 'string',

@@ -48,9 +48,9 @@ class UserPolicy
         }
 
         if ($utilisateur->role === 'superviseur_communal') {
-            return (int) $cible->commune_id === (int) $utilisateur->commune_id
+            return in_array((int) $cible->commune_id, $utilisateur->communesIds(), true)
                 || ($cible->estEnqueteur() && $cible->collines()->whereHas('zone', function ($query) use ($utilisateur) {
-                    $query->where('commune_id', $utilisateur->commune_id);
+                    $query->whereIn('commune_id', $utilisateur->communesIds());
                 })->exists());
         }
 
@@ -88,9 +88,9 @@ class UserPolicy
         }
 
         if ($utilisateur->role === 'superviseur_communal') {
-            return (int) $cible->commune_id === (int) $utilisateur->commune_id
+            return in_array((int) $cible->commune_id, $utilisateur->communesIds(), true)
                 || ($cible->estEnqueteur() && $cible->collines()->whereHas('zone', function ($query) use ($utilisateur) {
-                    $query->where('commune_id', $utilisateur->commune_id);
+                    $query->whereIn('commune_id', $utilisateur->communesIds());
                 })->exists());
         }
 

@@ -14,6 +14,8 @@ class MenageResource extends JsonResource
             'type_menage' => $this->type_menage,
             'nom_chef_menage' => $this->nom_chef_menage,
             'prenom_chef_menage' => $this->prenom_chef_menage,
+            'sexe' => $this->sexe,
+            'date_naissance' => $this->date_naissance?->toDateString(),
             'telephone' => $this->telephone,
             'cni' => $this->cni,
 

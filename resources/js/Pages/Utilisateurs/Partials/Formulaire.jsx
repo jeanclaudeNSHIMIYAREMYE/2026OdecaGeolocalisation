@@ -123,6 +123,7 @@ export default function Formulaire({
                             role: e.target.value,
                             province_id: '',
                             commune_id: '',
+                            communes_ids: [],
                             collines_ids: [],
                         }))
                     }
@@ -172,6 +173,7 @@ export default function Formulaire({
                                     ...precedent,
                                     province_id: e.target.value,
                                     commune_id: '',
+                                    communes_ids: [],
                                 }))
                             }
                             required
@@ -186,23 +188,33 @@ export default function Formulaire({
                     </div>
 
                     <div>
-                        <InputLabel htmlFor="commune_id" value="Commune" />
-                        <select
-                            id="commune_id"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            value={data.commune_id}
-                            onChange={(e) => setData('commune_id', e.target.value)}
-                            required
-                            disabled={!data.province_id}
-                        >
-                            <option value="">— Sélectionner —</option>
+                        <InputLabel value="Communes d'affectation" />
+                        <p className="mt-1 text-sm text-gray-500">
+                            Sélectionnez une ou plusieurs communes de cette province.
+                        </p>
+                        <div className="mt-2 max-h-64 space-y-2 overflow-y-auto rounded-md border border-gray-300 p-3">
                             {communesFiltrees.map((commune) => (
-                                <option key={commune.id} value={commune.id}>
-                                    {commune.nom}
-                                </option>
+                                <label key={commune.id} className="flex items-center gap-2 text-sm">
+                                    <input
+                                        type="checkbox"
+                                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                        checked={(data.communes_ids ?? []).includes(commune.id)}
+                                        disabled={!data.province_id}
+                                        onChange={(e) => {
+                                            const ids = data.communes_ids ?? [];
+                                            setData(
+                                                'communes_ids',
+                                                e.target.checked
+                                                    ? [...ids, commune.id]
+                                                    : ids.filter((id) => id !== commune.id),
+                                            );
+                                        }}
+                                    />
+                                    <span>{commune.nom}</span>
+                                </label>
                             ))}
-                        </select>
-                        <InputError message={errors.commune_id} className="mt-2" />
+                        </div>
+                        <InputError message={errors.communes_ids} className="mt-2" />
                     </div>
                 </>
             )}

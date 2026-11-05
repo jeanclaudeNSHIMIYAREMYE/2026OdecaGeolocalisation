@@ -55,6 +55,8 @@ export default function Dupliquer({
         code_menage: menage.code_menage ?? '',
         nom_chef_menage: menage.nom_chef_menage ?? '',
         prenom_chef_menage: menage.prenom_chef_menage ?? '',
+        sexe: menage.sexe ?? '',
+        date_naissance: menage.date_naissance ?? '',
         telephone: menage.telephone ?? '',
         cni: menage.cni ?? '',
         colline_id: menage.colline_id ?? '',
@@ -260,6 +262,44 @@ export default function Dupliquer({
                                                 )
                                             }
                                             placeholder="Nom"
+                                        />
+                                    </Champ>
+
+                                    <Champ
+                                        id="sexe"
+                                        label="Sexe"
+                                        error={errors.sexe}
+                                    >
+                                        <select
+                                            id="sexe"
+                                            className="mt-1 block min-h-[44px] w-full rounded-xl text-base sm:text-sm"
+                                            value={data.sexe}
+                                            onChange={(e) =>
+                                                setData('sexe', e.target.value)
+                                            }
+                                        >
+                                            <option value="">Sélectionner</option>
+                                            <option value="homme">Homme</option>
+                                            <option value="femme">Femme</option>
+                                        </select>
+                                    </Champ>
+
+                                    <Champ
+                                        id="date_naissance"
+                                        label="Date de naissance"
+                                        error={errors.date_naissance}
+                                    >
+                                        <TextInput
+                                            id="date_naissance"
+                                            type="date"
+                                            className="mt-1 block min-h-[44px] w-full rounded-xl text-base sm:text-sm"
+                                            value={data.date_naissance}
+                                            onChange={(e) =>
+                                                setData(
+                                                    'date_naissance',
+                                                    e.target.value,
+                                                )
+                                            }
                                         />
                                     </Champ>
 

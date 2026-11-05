@@ -91,6 +91,34 @@ export default function Formulaire({
                 </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <InputLabel htmlFor="sexe" value="Sexe" />
+                    <select
+                        id="sexe"
+                        className={classeSelect}
+                        value={data.sexe ?? ''}
+                        onChange={(e) => setData('sexe', e.target.value)}
+                    >
+                        <option value="">Sélectionner</option>
+                        <option value="homme">Homme</option>
+                        <option value="femme">Femme</option>
+                    </select>
+                    <InputError message={errors.sexe} className="mt-2" />
+                </div>
+                <div>
+                    <InputLabel htmlFor="date_naissance" value="Date de naissance" />
+                    <TextInput
+                        id="date_naissance"
+                        type="date"
+                        className="mt-1 block w-full"
+                        value={data.date_naissance ?? ''}
+                        onChange={(e) => setData('date_naissance', e.target.value)}
+                    />
+                    <InputError message={errors.date_naissance} className="mt-2" />
+                </div>
+            </div>
+
             <div>
                 <InputLabel htmlFor="telephone" value="Téléphone" />
                 <TextInput

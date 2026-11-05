@@ -40,6 +40,8 @@ class SyncController extends Controller
             'menages.*.code_menage' => ['required', 'string', 'max:255'],
             'menages.*.nom_chef_menage' => ['nullable', 'string', 'max:255'],
             'menages.*.prenom_chef_menage' => ['nullable', 'string', 'max:255'],
+            'menages.*.sexe' => ['nullable', 'string', 'max:20'],
+            'menages.*.date_naissance' => ['nullable', 'date'],
             'menages.*.telephone' => ['nullable', 'string', 'max:50'],
             'menages.*.colline_id' => ['required', 'exists:collines,id'],
             'menages.*.statut' => ['nullable', 'in:a_faire,en_attente,termine'],
@@ -78,6 +80,8 @@ class SyncController extends Controller
                     [
                         'nom_chef_menage' => $m['nom_chef_menage'] ?? null,
                         'prenom_chef_menage' => $m['prenom_chef_menage'] ?? null,
+                        'sexe' => $m['sexe'] ?? null,
+                        'date_naissance' => $m['date_naissance'] ?? null,
                         'telephone' => $m['telephone'] ?? null,
                         'colline_id' => $m['colline_id'],
                         'statut' => $m['statut'] ?? 'a_faire',
