@@ -219,6 +219,17 @@ export default function Index({
         );
     };
 
+    const urlExport = route(
+        'utilisateurs.export',
+        nettoyer({
+            q: form.q,
+            role: form.role,
+            actif: form.actif,
+            province_id: form.province_id,
+            commune_id: form.commune_id,
+        }),
+    );
+
     const trierPar = (colonne) => {
         const direction =
             filters.sort_by === colonne && filters.sort_dir === 'asc'
@@ -350,7 +361,7 @@ export default function Index({
 
                                 <div className="flex flex-wrap gap-2">
                                     <a
-                                        href={route('utilisateurs.export')}
+                                        href={urlExport}
                                         title="Exporter la liste Excel"
                                         aria-label="Exporter la liste des utilisateurs au format Excel"
                                         className="inline-flex items-center gap-2 rounded-lg border border-green-200 bg-white px-4 py-2.5 text-sm font-semibold text-green-800 shadow-sm transition hover:-translate-y-0.5 hover:bg-green-50"

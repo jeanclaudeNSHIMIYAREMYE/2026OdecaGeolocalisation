@@ -104,13 +104,24 @@ public function index(Request $request): Response
     $communeId = $request->query('commune_id');
 
     if (ctype_digit((string) $provinceId) && (int) $provinceId > 0) {
-        $query->where('province_id', (int) $provinceId);
+        $provinceId = (int) $provinceId;
+        $query->where(function ($q) use ($provinceId) {
+            $q->where('province_id', $provinceId)
+                ->orWhereHas('commune', fn ($commune) => $commune->where('province_id', $provinceId))
+                ->orWhereHas('communes', fn ($commune) => $commune->where('province_id', $provinceId))
+                ->orWhereHas('collines.zone.commune', fn ($commune) => $commune->where('province_id', $provinceId));
+        });
     } else {
         $provinceId = '';
     }
 
     if (ctype_digit((string) $communeId) && (int) $communeId > 0) {
-        $query->where('commune_id', (int) $communeId);
+        $communeId = (int) $communeId;
+        $query->where(function ($q) use ($communeId) {
+            $q->where('commune_id', $communeId)
+                ->orWhereHas('communes', fn ($commune) => $commune->whereKey($communeId))
+                ->orWhereHas('collines.zone', fn ($zone) => $zone->where('commune_id', $communeId));
+        });
     } else {
         $communeId = '';
     }
@@ -241,13 +252,41 @@ public function index(Request $request): Response
         $this->authorize('viewAny', User::class);
 
         $utilisateurs = User::visiblePour($request->user())
-            ->whereIn('role', ['superviseur_national', 'superviseur_provincial', 'superviseur_communal', 'enqueteur'])
             ->with([
                 'province:id,nom',
                 'commune:id,nom,province_id',
                 'commune.province:id,nom',
                 'collines.zone.commune.province',
             ])
+            ->when(trim((string) $request->query('q', '')) !== '', function ($query) use ($request) {
+                $recherche = trim((string) $request->query('q', ''));
+                $query->where(function ($q) use ($recherche) {
+                    $q->where('name', 'like', "%{$recherche}%")
+                        ->orWhere('email', 'like', "%{$recherche}%");
+                    if (ctype_digit($recherche)) {
+                        $q->orWhere('id', (int) $recherche);
+                    }
+                });
+            })
+            ->when(in_array($request->query('role'), ['admin', 'superviseur_national', 'superviseur_provincial', 'superviseur_communal', 'enqueteur'], true), fn ($query) => $query->where('role', $request->query('role')))
+            ->when(in_array($request->query('actif'), ['0', '1'], true), fn ($query) => $query->where('actif', (int) $request->query('actif')))
+            ->when(ctype_digit((string) $request->query('province_id')) && (int) $request->query('province_id') > 0, function ($query) use ($request) {
+                $provinceId = (int) $request->query('province_id');
+                $query->where(function ($q) use ($provinceId) {
+                    $q->where('province_id', $provinceId)
+                        ->orWhereHas('commune', fn ($commune) => $commune->where('province_id', $provinceId))
+                        ->orWhereHas('communes', fn ($commune) => $commune->where('province_id', $provinceId))
+                        ->orWhereHas('collines.zone.commune', fn ($commune) => $commune->where('province_id', $provinceId));
+                });
+            })
+            ->when(ctype_digit((string) $request->query('commune_id')) && (int) $request->query('commune_id') > 0, function ($query) use ($request) {
+                $communeId = (int) $request->query('commune_id');
+                $query->where(function ($q) use ($communeId) {
+                    $q->where('commune_id', $communeId)
+                        ->orWhereHas('communes', fn ($commune) => $commune->whereKey($communeId))
+                        ->orWhereHas('collines.zone', fn ($zone) => $zone->where('commune_id', $communeId));
+                });
+            })
             ->orderBy('role')
             ->orderBy('name')
             ->get();
