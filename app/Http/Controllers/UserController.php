@@ -185,15 +185,18 @@ public function index(Request $request): Response
         $donnees = $this->normaliserPorteeTerritoriale($request->user(), $donnees);
 
         $utilisateur = User::create([
-            ...Arr::except($donnees, ['communes_ids', 'password']),
+            ...Arr::except($donnees, ['communes_ids', 'collines_ids', 'password']),
             'password' => bcrypt($donnees['password']),
         ]);
 
-        if ($donnees['role'] === 'enqueteur') {
-            $utilisateur->collines()->sync($donnees['collines_ids'] ?? []);
-        } elseif ($donnees['role'] === 'superviseur_communal') {
-            $utilisateur->communes()->sync($donnees['communes_ids']);
-        }
+        $utilisateur->collines()->sync(
+            in_array($donnees['role'], ['enqueteur', 'superviseur_communal'], true)
+                ? ($donnees['collines_ids'] ?? [])
+                : []
+        );
+        $utilisateur->communes()->sync(
+            $donnees['role'] === 'superviseur_communal' ? ($donnees['communes_ids'] ?? []) : []
+        );
 
         return redirect()->route('utilisateurs.index')->with('succes', 'Compte créé.');
     }
@@ -202,10 +205,27 @@ public function index(Request $request): Response
     {
         $this->authorize('update', $utilisateur);
 
+        $collinesIds = $utilisateur->role === 'superviseur_communal'
+            ? $utilisateur->collinesIdsAutorisees()
+            : $utilisateur->collinesIds();
+
+        if (request()->user()->role === 'superviseur_provincial') {
+            $collinesIds = Colline::whereIn('id', $collinesIds)
+                ->whereHas('zone.commune', fn ($query) => $query->where('province_id', request()->user()->province_id))
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+        } elseif (request()->user()->role === 'superviseur_communal') {
+            $collinesIds = array_values(array_intersect(
+                $collinesIds,
+                request()->user()->collinesIdsAutorisees(),
+            ));
+        }
+
         return Inertia::render('Utilisateurs/Modifier', [
             'utilisateur' => [
                 ...$utilisateur->only(['id', 'name', 'email', 'role', 'province_id', 'commune_id']),
-                'collines_ids' => $utilisateur->collines()->pluck('collines.id'),
+                'collines_ids' => $collinesIds,
                 'communes_ids' => $utilisateur->communesIds(),
             ],
             ...$this->donneesFormulaire(request()->user()),
@@ -217,7 +237,7 @@ public function index(Request $request): Response
         $this->authorize('update', $utilisateur);
 
         $donnees = $this->valider($request, $utilisateur->id);
-        $donnees = $this->normaliserPorteeTerritoriale($request->user(), $donnees);
+        $donnees = $this->normaliserPorteeTerritoriale($request->user(), $donnees, $utilisateur);
 
         $utilisateur->update([
             'name' => $donnees['name'],
@@ -228,10 +248,10 @@ public function index(Request $request): Response
             ...(filled($donnees['password'] ?? null) ? ['password' => bcrypt($donnees['password'])] : []),
         ]);
 
-        // Un utilisateur qui change de rôle et n'est plus enquêteur perd
-        // ses affectations de collines ; sync([]) les retire proprement.
         $utilisateur->collines()->sync(
-            $donnees['role'] === 'enqueteur' ? ($donnees['collines_ids'] ?? []) : []
+            in_array($donnees['role'], ['enqueteur', 'superviseur_communal'], true)
+                ? ($donnees['collines_ids'] ?? [])
+                : []
         );
         $utilisateur->communes()->sync(
             $donnees['role'] === 'superviseur_communal' ? ($donnees['communes_ids'] ?? []) : []
@@ -269,6 +289,7 @@ public function index(Request $request): Response
                 'commune.province:id,nom',
                 'communes:id,nom,province_id',
                 'communes.province:id,nom',
+                'collines:id,nom,zone_id',
                 'collines.zone.commune.province',
             ])
             ->whereIn('role', ['superviseur_national', 'superviseur_provincial', 'superviseur_communal', 'enqueteur'])
@@ -311,7 +332,7 @@ public function index(Request $request): Response
         $superviseurs = $classeur->createSheet();
         $superviseurs->setTitle('Superviseurs');
         $superviseurs->fromArray([
-            ['Nom', 'E-mail', 'Fonction', 'Province', 'Commune', 'Statut'],
+            ['Nom', 'E-mail', 'Fonction', 'Province', 'Commune', 'Collines de supervision', 'Statut'],
         ], null, 'A1');
         $ligne = 2;
 
@@ -331,6 +352,9 @@ public function index(Request $request): Response
                 $this->roles()[$utilisateur->role] ?? $utilisateur->role,
                 $utilisateur->province?->nom ?? ($provincesAffectees ?: '-'),
                 $communesAffectees->pluck('nom')->filter()->unique()->implode(', ') ?: '-',
+                $utilisateur->role === 'superviseur_communal'
+                    ? ($utilisateur->collines->pluck('nom')->unique()->implode(', ') ?: '-')
+                    : '-',
                 $utilisateur->actif ? 'Actif' : 'Désactivé',
             ], null, "A{$ligne}");
             $ligne++;
@@ -426,17 +450,28 @@ public function index(Request $request): Response
 
         $provinces = Province::query();
         $communes = Commune::query();
+        $zones = Zone::query();
+        $collines = Colline::query();
+
         if ($utilisateurConnecte?->role === 'superviseur_provincial') {
             $provinces->whereKey($utilisateurConnecte->province_id);
             $communes->where('province_id', $utilisateurConnecte->province_id);
+            $zones->whereHas('commune', fn ($query) => $query->where('province_id', $utilisateurConnecte->province_id));
+            $collines->whereHas('zone.commune', fn ($query) => $query->where('province_id', $utilisateurConnecte->province_id));
+        } elseif ($utilisateurConnecte?->role === 'superviseur_communal') {
+            $collinesIds = $utilisateurConnecte->collinesIdsAutorisees();
+            $provinces->whereHas('communes.zones.collines', fn ($query) => $query->whereIn('collines.id', $collinesIds));
+            $communes->whereHas('zones.collines', fn ($query) => $query->whereIn('collines.id', $collinesIds));
+            $zones->whereHas('collines', fn ($query) => $query->whereIn('collines.id', $collinesIds));
+            $collines->whereIn('id', $collinesIds);
         }
 
         return [
             'roles' => $roles,
             'provinces' => $provinces->orderBy('nom')->get(['id', 'nom']),
             'communes' => $communes->orderBy('nom')->get(['id', 'nom', 'province_id']),
-            'zones' => Zone::orderBy('nom')->get(['id', 'nom', 'commune_id']),
-            'collines' => Colline::orderBy('nom')->get(['id', 'nom', 'zone_id']),
+            'zones' => $zones->orderBy('nom')->get(['id', 'nom', 'commune_id']),
+            'collines' => $collines->orderBy('nom')->get(['id', 'nom', 'zone_id']),
         ];
     }
 
@@ -460,10 +495,10 @@ public function index(Request $request): Response
             'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($idIgnore)],
             'role' => ['required', Rule::in($rolesAutorises)],
             'province_id' => ['nullable', 'exists:provinces,id', 'required_if:role,superviseur_provincial'],
-            'communes_ids' => ['nullable', 'array', 'required_if:role,superviseur_communal', 'min:1'],
+            'communes_ids' => ['nullable', 'array'],
             'communes_ids.*' => ['integer', 'distinct', 'exists:communes,id'],
-            'collines_ids' => ['nullable', 'array', 'required_if:role,enqueteur'],
-            'collines_ids.*' => ['integer', 'exists:collines,id'],
+            'collines_ids' => ['nullable', 'array', 'required_if:role,enqueteur', 'required_if:role,superviseur_communal', 'min:1'],
+            'collines_ids.*' => ['integer', 'distinct', 'exists:collines,id'],
             'password' => [$idIgnore ? 'nullable' : 'required', 'string', 'min:8'],
         ]);
     }
@@ -480,32 +515,61 @@ public function index(Request $request): Response
         };
     }
 
-    private function normaliserPorteeTerritoriale(User $utilisateur, array $donnees): array
+    private function normaliserPorteeTerritoriale(User $utilisateur, array $donnees, ?User $cible = null): array
     {
         if ($utilisateur->role === 'superviseur_provincial') {
             $donnees['province_id'] = $utilisateur->province_id;
 
-            if (! empty($donnees['communes_ids'])
-                && Commune::whereIn('id', $donnees['communes_ids'])
-                    ->where('province_id', $utilisateur->province_id)
-                    ->count() !== count(array_unique($donnees['communes_ids']))) {
+            $collinesIds = array_map('intval', $donnees['collines_ids'] ?? []);
+            if ($collinesIds !== []
+                && Colline::whereIn('id', $collinesIds)
+                    ->whereHas('zone.commune', fn ($query) => $query->where('province_id', $utilisateur->province_id))
+                    ->count() !== count(array_unique($collinesIds))) {
                 throw ValidationException::withMessages([
-                    'communes_ids' => 'Une commune sélectionnée est hors de votre province.',
+                    'collines_ids' => 'Une colline sélectionnée est hors de votre province.',
                 ]);
+            }
+
+            if (in_array($cible?->role, ['enqueteur', 'superviseur_communal'], true)) {
+                $collinesCible = $cible->role === 'superviseur_communal'
+                    ? $cible->collinesIdsAutorisees()
+                    : $cible->collinesIds();
+                $collinesHorsProvince = Colline::whereIn('id', $collinesCible)
+                    ->whereDoesntHave('zone.commune', fn ($query) => $query->where('province_id', $utilisateur->province_id))
+                    ->pluck('id')
+                    ->map(fn ($id) => (int) $id)
+                    ->all();
+                $donnees['collines_ids'] = array_values(array_unique([...$collinesIds, ...$collinesHorsProvince]));
             }
         }
 
         if ($utilisateur->role === 'superviseur_communal') {
-            $communeIds = $utilisateur->communesIds();
-            $commune = Commune::find($communeIds[0] ?? $utilisateur->commune_id);
-            $donnees['communes_ids'] = $communeIds;
-            $donnees['commune_id'] = $communeIds[0] ?? $utilisateur->commune_id;
-            $donnees['province_id'] = $commune?->province_id;
+            $collinesAutorisees = $utilisateur->collinesIdsAutorisees();
+            $collinesSelectionnees = array_map('intval', $donnees['collines_ids'] ?? []);
+
+            if (array_diff($collinesSelectionnees, $collinesAutorisees) !== []) {
+                throw ValidationException::withMessages([
+                    'collines_ids' => 'Une colline sélectionnée est hors de votre périmètre de supervision.',
+                ]);
+            }
+
+            if (in_array($cible?->role, ['enqueteur', 'superviseur_communal'], true)) {
+                $collinesCible = $cible->role === 'superviseur_communal'
+                    ? $cible->collinesIdsAutorisees()
+                    : $cible->collinesIds();
+                $donnees['collines_ids'] = array_values(array_unique([
+                    ...$collinesSelectionnees,
+                    ...array_diff($collinesCible, $collinesAutorisees),
+                ]));
+            }
         }
 
         if (($donnees['role'] ?? null) === 'superviseur_communal') {
-            $communes = Commune::whereIn('id', $donnees['communes_ids'] ?? [])
-                ->get(['id', 'province_id']);
+            $communes = Commune::whereHas(
+                'zones.collines',
+                fn ($query) => $query->whereIn('collines.id', $donnees['collines_ids'] ?? [])
+            )->orderBy('id')->get(['id', 'province_id']);
+            $donnees['communes_ids'] = $communes->pluck('id')->map(fn ($id) => (int) $id)->all();
             $donnees['commune_id'] = $communes->first()?->id;
             $provinceIds = $communes->pluck('province_id')->unique();
             $donnees['province_id'] = $provinceIds->count() === 1

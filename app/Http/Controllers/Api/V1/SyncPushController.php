@@ -70,9 +70,9 @@ class SyncPushController extends Controller
         DB::beginTransaction();
 
         $user = $request->user();
-        $collinesOk = $user->role === 'enqueteur'
-            ? $user->collines()->pluck('collines.id')->map(fn ($id) => (int) $id)->all()
-            : null; // null = pas de restriction (admin, superviseurs)
+        $collinesOk = in_array($user->role, ['enqueteur', 'superviseur_communal'], true)
+            ? $user->collinesIdsAutorisees()
+            : null; // null = pas de restriction (admin, superviseurs national et provincial)
 
         Log::info('Sync push sent data', [
             'menages' => $menages,

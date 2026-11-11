@@ -17,10 +17,12 @@ class MenageController extends Controller
     {
         $user = $request->user();
 
-        AccesTerritorial::verifierColline(
-            $user,
-            (int) $request->input('colline_id')
-        );
+        if ($request->filled('colline_id') || $user->role === 'enqueteur') {
+            AccesTerritorial::verifierColline(
+                $user,
+                (int) $request->input('colline_id')
+            );
+        }
 
         $collineIds = $user->collines()->pluck('collines.id');
         $menages = Menage::query()

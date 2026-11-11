@@ -54,6 +54,9 @@ class AuthController extends Controller
                 'communes_ids' => $utilisateur->role === 'superviseur_communal'
                     ? $utilisateur->communesIds()
                     : [],
+                'collines_ids' => in_array($utilisateur->role, ['enqueteur', 'superviseur_communal'], true)
+                    ? $utilisateur->collinesIdsAutorisees()
+                    : [],
             ],
         ]);
     }

@@ -6,8 +6,7 @@ import { useMemo, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 
 const ROLES_AVEC_PROVINCE = ['superviseur_provincial'];
-const ROLES_AVEC_COMMUNE = ['superviseur_communal'];
-const ROLES_AVEC_COLLINES = ['enqueteur'];
+const ROLES_AVEC_COLLINES = ['superviseur_communal', 'enqueteur'];
 
 export default function Formulaire({
     data,
@@ -22,44 +21,42 @@ export default function Formulaire({
     modeCreation,
     onSubmit,
 }) {
-    // Filtres locaux utilisés uniquement pour retrouver des collines dans la
-    // liste : ils ne sont jamais envoyés au serveur, seules les collines
-    // cochées (data.collines_ids) sont enregistrées.
+    // Ces filtres servent à parcourir la hiérarchie; seules les collines
+    // cochées sont envoyées au serveur.
     const [filtreProvince, setFiltreProvince] = useState('');
-    const [filtreProvinceCommunes, setFiltreProvinceCommunes] = useState('');
     const [filtreCommune, setFiltreCommune] = useState('');
     const [filtreZone, setFiltreZone] = useState('');
     const [recherche, setRecherche] = useState('');
     const [afficherMotDePasse, setAfficherMotDePasse] = useState(false);
 
     const communesDuFiltre = useMemo(
-        () => communes.filter((commune) => !filtreProvince || commune.province_id === Number(filtreProvince)),
+        () => communes.filter((commune) => !filtreProvince || Number(commune.province_id) === Number(filtreProvince)),
         [communes, filtreProvince],
     );
 
-    const communesAffichees = useMemo(
-        () =>
-            communes.filter(
-                (commune) =>
-                    !filtreProvinceCommunes ||
-                    commune.province_id === Number(filtreProvinceCommunes),
-            ),
-        [communes, filtreProvinceCommunes],
+    const communesIdsDuFiltre = useMemo(
+        () => new Set(communesDuFiltre.map((commune) => Number(commune.id))),
+        [communesDuFiltre],
     );
 
     const zonesDuFiltre = useMemo(
-        () => zones.filter((zone) => !filtreCommune || zone.commune_id === Number(filtreCommune)),
-        [zones, filtreCommune],
+        () =>
+            zones.filter(
+                (zone) =>
+                    communesIdsDuFiltre.has(Number(zone.commune_id)) &&
+                    (!filtreCommune || Number(zone.commune_id) === Number(filtreCommune)),
+            ),
+        [zones, communesIdsDuFiltre, filtreCommune],
     );
 
     const collinesAffichees = useMemo(() => {
-        const zoneIdsDuFiltre = filtreCommune ? new Set(zonesDuFiltre.map((zone) => zone.id)) : null;
+        const zoneIdsDuFiltre = new Set(zonesDuFiltre.map((zone) => Number(zone.id)));
 
         return collines.filter((colline) => {
-            if (filtreZone && colline.zone_id !== Number(filtreZone)) {
+            if (!zoneIdsDuFiltre.has(Number(colline.zone_id))) {
                 return false;
             }
-            if (!filtreZone && zoneIdsDuFiltre && !zoneIdsDuFiltre.has(colline.zone_id)) {
+            if (filtreZone && Number(colline.zone_id) !== Number(filtreZone)) {
                 return false;
             }
             if (recherche && !colline.nom.toLowerCase().includes(recherche.toLowerCase())) {
@@ -67,7 +64,7 @@ export default function Formulaire({
             }
             return true;
         });
-    }, [collines, filtreZone, filtreCommune, zonesDuFiltre, recherche]);
+    }, [collines, filtreZone, zonesDuFiltre, recherche]);
 
     const collinesSelectionnees = useMemo(
         () => collines.filter((colline) => (data.collines_ids ?? []).includes(colline.id)),
@@ -166,74 +163,21 @@ export default function Formulaire({
                 </div>
             )}
 
-            {ROLES_AVEC_COMMUNE.includes(data.role) && (
-                <>
-                    <div>
-                        <InputLabel htmlFor="filtre-province-communes" value="Filtrer par province" />
-                        <select
-                            id="filtre-province-communes"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            value={filtreProvinceCommunes}
-                            onChange={(e) => setFiltreProvinceCommunes(e.target.value)}
-                        >
-                            <option value="">Toutes les provinces</option>
-                            {provinces.map((province) => (
-                                <option key={province.id} value={province.id}>
-                                    {province.nom}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div>
-                        <InputLabel value="Communes d'affectation" />
-                        <p className="mt-1 text-sm text-gray-500">
-                            Sélectionnez une ou plusieurs communes, y compris dans des provinces différentes.
-                        </p>
-                        <div className="mt-2 max-h-64 space-y-2 overflow-y-auto rounded-md border border-gray-300 p-3">
-                            {communesAffichees.map((commune) => (
-                                <label key={commune.id} className="flex items-center gap-2 text-sm">
-                                    <input
-                                        type="checkbox"
-                                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                        checked={(data.communes_ids ?? []).includes(commune.id)}
-                                        onChange={(e) => {
-                                            const ids = data.communes_ids ?? [];
-                                            setData(
-                                                'communes_ids',
-                                                e.target.checked
-                                                    ? [...ids, commune.id]
-                                                    : ids.filter((id) => id !== commune.id),
-                                            );
-                                        }}
-                                    />
-                                    <span>
-                                        {commune.nom}
-                                        <span className="ml-1 text-gray-500">
-                                            ({provinces.find((province) => province.id === commune.province_id)?.nom ?? 'Province inconnue'})
-                                        </span>
-                                    </span>
-                                </label>
-                            ))}
-                            {communesAffichees.length === 0 && (
-                                <p className="text-sm text-gray-500">Aucune commune disponible pour cette province.</p>
-                            )}
-                        </div>
-                        <p className="mt-2 text-sm text-gray-600">
-                            {data.communes_ids?.length ?? 0} commune(s) sélectionnée(s)
-                        </p>
-                        <InputError message={errors.communes_ids} className="mt-2" />
-                    </div>
-                </>
-            )}
-
             {ROLES_AVEC_COLLINES.includes(data.role) && (
                 <div>
-                    <InputLabel value="Collines d'affectation" />
+                    <InputLabel
+                        value={
+                            data.role === 'superviseur_communal'
+                                ? 'Zones et collines de supervision'
+                                : "Collines d'affectation"
+                        }
+                    />
                     <p className="mt-1 text-sm text-gray-500">
                         Filtrez par province, commune ou zone pour retrouver des collines, puis
-                        cochez une ou plusieurs collines. L'enquêteur ne pourra intervenir que
-                        sur les collines sélectionnées ci-dessous.
+                        cochez les collines souhaitées.
+                        {data.role === 'superviseur_communal'
+                            ? ' Le périmètre du superviseur sera limité aux collines sélectionnées.'
+                            : " L'enquêteur ne pourra intervenir que sur les collines sélectionnées ci-dessous."}
                     </p>
 
                     <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -307,19 +251,36 @@ export default function Formulaire({
                         {collinesAffichees.length === 0 && (
                             <p className="p-2 text-sm text-gray-400">Aucune colline ne correspond aux filtres.</p>
                         )}
-                        {collinesAffichees.map((colline) => (
-                            <label
-                                key={colline.id}
-                                className="flex items-center gap-2 rounded px-2 py-1 text-sm hover:bg-gray-50"
-                            >
-                                <input
-                                    type="checkbox"
-                                    checked={(data.collines_ids ?? []).includes(colline.id)}
-                                    onChange={() => basculerColline(colline.id)}
-                                />
-                                {colline.nom}
-                            </label>
-                        ))}
+                        {collinesAffichees.map((colline) => {
+                            const zone = zones.find((item) => Number(item.id) === Number(colline.zone_id));
+                            const commune = communes.find(
+                                (item) => Number(item.id) === Number(zone?.commune_id),
+                            );
+                            const province = provinces.find(
+                                (item) => Number(item.id) === Number(commune?.province_id),
+                            );
+
+                            return (
+                                <label
+                                    key={colline.id}
+                                    className="flex items-center gap-2 rounded px-2 py-1 text-sm hover:bg-gray-50"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={(data.collines_ids ?? []).includes(colline.id)}
+                                        onChange={() => basculerColline(colline.id)}
+                                    />
+                                    <span>
+                                        {colline.nom}
+                                        {commune && (
+                                            <span className="ml-1 text-gray-500">
+                                                ({commune.nom}{province ? `, ${province.nom}` : ''})
+                                            </span>
+                                        )}
+                                    </span>
+                                </label>
+                            );
+                        })}
                     </div>
 
                     {collinesSelectionnees.length > 0 && (

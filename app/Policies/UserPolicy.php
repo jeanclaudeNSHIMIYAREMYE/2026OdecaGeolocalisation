@@ -49,11 +49,18 @@ class UserPolicy
         }
 
         if ($utilisateur->role === 'superviseur_communal') {
+            $collineIds = $utilisateur->collinesIdsAutorisees();
+            if ($collineIds === []) {
+                return false;
+            }
+
+            if ($cible->collines()->exists()) {
+                return $cible->collines()->whereIn('collines.id', $collineIds)->exists();
+            }
+
             return in_array((int) $cible->commune_id, $utilisateur->communesIds(), true)
                 || $cible->communes()->whereIn('communes.id', $utilisateur->communesIds())->exists()
-                || ($cible->estEnqueteur() && $cible->collines()->whereHas('zone', function ($query) use ($utilisateur) {
-                    $query->whereIn('commune_id', $utilisateur->communesIds());
-                })->exists());
+                || ($cible->estEnqueteur() && $cible->collines()->whereIn('collines.id', $collineIds)->exists());
         }
 
         return false;
@@ -91,11 +98,18 @@ class UserPolicy
         }
 
         if ($utilisateur->role === 'superviseur_communal') {
+            $collineIds = $utilisateur->collinesIdsAutorisees();
+            if ($collineIds === []) {
+                return false;
+            }
+
+            if ($cible->collines()->exists()) {
+                return $cible->collines()->whereIn('collines.id', $collineIds)->exists();
+            }
+
             return in_array((int) $cible->commune_id, $utilisateur->communesIds(), true)
                 || $cible->communes()->whereIn('communes.id', $utilisateur->communesIds())->exists()
-                || ($cible->estEnqueteur() && $cible->collines()->whereHas('zone', function ($query) use ($utilisateur) {
-                    $query->whereIn('commune_id', $utilisateur->communesIds());
-                })->exists());
+                || ($cible->estEnqueteur() && $cible->collines()->whereIn('collines.id', $collineIds)->exists());
         }
 
         return false;

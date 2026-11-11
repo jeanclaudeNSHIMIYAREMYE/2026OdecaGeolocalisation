@@ -72,15 +72,36 @@ class User extends Authenticatable
         return array_values(array_unique($ids));
     }
 
+    public function collinesIds(): array
+    {
+        return $this->collines()
+            ->pluck('collines.id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    public function collinesIdsAutorisees(): array
+    {
+        $collinesIds = $this->collinesIds();
+
+        if ($collinesIds !== [] || $this->role !== 'superviseur_communal') {
+            return $collinesIds;
+        }
+
+        return Colline::query()
+            ->whereHas('zone', fn ($zone) => $zone->whereIn('commune_id', $this->communesIds()))
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
     public function menagesAssignes(): HasMany
     {
         return $this->hasMany(Menage::class, 'enqueteur_id');
     }
 
     /**
-     * Collines sur lesquelles un enquêteur est autorisé à intervenir.
-     * Un enquêteur peut être affecté à une ou plusieurs collines,
-     * potentiellement réparties sur plusieurs zones/communes.
+     * Affectations territoriales d'un enquêteur ou d'un superviseur communal.
      */
     public function collines(): BelongsToMany
     {
@@ -138,12 +159,20 @@ class User extends Authenticatable
 
             'superviseur_communal' => $query->where(function ($q) use ($utilisateur) {
                 $communeIds = $utilisateur->communesIds();
-                $q->whereIn('commune_id', $communeIds)
-                    ->orWhereHas('communes', fn ($commune) => $commune->whereIn('communes.id', $communeIds))
-                    ->orWhere(function ($q) use ($communeIds) {
-                        $q->where('role', 'enqueteur')
-                            ->whereHas('collines.zone', function ($zone) use ($communeIds) {
-                                $zone->whereIn('commune_id', $communeIds);
+                $collineIds = $utilisateur->collinesIdsAutorisees();
+
+                if ($collineIds === []) {
+                    $q->whereRaw('1 = 0');
+
+                    return $q;
+                }
+
+                $q->whereHas('collines', fn ($colline) => $colline->whereIn('collines.id', $collineIds))
+                    ->orWhere(function ($legacy) use ($communeIds) {
+                        $legacy->whereDoesntHave('collines')
+                            ->where(function ($target) use ($communeIds) {
+                                $target->whereIn('commune_id', $communeIds)
+                                    ->orWhereHas('communes', fn ($commune) => $commune->whereIn('communes.id', $communeIds));
                             });
                     });
             }),

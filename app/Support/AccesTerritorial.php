@@ -17,12 +17,10 @@ class AccesTerritorial
         int $menageId
     ): Menage {
 
-        // L'enquêteur ne peut accéder qu'aux ménages
-        // situés dans ses collines affectées.
-        if ($user->role === 'enqueteur') {
-
-            $collineIds = $user->collines()
-                ->pluck('collines.id');
+        // Les superviseurs communaux et les enquêteurs sont limités à leurs
+        // collines affectées.
+        if (in_array($user->role, ['enqueteur', 'superviseur_communal'], true)) {
+            $collineIds = $user->collinesIdsAutorisees();
 
            logger()->info('ACCESS MENAGE', [
                 'user id' => $user->id,
@@ -58,16 +56,12 @@ class AccesTerritorial
      * Vérifie si l'utilisateur peut travailler dans une colline.
      */
     public static function verifierColline(User $user, int $collineId): void
-{
-    if ($user->role !== 'enqueteur') {
-        return;
-    }
+    {
+        if (! in_array($user->role, ['enqueteur', 'superviseur_communal'], true)) {
+            return;
+        }
 
-    $collineIds = $user->collines()
-        ->pluck('collines.id')
-        ->map(fn ($id) => (int) $id)
-        ->values()
-        ->all();
+        $collineIds = $user->collinesIdsAutorisees();
 
     if (!in_array((int) $collineId, $collineIds, true)) {
         throw new AuthorizationException(

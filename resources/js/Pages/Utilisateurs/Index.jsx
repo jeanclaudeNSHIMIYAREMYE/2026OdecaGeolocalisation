@@ -653,14 +653,19 @@ export default function Index({
                                                 </td>
 
                                                 <td className="px-6 py-4 text-gray-600">
-                                                    {utilisateur.role === 'superviseur_communal' &&
-                                                    utilisateur.communes?.length
-                                                        ? utilisateur.communes
-                                                              .map(
-                                                                  (commune) =>
-                                                                      `${commune.nom} (${commune.province?.nom ?? 'Province inconnue'})`,
-                                                              )
-                                                              .join(', ')
+                                                    {utilisateur.role === 'superviseur_communal'
+                                                        ? `${
+                                                              utilisateur.collines_count
+                                                                  ? `${utilisateur.collines_count} colline(s) · `
+                                                                  : ''
+                                                          }${
+                                                              utilisateur.communes
+                                                                  ?.map(
+                                                                      (commune) =>
+                                                                          `${commune.nom} (${commune.province?.nom ?? 'Province inconnue'})`,
+                                                                  )
+                                                                  .join(', ') || 'Aucun périmètre défini'
+                                                          }`
                                                         : utilisateur.commune?.nom ??
                                                           utilisateur.province?.nom ??
                                                           (utilisateur.role === 'enqueteur'

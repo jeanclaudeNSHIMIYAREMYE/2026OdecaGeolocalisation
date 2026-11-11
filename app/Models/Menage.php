@@ -88,10 +88,18 @@ public function scopeVisiblePour(Builder $query, User $utilisateur): Builder
             )
         ),
 
-        'superviseur_communal' => $query->whereHas(
-            'colline.zone',
-            fn (Builder $q) => $q->whereIn('commune_id', $utilisateur->communesIds())
-        ),
+        'superviseur_communal' => $query->where(function (Builder $q) use ($utilisateur) {
+            $collineIds = $utilisateur->collinesIdsAutorisees();
+
+            if ($collineIds === []) {
+                $q->whereRaw('1 = 0');
+
+                return;
+            }
+
+            $q->whereIn('colline_id', $collineIds)
+                ->orWhereHas('collines', fn (Builder $colline) => $colline->whereIn('collines.id', $collineIds));
+        }),
 
         'enqueteur' => $query->where(
             function (Builder $q) use ($utilisateur) {

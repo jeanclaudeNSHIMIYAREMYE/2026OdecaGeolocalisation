@@ -639,7 +639,7 @@ function BanniereAvancement({ kpi, nombre }) {
             <div className="relative p-5 sm:p-6 lg:p-7">
                 <div className="flex flex-wrap items-center justify-between gap-5">
                     <div className="flex items-center gap-4">
-                        <div className="flex h-16 min-w-[4rem] items-center justify-center rounded-2xl bg-white px-3 text-2xl font-bold tabular-nums text-green-800 shadow-lg shadow-black/25 ring-1 ring-white/40">
+                        <div className="flex h-16 min-w-[4rem] items-center justify-center rounded-2xl bg-white px-3 text-2xl font-bold tabular-nums text-re-800 shadow-lg shadow-black/25 ring-1 ring-white/40">
                             {Number(taux).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}%
                         </div>
 
@@ -650,8 +650,8 @@ function BanniereAvancement({ kpi, nombre }) {
 
                             <p className="mt-0.5 flex items-center gap-2 text-sm text-green-100/70">
                                 <span className="relative flex h-2 w-2">
-                                    <span className="dash-pulse absolute inline-flex h-full w-full rounded-full bg-green-400" />
-                                    <span className="relative inline-flex h-2 w-2 rounded-full bg-green-400" />
+                                    <span className="dash-pulse absolute inline-flex h-full w-full rounded-full bg-red-400" />
+                                    <span className="relative inline-flex h-2 w-2 rounded-full bg-yellow-400" />
                                 </span>
                                 {nombre(termines)} sur {nombre(total)} Caféiculteur terminés
                             </p>
