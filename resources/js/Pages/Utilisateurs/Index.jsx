@@ -653,11 +653,19 @@ export default function Index({
                                                 </td>
 
                                                 <td className="px-6 py-4 text-gray-600">
-                                                    {utilisateur.commune?.nom ??
-                                                        utilisateur.province?.nom ??
-                                                        (utilisateur.role === 'enqueteur'
-                                                            ? `${utilisateur.collines_count ?? 0} colline(s)`
-                                                            : '—')}
+                                                    {utilisateur.role === 'superviseur_communal' &&
+                                                    utilisateur.communes?.length
+                                                        ? utilisateur.communes
+                                                              .map(
+                                                                  (commune) =>
+                                                                      `${commune.nom} (${commune.province?.nom ?? 'Province inconnue'})`,
+                                                              )
+                                                              .join(', ')
+                                                        : utilisateur.commune?.nom ??
+                                                          utilisateur.province?.nom ??
+                                                          (utilisateur.role === 'enqueteur'
+                                                              ? `${utilisateur.collines_count ?? 0} colline(s)`
+                                                              : '—')}
                                                 </td>
 
                                                 <td className="px-6 py-4">

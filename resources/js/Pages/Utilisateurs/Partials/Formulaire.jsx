@@ -22,15 +22,11 @@ export default function Formulaire({
     modeCreation,
     onSubmit,
 }) {
-    const communesFiltrees = useMemo(
-        () => communes.filter((commune) => commune.province_id === Number(data.province_id)),
-        [communes, data.province_id],
-    );
-
     // Filtres locaux utilisés uniquement pour retrouver des collines dans la
     // liste : ils ne sont jamais envoyés au serveur, seules les collines
     // cochées (data.collines_ids) sont enregistrées.
     const [filtreProvince, setFiltreProvince] = useState('');
+    const [filtreProvinceCommunes, setFiltreProvinceCommunes] = useState('');
     const [filtreCommune, setFiltreCommune] = useState('');
     const [filtreZone, setFiltreZone] = useState('');
     const [recherche, setRecherche] = useState('');
@@ -39,6 +35,16 @@ export default function Formulaire({
     const communesDuFiltre = useMemo(
         () => communes.filter((commune) => !filtreProvince || commune.province_id === Number(filtreProvince)),
         [communes, filtreProvince],
+    );
+
+    const communesAffichees = useMemo(
+        () =>
+            communes.filter(
+                (commune) =>
+                    !filtreProvinceCommunes ||
+                    commune.province_id === Number(filtreProvinceCommunes),
+            ),
+        [communes, filtreProvinceCommunes],
     );
 
     const zonesDuFiltre = useMemo(
@@ -163,22 +169,14 @@ export default function Formulaire({
             {ROLES_AVEC_COMMUNE.includes(data.role) && (
                 <>
                     <div>
-                        <InputLabel htmlFor="province_id" value="Province" />
+                        <InputLabel htmlFor="filtre-province-communes" value="Filtrer par province" />
                         <select
-                            id="province_id"
+                            id="filtre-province-communes"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            value={data.province_id}
-                            onChange={(e) =>
-                                setData((precedent) => ({
-                                    ...precedent,
-                                    province_id: e.target.value,
-                                    commune_id: '',
-                                    communes_ids: [],
-                                }))
-                            }
-                            required
+                            value={filtreProvinceCommunes}
+                            onChange={(e) => setFiltreProvinceCommunes(e.target.value)}
                         >
-                            <option value="">— Sélectionner —</option>
+                            <option value="">Toutes les provinces</option>
                             {provinces.map((province) => (
                                 <option key={province.id} value={province.id}>
                                     {province.nom}
@@ -190,16 +188,15 @@ export default function Formulaire({
                     <div>
                         <InputLabel value="Communes d'affectation" />
                         <p className="mt-1 text-sm text-gray-500">
-                            Sélectionnez une ou plusieurs communes de cette province.
+                            Sélectionnez une ou plusieurs communes, y compris dans des provinces différentes.
                         </p>
                         <div className="mt-2 max-h-64 space-y-2 overflow-y-auto rounded-md border border-gray-300 p-3">
-                            {communesFiltrees.map((commune) => (
+                            {communesAffichees.map((commune) => (
                                 <label key={commune.id} className="flex items-center gap-2 text-sm">
                                     <input
                                         type="checkbox"
                                         className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                         checked={(data.communes_ids ?? []).includes(commune.id)}
-                                        disabled={!data.province_id}
                                         onChange={(e) => {
                                             const ids = data.communes_ids ?? [];
                                             setData(
@@ -210,10 +207,21 @@ export default function Formulaire({
                                             );
                                         }}
                                     />
-                                    <span>{commune.nom}</span>
+                                    <span>
+                                        {commune.nom}
+                                        <span className="ml-1 text-gray-500">
+                                            ({provinces.find((province) => province.id === commune.province_id)?.nom ?? 'Province inconnue'})
+                                        </span>
+                                    </span>
                                 </label>
                             ))}
+                            {communesAffichees.length === 0 && (
+                                <p className="text-sm text-gray-500">Aucune commune disponible pour cette province.</p>
+                            )}
                         </div>
+                        <p className="mt-2 text-sm text-gray-600">
+                            {data.communes_ids?.length ?? 0} commune(s) sélectionnée(s)
+                        </p>
                         <InputError message={errors.communes_ids} className="mt-2" />
                     </div>
                 </>

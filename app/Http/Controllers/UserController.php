@@ -64,7 +64,12 @@ public function index(Request $request): Response
             'is_super_admin',
             'created_at',
         ])
-        ->with(['province:id,nom', 'commune:id,nom'])
+        ->with([
+            'province:id,nom',
+            'commune:id,nom',
+            'communes:id,nom,province_id',
+            'communes.province:id,nom',
+        ])
         ->withCount('collines');
 
     // Recherche par nom, e-mail ou identifiant
@@ -139,12 +144,18 @@ public function index(Request $request): Response
         'peutDesactiver' => $request->user()->estAdmin() || $request->user()->estSuperviseur(),
         'peutAjouter' => $request->user()->estAdmin() || $request->user()->estSuperviseur(),
         'roles' => $this->roles(),
-        'provinces' => Province::orderBy('nom')->get(['id', 'nom']),
+        'provinces' => Province::when(
+            $request->user()->role === 'superviseur_provincial',
+            fn ($query) => $query->whereKey($request->user()->province_id)
+        )->orderBy('nom')->get(['id', 'nom']),
         'communes' => Commune::orderBy('nom')->get([
             'id',
             'nom',
             'province_id',
-        ]),
+        ])->when(
+            $request->user()->role === 'superviseur_provincial',
+            fn ($communes) => $communes->where('province_id', $request->user()->province_id)->values()
+        ),
         'filters' => [
             'q' => $recherche,
             'role' => $role,
@@ -256,8 +267,11 @@ public function index(Request $request): Response
                 'province:id,nom',
                 'commune:id,nom,province_id',
                 'commune.province:id,nom',
+                'communes:id,nom,province_id',
+                'communes.province:id,nom',
                 'collines.zone.commune.province',
             ])
+            ->whereIn('role', ['superviseur_national', 'superviseur_provincial', 'superviseur_communal', 'enqueteur'])
             ->when(trim((string) $request->query('q', '')) !== '', function ($query) use ($request) {
                 $recherche = trim((string) $request->query('q', ''));
                 $query->where(function ($q) use ($recherche) {
@@ -302,12 +316,21 @@ public function index(Request $request): Response
         $ligne = 2;
 
         foreach ($utilisateurs->where('role', '!=', 'enqueteur') as $utilisateur) {
+            $communesAffectees = $utilisateur->communes->isNotEmpty()
+                ? $utilisateur->communes
+                : collect([$utilisateur->commune])->filter();
+            $provincesAffectees = $communesAffectees
+                ->map(fn (Commune $commune) => $commune->province?->nom)
+                ->filter()
+                ->unique()
+                ->implode(', ');
+
             $superviseurs->fromArray([
                 $utilisateur->name,
                 $utilisateur->email,
                 $this->roles()[$utilisateur->role] ?? $utilisateur->role,
-                $utilisateur->province?->nom ?? $utilisateur->commune?->province?->nom ?? '-',
-                $utilisateur->commune?->nom ?? '-',
+                $utilisateur->province?->nom ?? ($provincesAffectees ?: '-'),
+                $communesAffectees->pluck('nom')->filter()->unique()->implode(', ') ?: '-',
                 $utilisateur->actif ? 'Actif' : 'Désactivé',
             ], null, "A{$ligne}");
             $ligne++;
@@ -401,10 +424,17 @@ public function index(Request $request): Response
             $roles = Arr::except($roles, ['admin']);
         }
 
+        $provinces = Province::query();
+        $communes = Commune::query();
+        if ($utilisateurConnecte?->role === 'superviseur_provincial') {
+            $provinces->whereKey($utilisateurConnecte->province_id);
+            $communes->where('province_id', $utilisateurConnecte->province_id);
+        }
+
         return [
             'roles' => $roles,
-            'provinces' => Province::orderBy('nom')->get(['id', 'nom']),
-            'communes' => Commune::orderBy('nom')->get(['id', 'nom', 'province_id']),
+            'provinces' => $provinces->orderBy('nom')->get(['id', 'nom']),
+            'communes' => $communes->orderBy('nom')->get(['id', 'nom', 'province_id']),
             'zones' => Zone::orderBy('nom')->get(['id', 'nom', 'commune_id']),
             'collines' => Colline::orderBy('nom')->get(['id', 'nom', 'zone_id']),
         ];
@@ -429,9 +459,9 @@ public function index(Request $request): Response
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($idIgnore)],
             'role' => ['required', Rule::in($rolesAutorises)],
-            'province_id' => ['nullable', 'exists:provinces,id', 'required_if:role,superviseur_provincial', 'required_if:role,superviseur_communal'],
-            'communes_ids' => ['nullable', 'array', 'required_if:role,superviseur_communal'],
-            'communes_ids.*' => ['integer', 'exists:communes,id'],
+            'province_id' => ['nullable', 'exists:provinces,id', 'required_if:role,superviseur_provincial'],
+            'communes_ids' => ['nullable', 'array', 'required_if:role,superviseur_communal', 'min:1'],
+            'communes_ids.*' => ['integer', 'distinct', 'exists:communes,id'],
             'collines_ids' => ['nullable', 'array', 'required_if:role,enqueteur'],
             'collines_ids.*' => ['integer', 'exists:collines,id'],
             'password' => [$idIgnore ? 'nullable' : 'required', 'string', 'min:8'],
@@ -474,7 +504,13 @@ public function index(Request $request): Response
         }
 
         if (($donnees['role'] ?? null) === 'superviseur_communal') {
-            $donnees['commune_id'] = $donnees['communes_ids'][0] ?? null;
+            $communes = Commune::whereIn('id', $donnees['communes_ids'] ?? [])
+                ->get(['id', 'province_id']);
+            $donnees['commune_id'] = $communes->first()?->id;
+            $provinceIds = $communes->pluck('province_id')->unique();
+            $donnees['province_id'] = $provinceIds->count() === 1
+                ? $provinceIds->first()
+                : null;
         }
 
         return $donnees;

@@ -125,6 +125,9 @@ class User extends Authenticatable
                     ->orWhereHas('commune', function ($commune) use ($utilisateur) {
                         $commune->where('province_id', $utilisateur->province_id);
                     })
+                    ->orWhereHas('communes', function ($commune) use ($utilisateur) {
+                        $commune->where('province_id', $utilisateur->province_id);
+                    })
                     ->orWhere(function ($q) use ($utilisateur) {
                         $q->where('role', 'enqueteur')
                             ->whereHas('collines.zone.commune', function ($commune) use ($utilisateur) {
@@ -136,6 +139,7 @@ class User extends Authenticatable
             'superviseur_communal' => $query->where(function ($q) use ($utilisateur) {
                 $communeIds = $utilisateur->communesIds();
                 $q->whereIn('commune_id', $communeIds)
+                    ->orWhereHas('communes', fn ($commune) => $commune->whereIn('communes.id', $communeIds))
                     ->orWhere(function ($q) use ($communeIds) {
                         $q->where('role', 'enqueteur')
                             ->whereHas('collines.zone', function ($zone) use ($communeIds) {

@@ -42,6 +42,7 @@ class UserPolicy
         if ($utilisateur->role === 'superviseur_provincial') {
             return (int) $cible->province_id === (int) $utilisateur->province_id
                 || $cible->commune()->where('province_id', $utilisateur->province_id)->exists()
+                || $cible->communes()->where('province_id', $utilisateur->province_id)->exists()
                 || ($cible->estEnqueteur() && $cible->collines()->whereHas('zone.commune', function ($query) use ($utilisateur) {
                     $query->where('province_id', $utilisateur->province_id);
                 })->exists());
@@ -49,6 +50,7 @@ class UserPolicy
 
         if ($utilisateur->role === 'superviseur_communal') {
             return in_array((int) $cible->commune_id, $utilisateur->communesIds(), true)
+                || $cible->communes()->whereIn('communes.id', $utilisateur->communesIds())->exists()
                 || ($cible->estEnqueteur() && $cible->collines()->whereHas('zone', function ($query) use ($utilisateur) {
                     $query->whereIn('commune_id', $utilisateur->communesIds());
                 })->exists());
@@ -82,6 +84,7 @@ class UserPolicy
         if ($utilisateur->role === 'superviseur_provincial') {
             return (int) $cible->province_id === (int) $utilisateur->province_id
                 || $cible->commune()->where('province_id', $utilisateur->province_id)->exists()
+                || $cible->communes()->where('province_id', $utilisateur->province_id)->exists()
                 || ($cible->estEnqueteur() && $cible->collines()->whereHas('zone.commune', function ($query) use ($utilisateur) {
                     $query->where('province_id', $utilisateur->province_id);
                 })->exists());
@@ -89,6 +92,7 @@ class UserPolicy
 
         if ($utilisateur->role === 'superviseur_communal') {
             return in_array((int) $cible->commune_id, $utilisateur->communesIds(), true)
+                || $cible->communes()->whereIn('communes.id', $utilisateur->communesIds())->exists()
                 || ($cible->estEnqueteur() && $cible->collines()->whereHas('zone', function ($query) use ($utilisateur) {
                     $query->whereIn('commune_id', $utilisateur->communesIds());
                 })->exists());

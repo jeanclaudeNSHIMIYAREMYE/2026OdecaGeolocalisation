@@ -3,100 +3,47 @@
 namespace App\Http\Controllers;
 
 use App\Models\Colline;
+use App\Models\Commune;
 use App\Models\Menage;
 use App\Models\Parcelle;
 use App\Models\Province;
 use App\Models\SyncLog;
 use App\Models\User;
+use App\Models\Zone;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class StatistiqueController extends Controller
 {
-    /**
-     * Filtres territoriaux + période, communs à toutes les statistiques.
-     *
-     * Contrairement à RapportController::parcellesFiltrees (qui part des
-     * parcelles déjà géolocalisées), on part ici de Menage : les
-     * statistiques doivent refléter TOUT le projet, y compris les
-     * ménages pas encore géolocalisés (statut "à faire" / "en attente"),
-     * pour donner une vraie mesure de l'avancement national.
-     *
-     * Comme dans RapportController, ce module est réservé aux admins
-     * (portée nationale) donc pas de scope territorial implicite ici.
-     */
-    private function menagesFiltres(Request $request)
-    {
-        $filtres = $request->only(['province_id', 'commune_id', 'zone_id', 'colline_id', 'enqueteur_id', 'date_debut', 'date_fin']);
+    private const CLES_FILTRES = ['province_id', 'commune_id', 'zone_id', 'colline_id', 'enqueteur_id', 'date_debut', 'date_fin'];
 
-        return Menage::query()
-            ->with(['colline.zone.commune.province', 'enqueteur:id,name'])
-            ->when($filtres['colline_id'] ?? null, fn ($q, $v) => $q->where('colline_id', $v))
-            ->when($filtres['zone_id'] ?? null, fn ($q, $v) => $q->whereHas(
-                'colline',
-                fn ($q) => $q->where('zone_id', $v)
-            ))
-            ->when($filtres['commune_id'] ?? null, fn ($q, $v) => $q->whereHas(
-                'colline.zone',
-                fn ($q) => $q->where('commune_id', $v)
-            ))
-            ->when($filtres['province_id'] ?? null, fn ($q, $v) => $q->whereHas(
-                'colline.zone.commune',
-                fn ($q) => $q->where('province_id', $v)
-            ))
-            ->when($filtres['enqueteur_id'] ?? null, fn ($q, $v) => $q->where('enqueteur_id', $v))
-            ->when($filtres['date_debut'] ?? null, fn ($q, $v) => $q->whereDate('menages.created_at', '>=', $v))
-            ->when($filtres['date_fin'] ?? null, fn ($q, $v) => $q->whereDate('menages.created_at', '<=', $v));
+    /** Applique les filtres sur une requête portant sur la table menages. */
+    private function appliquerFiltresMenage($q, array $f)
+    {
+        return $q
+            ->when($f['colline_id'] ?? null, fn ($q, $v) => $q->where('menages.colline_id', $v))
+            ->when($f['zone_id'] ?? null, fn ($q, $v) => $q->whereHas('colline', fn ($q) => $q->where('zone_id', $v)))
+            ->when($f['commune_id'] ?? null, fn ($q, $v) => $q->whereHas('colline.zone', fn ($q) => $q->where('commune_id', $v)))
+            ->when($f['province_id'] ?? null, fn ($q, $v) => $q->whereHas('colline.zone.commune', fn ($q) => $q->where('province_id', $v)))
+            ->when($f['enqueteur_id'] ?? null, fn ($q, $v) => $q->where('menages.enqueteur_id', $v))
+            ->when($f['date_debut'] ?? null, fn ($q, $v) => $q->whereDate('menages.created_at', '>=', $v))
+            ->when($f['date_fin'] ?? null, fn ($q, $v) => $q->whereDate('menages.created_at', '<=', $v));
     }
 
-    /**
-     * Parcelles correspondant aux MÊMES filtres que menagesFiltres(), mais
-     * interrogées directement via une sous-requête corrélée (whereHas) au
-     * lieu de collecter les IDs de ménages puis whereIn('menage_id', ...).
-     *
-     * CORRECTIF : à l'échelle nationale (dizaines de milliers de ménages),
-     * un whereIn() avec la liste complète des IDs dépasse la limite
-     * PostgreSQL de 65 535 paramètres liés par requête
-     * (SQLSTATE[HY000]: number of parameters must be between 0 and 65535).
-     * whereHas() génère un EXISTS corrélé dont le nombre de paramètres ne
-     * dépend que du nombre de filtres actifs, jamais du nombre de lignes.
-     */
-    private function parcellesFiltrees(Request $request)
+    /** Requête (non exécutée) sur les ménages filtrés : SANS with() ni get(). */
+    private function menagesFiltres(array $f)
     {
-        $filtres = $request->only(['province_id', 'commune_id', 'zone_id', 'colline_id', 'enqueteur_id', 'date_debut', 'date_fin']);
-
-        return Parcelle::query()
-            ->whereHas('menage', function ($q) use ($filtres) {
-                $q->when($filtres['colline_id'] ?? null, fn ($q, $v) => $q->where('colline_id', $v))
-                    ->when($filtres['zone_id'] ?? null, fn ($q, $v) => $q->whereHas(
-                        'colline',
-                        fn ($q) => $q->where('zone_id', $v)
-                    ))
-                    ->when($filtres['commune_id'] ?? null, fn ($q, $v) => $q->whereHas(
-                        'colline.zone',
-                        fn ($q) => $q->where('commune_id', $v)
-                    ))
-                    ->when($filtres['province_id'] ?? null, fn ($q, $v) => $q->whereHas(
-                        'colline.zone.commune',
-                        fn ($q) => $q->where('province_id', $v)
-                    ))
-                    ->when($filtres['enqueteur_id'] ?? null, fn ($q, $v) => $q->where('enqueteur_id', $v))
-                    ->when($filtres['date_debut'] ?? null, fn ($q, $v) => $q->whereDate('created_at', '>=', $v))
-                    ->when($filtres['date_fin'] ?? null, fn ($q, $v) => $q->whereDate('created_at', '<=', $v));
-            })
-            ->get();
+        return $this->appliquerFiltresMenage(Menage::query(), $f);
     }
 
-    /**
-     * Enquêteurs à proposer dans le filtre "Enquêteur", restreints au
-     * niveau territorial le plus précis déjà sélectionné (colline > zone
-     * > commune > province). Sans cette restriction, le menu déroulant
-     * affichait tous les enquêteurs du pays même après avoir choisi une
-     * colline précise, ce qui n'a aucun sens : un enquêteur n'apparaît
-     * dans ce filtre que s'il est affecté (colline_user) quelque part
-     * dans le périmètre déjà sélectionné.
-     */
+    /** Requête (non exécutée) sur les parcelles des ménages filtrés. */
+    private function parcellesFiltrees(array $f)
+    {
+        return Parcelle::query()->whereHas('menage', fn ($q) => $this->appliquerFiltresMenage($q, $f));
+    }
+
     private function enqueteursFiltres(array $filtres)
     {
         $query = User::where('role', 'enqueteur');
@@ -116,153 +63,153 @@ class StatistiqueController extends Controller
 
     public function index(Request $request): Response
     {
-        $filtres = $request->only(['province_id', 'commune_id', 'zone_id', 'colline_id', 'enqueteur_id', 'date_debut', 'date_fin']);
+        $filtres = $request->only(self::CLES_FILTRES);
 
-        $menages = $this->menagesFiltres($request)->get();
+        // ---------- KPI ----------
+        $totalMenages = (clone $this->menagesFiltres($filtres))->count();
 
-        // CORRECTIF : remplace l'ancien
-        //   $menageIds = $menages->pluck('id');
-        //   $parcelles = Parcelle::query()->whereIn('menage_id', $menageIds)->get();
-        // qui dépassait la limite de paramètres PostgreSQL à l'échelle nationale.
-        $parcelles = $this->parcellesFiltrees($request);
+        $statsParcelles = $this->parcellesFiltrees($filtres)
+            ->selectRaw('COUNT(*) AS total')
+            ->selectRaw('COUNT(*) FILTER (WHERE parcelles.latitude IS NOT NULL AND parcelles.longitude IS NOT NULL) AS geo')
+            ->selectRaw('COALESCE(SUM(parcelles.nombre_pieds), 0) AS pieds')
+            ->first();
 
-        $totalMenages = $menages->count();
-        $totalParcelles = $parcelles->count();
-        $totalParcellesGeolocalisees = $parcelles->whereNotNull('latitude')->whereNotNull('longitude')->count();
-        $totalPieds = (int) $parcelles->sum('nombre_pieds');
+        $totalParcelles = (int) $statsParcelles->total;
+        $totalParcellesGeolocalisees = (int) $statsParcelles->geo;
+        $totalPieds = (int) $statsParcelles->pieds;
 
-        // --- Avancement global (par statut de ménage) ---
-        $parStatut = $menages->groupBy('statut')->map->count();
-        $libellesStatuts = [
-            'a_faire' => 'À faire',
-            'en_attente' => 'En attente',
-            'termine' => 'Terminé',
-        ];
+        // ---------- Avancement ----------
+        $parStatut = $this->menagesFiltres($filtres)
+            ->select('menages.statut', DB::raw('COUNT(*) AS total'))
+            ->groupBy('menages.statut')
+            ->pluck('total', 'statut');
+
+        $libellesStatuts = ['a_faire' => 'À faire', 'en_attente' => 'En attente', 'termine' => 'Terminé'];
         $avancement = collect($libellesStatuts)->map(fn ($label, $statut) => [
             'statut' => $statut,
             'label' => $label,
-            'total' => $parStatut[$statut] ?? 0,
+            'total' => (int) ($parStatut[$statut] ?? 0),
             'pourcentage' => $totalMenages > 0 ? round((($parStatut[$statut] ?? 0) / $totalMenages) * 100, 1) : 0,
         ])->values();
 
-        // --- Répartition territoriale, par province ---
-        $parProvince = $menages
-            ->groupBy(fn ($m) => $m->colline?->zone?->commune?->province?->nom ?? 'Non renseigné')
-            ->map(function ($groupe, $province) use ($parcelles) {
-                $idsGroupe = $groupe->pluck('id');
-                $parcellesGroupe = $parcelles->whereIn('menage_id', $idsGroupe);
+        // ---------- Par province ----------
+        $exprProvince = "COALESCE(provinces.nom, 'Non renseigné')";
 
-                return [
-                    'province' => $province,
-                    'menages' => $groupe->count(),
-                    'menages_termines' => $groupe->where('statut', 'termine')->count(),
-                    'parcelles' => $parcellesGroupe->count(),
-                    'pieds' => (int) $parcellesGroupe->sum('nombre_pieds'),
-                ];
-            })
-            ->sortByDesc('menages')
-            ->values();
+        $menagesProvince = $this->menagesFiltres($filtres)
+            ->leftJoin('collines', 'collines.id', '=', 'menages.colline_id')
+            ->leftJoin('zones', 'zones.id', '=', 'collines.zone_id')
+            ->leftJoin('communes', 'communes.id', '=', 'zones.commune_id')
+            ->leftJoin('provinces', 'provinces.id', '=', 'communes.province_id')
+            ->selectRaw("$exprProvince AS province, COUNT(*) AS menages, COUNT(*) FILTER (WHERE menages.statut = 'termine') AS menages_termines")
+            ->groupBy(DB::raw($exprProvince))
+            ->get()->keyBy('province');
 
-        // --- Classement par enquêteur ---
-        $parEnqueteur = $menages
-            ->whereNotNull('enqueteur_id')
-            ->groupBy(fn ($m) => $m->enqueteur?->name ?? 'Non assigné')
-            ->map(function ($groupe, $nom) use ($parcelles) {
-                $idsGroupe = $groupe->pluck('id');
-                $parcellesGroupe = $parcelles->whereIn('menage_id', $idsGroupe);
+        $parcellesProvince = $this->parcellesFiltrees($filtres)
+            ->join('menages', 'menages.id', '=', 'parcelles.menage_id')
+            ->leftJoin('collines', 'collines.id', '=', 'menages.colline_id')
+            ->leftJoin('zones', 'zones.id', '=', 'collines.zone_id')
+            ->leftJoin('communes', 'communes.id', '=', 'zones.commune_id')
+            ->leftJoin('provinces', 'provinces.id', '=', 'communes.province_id')
+            ->selectRaw("$exprProvince AS province, COUNT(*) AS parcelles, COALESCE(SUM(parcelles.nombre_pieds),0) AS pieds")
+            ->groupBy(DB::raw($exprProvince))
+            ->get()->keyBy('province');
 
-                return [
-                    'enqueteur' => $nom,
-                    'menages' => $groupe->count(),
-                    'menages_termines' => $groupe->where('statut', 'termine')->count(),
-                    'parcelles' => $parcellesGroupe->count(),
-                    'pieds' => (int) $parcellesGroupe->sum('nombre_pieds'),
-                ];
-            })
-            ->sortByDesc('parcelles')
-            ->values();
+        $parProvince = $menagesProvince->map(fn ($m, $nom) => [
+            'province' => $nom,
+            'menages' => (int) $m->menages,
+            'menages_termines' => (int) $m->menages_termines,
+            'parcelles' => (int) ($parcellesProvince[$nom]->parcelles ?? 0),
+            'pieds' => (int) ($parcellesProvince[$nom]->pieds ?? 0),
+        ])->sortByDesc('menages')->values();
 
-        // --- État des vergers, mode de positionnement/acquisition, type de ménage ---
-        $parEtatVerger = $parcelles->whereNotNull('etat_verger')->groupBy('etat_verger')->map->count()->sortDesc();
-        $parModePositionnement = $parcelles->whereNotNull('mode_positionnement')->groupBy('mode_positionnement')->map->count();
-        $parModeAcquisition = $parcelles->whereNotNull('mode_acquisition')->groupBy('mode_acquisition')->map->count();
-        $parTypeMenage = $menages->groupBy('type_menage')->map->count();
+        // ---------- Par enquêteur (clé = id) ----------
+        $menagesEnq = $this->menagesFiltres($filtres)
+            ->whereNotNull('menages.enqueteur_id')
+            ->selectRaw("menages.enqueteur_id, COUNT(*) AS menages, COUNT(*) FILTER (WHERE menages.statut = 'termine') AS menages_termines")
+            ->groupBy('menages.enqueteur_id')
+            ->get()->keyBy('enqueteur_id');
 
-        // --- Évolution dans le temps (parcelles géolocalisées, par semaine) ---
-        $evolution = $parcelles
-            ->whereNotNull('latitude')
-            ->groupBy(fn ($p) => $p->created_at->startOfWeek()->format('d/m/Y'))
-            ->map->count()
-            ->sortKeys();
+        $parcellesEnq = $this->parcellesFiltrees($filtres)
+            ->join('menages', 'menages.id', '=', 'parcelles.menage_id')
+            ->whereNotNull('menages.enqueteur_id')
+            ->selectRaw('menages.enqueteur_id, COUNT(*) AS parcelles, COALESCE(SUM(parcelles.nombre_pieds),0) AS pieds')
+            ->groupBy('menages.enqueteur_id')
+            ->get()->keyBy('enqueteur_id');
 
-        // --- Enquêteurs affectés à la colline sélectionnée ---
-        //
-        // Différent du "Classement par enquêteur" ci-dessus : celui-ci ne
-        // liste que les enquêteurs ayant déjà saisi au moins un ménage.
-        // Ici, dès qu'une colline est sélectionnée dans les filtres, on
-        // affiche TOUS les enquêteurs qui y sont affectés (table pivot
-        // colline_user, cf. User::collines()), y compris ceux qui n'ont
-        // encore rien saisi — utile pour repérer un enquêteur affecté mais
-        // inactif sur le terrain, ou une colline sans personne affectée.
+        $noms = User::whereIn('id', $menagesEnq->keys())->pluck('name', 'id');
+
+        $statsParEnqueteurId = $menagesEnq->map(fn ($m, $id) => [
+            'menages' => (int) $m->menages,
+            'menages_termines' => (int) $m->menages_termines,
+            'parcelles' => (int) ($parcellesEnq[$id]->parcelles ?? 0),
+            'pieds' => (int) ($parcellesEnq[$id]->pieds ?? 0),
+        ]);
+
+        $parEnqueteur = $statsParEnqueteurId
+            ->map(fn ($s, $id) => ['enqueteur' => $noms[$id] ?? 'Non assigné'] + $s)
+            ->sortByDesc('parcelles')->values();
+
+        // ---------- Répartitions qualitatives ----------
+        $repartition = fn (string $colonne) => $this->parcellesFiltrees($filtres)
+            ->whereNotNull("parcelles.$colonne")
+            ->select("parcelles.$colonne", DB::raw('COUNT(*) AS total'))
+            ->groupBy("parcelles.$colonne")
+            ->pluck('total', $colonne);
+
+        $parEtatVerger = $repartition('etat_verger')->sortDesc();
+        $parModePositionnement = $repartition('mode_positionnement');
+        $parModeAcquisition = $repartition('mode_acquisition');
+
+        $parTypeMenage = $this->menagesFiltres($filtres)
+            ->select('menages.type_menage', DB::raw('COUNT(*) AS total'))
+            ->groupBy('menages.type_menage')
+            ->pluck('total', 'type_menage');
+
+        // ---------- Évolution par semaine (PostgreSQL) ----------
+        $evolution = $this->parcellesFiltrees($filtres)
+            ->whereNotNull('parcelles.latitude')
+            ->selectRaw("date_trunc('week', parcelles.created_at)::date AS semaine, COUNT(*) AS total")
+            ->groupBy('semaine')
+            ->orderBy('semaine')
+            ->get()
+            ->mapWithKeys(fn ($r) => [\Carbon\Carbon::parse($r->semaine)->format('d/m/Y') => (int) $r->total]);
+
+        // ---------- Enquêteurs de la colline sélectionnée ----------
         $collineSelectionnee = null;
         $enqueteursColline = collect();
 
         if ($collineId = $filtres['colline_id'] ?? null) {
             $collineSelectionnee = Colline::find($collineId, ['id', 'nom']);
 
-            // Stats déjà calculées sur le périmètre filtré (donc déjà
-            // restreint à cette colline), indexées par id d'enquêteur.
-            $statsParEnqueteurId = $menages
-                ->whereNotNull('enqueteur_id')
-                ->groupBy('enqueteur_id')
-                ->map(function ($groupe) use ($parcelles) {
-                    $idsGroupe = $groupe->pluck('id');
-                    $parcellesGroupe = $parcelles->whereIn('menage_id', $idsGroupe);
-
-                    return [
-                        'menages' => $groupe->count(),
-                        'menages_termines' => $groupe->where('statut', 'termine')->count(),
-                        'parcelles' => $parcellesGroupe->count(),
-                        'pieds' => (int) $parcellesGroupe->sum('nombre_pieds'),
-                    ];
-                });
+            $vide = ['menages' => 0, 'menages_termines' => 0, 'parcelles' => 0, 'pieds' => 0];
 
             $enqueteursColline = User::where('role', 'enqueteur')
                 ->whereHas('collines', fn ($q) => $q->where('collines.id', $collineId))
                 ->orderBy('name')
                 ->get(['id', 'name', 'actif'])
-                ->map(function ($u) use ($statsParEnqueteurId) {
-                    $stats = $statsParEnqueteurId->get($u->id, [
-                        'menages' => 0,
-                        'menages_termines' => 0,
-                        'parcelles' => 0,
-                        'pieds' => 0,
-                    ]);
-
-                    return array_merge([
-                        'id' => $u->id,
-                        'enqueteur' => $u->name,
-                        'actif' => (bool) $u->actif,
-                    ], $stats);
-                })
+                ->map(fn ($u) => array_merge([
+                    'id' => $u->id,
+                    'enqueteur' => $u->name,
+                    'actif' => (bool) $u->actif,
+                ], $statsParEnqueteurId->get($u->id, $vide)))
                 ->values();
         }
 
-        // --- Synchronisation terrain (mêmes filtres enquêteur/période) ---
+        // ---------- Synchronisation ----------
         $parStatutSync = SyncLog::query()
             ->when($filtres['enqueteur_id'] ?? null, fn ($q, $v) => $q->where('enqueteur_id', $v))
             ->when($filtres['date_debut'] ?? null, fn ($q, $v) => $q->whereDate('created_at', '>=', $v))
             ->when($filtres['date_fin'] ?? null, fn ($q, $v) => $q->whereDate('created_at', '<=', $v))
-            ->get()
+            ->select('statut', DB::raw('COUNT(*) AS total'))
             ->groupBy('statut')
-            ->map->count();
+            ->pluck('total', 'statut');
 
         return Inertia::render('Statistiques/Index', [
             'filtres' => $filtres,
             'provinces' => Province::orderBy('nom')->get(['id', 'nom']),
-            'communes' => \App\Models\Commune::orderBy('nom')->get(['id', 'nom', 'province_id']),
-            'zones' => \App\Models\Zone::orderBy('nom')->get(['id', 'nom', 'commune_id']),
-            'collines' => \App\Models\Colline::orderBy('nom')->get(['id', 'nom', 'zone_id']),
+            'communes' => Commune::orderBy('nom')->get(['id', 'nom', 'province_id']),
+            'zones' => Zone::orderBy('nom')->get(['id', 'nom', 'commune_id']),
+            'collines' => Colline::orderBy('nom')->get(['id', 'nom', 'zone_id']),
             'enqueteurs' => $this->enqueteursFiltres($filtres),
 
             'kpis' => [
@@ -270,12 +217,10 @@ class StatistiqueController extends Controller
                 'total_parcelles' => $totalParcelles,
                 'total_parcelles_geolocalisees' => $totalParcellesGeolocalisees,
                 'taux_geolocalisation' => $totalParcelles > 0
-                    ? round(($totalParcellesGeolocalisees / $totalParcelles) * 100, 1)
-                    : 0,
+                    ? round(($totalParcellesGeolocalisees / $totalParcelles) * 100, 1) : 0,
                 'total_pieds' => $totalPieds,
                 'moyenne_pieds_par_parcelle' => $totalParcellesGeolocalisees > 0
-                    ? (int) round($totalPieds / $totalParcellesGeolocalisees)
-                    : 0,
+                    ? (int) round($totalPieds / $totalParcellesGeolocalisees) : 0,
             ],
 
             'avancement' => $avancement,
@@ -292,8 +237,3 @@ class StatistiqueController extends Controller
         ]);
     }
 }
-
-
-
-
-
