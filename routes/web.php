@@ -103,9 +103,19 @@ Route::delete('/menages/{menage}/parcelles/{parcelle}', [MenageController::class
     ->middleware(['auth', 'verified', 'role:admin,superviseur_national,superviseur_provincial,superviseur_communal'])
     ->name('menages.parcelles.destroy');
 
+// À ajouter dans routes/web.php, juste après la route menages.reponses.destroy :
+
+Route::put('/menages/{menage}/reponses/{reponse}', [MenageController::class, 'modifierReponse'])
+    ->middleware(['auth', 'verified', 'role:admin,superviseur_national,superviseur_provincial,superviseur_communal'])
+    ->name('menages.reponses.update');
+
 Route::delete('/menages/{menage}/reponses/{reponse}', [MenageController::class, 'detruireReponse'])
     ->middleware(['auth', 'verified', 'role:admin,superviseur_national,superviseur_provincial,superviseur_communal'])
     ->name('menages.reponses.destroy');
+
+Route::delete('/menages/{menage}/reponses', [MenageController::class, 'detruireToutesLesReponses'])
+    ->middleware(['auth', 'verified', 'role:admin,superviseur_national,superviseur_provincial,superviseur_communal'])
+    ->name('menages.reponses.destroy-all');
 
 // Import / export du fichier "caféiculteurs" — routes indépendantes du
 // groupe "utilisateurs" ci-dessous : elles portent sur les ménages, pas

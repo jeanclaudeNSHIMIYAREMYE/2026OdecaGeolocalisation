@@ -459,7 +459,7 @@ export default function Sidebar() {
                         className="group flex min-w-0 items-center gap-3 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-green-950"
                     >
                         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white shadow-lg shadow-black/25 ring-1 ring-white/40 transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-105">
-                            <ApplicationLogo className="block h-8 w-auto fill-current text-burundi-vert" />
+                            <ApplicationLogo className="block h-8 w-auto object-contain" />
                         </span>
 
                         <span className="truncate text-[17px] font-bold tracking-tight text-white">

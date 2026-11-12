@@ -1,3 +1,4 @@
+
 import FiltresTerritoriaux from '@/Components/FiltresTerritoriaux';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
@@ -5,36 +6,7 @@ import { useEffect, useState } from 'react';
 import { detailsStatutMenage } from '@/Constants/statutsMenage';
 
 // ============================================================
-// STATUTS
-// ============================================================
-
-const LIBELLES_STATUT = {
-    termine: {
-        texte: 'Terminé',
-        classe: 'bg-green-50 text-green-700 ring-1 ring-green-200',
-        point: 'bg-green-500',
-    },
-    en_attente: {
-        texte: 'En attente',
-        classe: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
-        point: 'bg-amber-500',
-    },
-    a_faire: {
-        texte: 'À faire',
-        classe: 'bg-gray-100 text-gray-600 ring-1 ring-gray-200',
-        point: 'bg-gray-400',
-    },
-};
-
-const STATUT_PAR_DEFAUT = {
-    texte: 'Non défini',
-    classe: 'bg-gray-100 text-gray-600 ring-1 ring-gray-200',
-    point: 'bg-gray-400',
-};
-
-// ============================================================
 // STYLES PARTAGÉS
-// Couleurs du drapeau : rouge #CE1126 · blanc · vert #18B637
 // ============================================================
 
 const CLASSE_SELECT =
@@ -54,29 +26,36 @@ const ICONES_COMPTEURS = {
 const STYLES_PAGE = `
 @keyframes suiEntree {
     from { opacity: 0; transform: translateY(14px); }
-    to   { opacity: 1; transform: translateY(0); }
+    to { opacity: 1; transform: translateY(0); }
 }
 @keyframes suiBarre {
-    0%   { transform: translateX(-100%); }
+    0% { transform: translateX(-100%); }
     100% { transform: translateX(350%); }
 }
 @keyframes suiDrapeau {
     from { background-position: 0 0; }
-    to   { background-position: 200% 0; }
+    to { background-position: 200% 0; }
 }
 @keyframes suiHalo {
     0%, 100% { transform: translate(0, 0) scale(1); opacity: .5; }
-    50%      { transform: translate(-20px, 16px) scale(1.15); opacity: .8; }
+    50% { transform: translate(-20px, 16px) scale(1.15); opacity: .8; }
 }
 @keyframes suiBrillance {
     from { transform: translateX(-130%) skewX(-18deg); }
-    to   { transform: translateX(260%) skewX(-18deg); }
+    to { transform: translateX(260%) skewX(-18deg); }
 }
 
-.anim-sui-carte  { opacity: 0; animation: suiEntree .55s cubic-bezier(.22, 1, .36, 1) forwards; }
-.anim-sui-ligne  { opacity: 0; animation: suiEntree .45s cubic-bezier(.22, 1, .36, 1) forwards; }
-.anim-sui-barre  { animation: suiBarre 1s ease-in-out infinite; }
-
+.anim-sui-carte {
+    opacity: 0;
+    animation: suiEntree .55s cubic-bezier(.22, 1, .36, 1) forwards;
+}
+.anim-sui-ligne {
+    opacity: 0;
+    animation: suiEntree .45s cubic-bezier(.22, 1, .36, 1) forwards;
+}
+.anim-sui-barre {
+    animation: suiBarre 1s ease-in-out infinite;
+}
 .sui-drapeau {
     background: linear-gradient(90deg, #ce1126, #ffffff, #18b637, #ce1126);
     background-size: 200% 100%;
@@ -84,42 +63,60 @@ const STYLES_PAGE = `
 }
 .sui-banniere {
     background:
-        radial-gradient(90% 120% at 100% 0%, rgba(24, 182, 55, .30) 0%, transparent 60%),
+        radial-gradient(90% 120% at 100% 0%, rgba(24,182,55,.30) 0%, transparent 60%),
         linear-gradient(160deg, #0a3b21 0%, #0d4a2a 55%, #07301a 100%);
 }
 .sui-halo {
-    background: radial-gradient(circle, rgba(206, 17, 38, .55) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(206,17,38,.55) 0%, transparent 70%);
     animation: suiHalo 9s ease-in-out infinite;
 }
-.sui-fond-vert  { background: linear-gradient(135deg, #18b637 0%, #0d6b2c 100%); box-shadow: 0 8px 16px -6px rgba(13, 107, 44, .6); }
-.sui-fond-rouge { background: linear-gradient(135deg, #e11d36 0%, #ce1126 55%, #9f0d1d 100%); box-shadow: 0 8px 16px -6px rgba(206, 17, 38, .65); }
-.sui-fond-sombre { background: linear-gradient(135deg, #0d4a2a 0%, #07301a 100%); box-shadow: 0 8px 16px -6px rgba(7, 48, 26, .7); }
-
-.sui-brillance { position: relative; overflow: hidden; }
+.sui-fond-vert {
+    background: linear-gradient(135deg, #18b637 0%, #0d6b2c 100%);
+    box-shadow: 0 8px 16px -6px rgba(13,107,44,.6);
+}
+.sui-fond-rouge {
+    background: linear-gradient(135deg, #e11d36 0%, #ce1126 55%, #9f0d1d 100%);
+    box-shadow: 0 8px 16px -6px rgba(206,17,38,.65);
+}
+.sui-fond-sombre {
+    background: linear-gradient(135deg, #0d4a2a 0%, #07301a 100%);
+    box-shadow: 0 8px 16px -6px rgba(7,48,26,.7);
+}
+.sui-brillance {
+    position: relative;
+    overflow: hidden;
+}
 .sui-brillance::after {
     content: '';
     position: absolute;
     inset: 0;
     width: 35%;
-    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .35), transparent);
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,.35), transparent);
     transform: translateX(-130%) skewX(-18deg);
     pointer-events: none;
 }
-.sui-brillance:hover::after { animation: suiBrillance .8s ease-out; }
-.sui-ligne:hover { box-shadow: inset 3px 0 0 0 #18b637; }
-.sui-ligne:focus { box-shadow: inset 3px 0 0 0 #ce1126; }
-
+.sui-brillance:hover::after {
+    animation: suiBrillance .8s ease-out;
+}
+.sui-ligne:hover {
+    box-shadow: inset 3px 0 0 0 #18b637;
+}
+.sui-ligne:focus {
+    box-shadow: inset 3px 0 0 0 #ce1126;
+}
 @media (prefers-reduced-motion: reduce) {
     .anim-sui-carte, .anim-sui-ligne, .anim-sui-barre,
     .sui-drapeau, .sui-halo, .sui-brillance:hover::after {
         animation: none !important;
     }
-    .anim-sui-carte, .anim-sui-ligne { opacity: 1 !important; }
+    .anim-sui-carte, .anim-sui-ligne {
+        opacity: 1 !important;
+    }
 }
 `;
 
 // ============================================================
-// COMPTEUR ANIMÉ (monte progressivement jusqu'à la valeur)
+// COMPTEUR ANIMÉ
 // ============================================================
 
 function useCompteurAnime(cible, duree = 900) {
@@ -162,7 +159,14 @@ function useCompteurAnime(cible, duree = 900) {
 // COMPOSANTS
 // ============================================================
 
-function CarteCompteur({ titre, valeur, fond, couleurTexte, icone, ordre }) {
+function CarteCompteur({
+    titre,
+    valeur,
+    fond,
+    couleurTexte,
+    icone,
+    ordre,
+}) {
     const affichee = useCompteurAnime(valeur);
 
     return (
@@ -245,7 +249,7 @@ function LienExport({ href, children }) {
 }
 
 // ============================================================
-// PAGE
+// PAGE PRINCIPALE
 // ============================================================
 
 export default function Index({
@@ -258,25 +262,54 @@ export default function Index({
     collines,
 }) {
     const [chargement, setChargement] = useState(false);
+    const [recherche, setRecherche] = useState(filtres?.recherche ?? '');
 
+    // Synchroniser la recherche avec les filtres Laravel/Inertia.
+    useEffect(() => {
+        setRecherche(filtres?.recherche ?? '');
+    }, [filtres?.recherche]);
+
+    // Appliquer les filtres et revenir à la première page.
     const appliquer = (nouveauxFiltres) => {
-        router.get(route('suivi-menages.index'), nouveauxFiltres, {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-            onStart: () => setChargement(true),
-            onFinish: () => setChargement(false),
-        });
+        router.get(
+            route('suivi-menages.index'),
+            {
+                ...nouveauxFiltres,
+                page: 1,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                onStart: () => setChargement(true),
+                onFinish: () => setChargement(false),
+            },
+        );
     };
 
     const listeMenages = menages?.data ?? [];
     const liensPagination = menages?.links ?? [];
 
+    const lancerRecherche = () => {
+        appliquer({
+            ...filtres,
+            recherche: recherche.trim() || undefined,
+        });
+    };
+
+    const effacerRecherche = () => {
+        setRecherche('');
+        appliquer({
+            ...filtres,
+            recherche: undefined,
+        });
+    };
+
     return (
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Suivi des caféiculteur
+                    Suivi des caféiculteurs
                 </h2>
             }
         >
@@ -286,7 +319,11 @@ export default function Index({
 
             <div className="py-10">
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
-                    {/* Compteurs */}
+
+                    {/* ========================================
+                        COMPTEURS
+                    ======================================== */}
+
                     <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                         <CarteCompteur
                             titre="Pré-enregistrés"
@@ -325,7 +362,10 @@ export default function Index({
                         />
                     </div>
 
-                    {/* Filtres */}
+                    {/* ========================================
+                        RECHERCHE ET FILTRES
+                    ======================================== */}
+
                     <div
                         className="anim-sui-carte relative space-y-4 overflow-hidden rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"
                         style={{ animationDelay: '280ms' }}
@@ -338,8 +378,97 @@ export default function Index({
                             )}
                         </div>
 
+                        {/* RECHERCHE MULTICRITÈRE */}
+
+                        <div className="mt-1 border-b border-gray-100 pb-4">
+                            <label
+                                htmlFor="recherche-menage"
+                                className="mb-2 block text-sm font-semibold text-gray-700"
+                            >
+                                Rechercher un Caféiculteurs
+                            </label>
+
+                            <div className="flex flex-col gap-2 sm:flex-row">
+                                <div className="relative min-w-0 flex-1">
+                                    <svg
+                                        className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="1.8"
+                                        aria-hidden="true"
+                                    >
+                                        <circle cx="11" cy="11" r="7" />
+                                        <path
+                                            strokeLinecap="round"
+                                            d="m20 20-3.5-3.5"
+                                        />
+                                    </svg>
+
+                                    <input
+                                        id="recherche-menage"
+                                        type="search"
+                                        value={recherche}
+                                        onChange={(e) =>
+                                            setRecherche(e.target.value)
+                                        }
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                lancerRecherche();
+                                            }
+                                        }}
+                                        placeholder="Code, nom, prénom, colline, zone, commune, province ou enquêteur..."
+                                        className="w-full rounded-xl border-gray-200 bg-gray-50/60 py-3 pl-10 pr-4 text-sm shadow-sm transition placeholder:text-gray-400 focus:border-green-600 focus:bg-white focus:ring-2 focus:ring-green-600/25"
+                                    />
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={lancerRecherche}
+                                    disabled={chargement}
+                                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:cursor-wait disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2"
+                                >
+                                    <svg
+                                        className="h-4 w-4"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        aria-hidden="true"
+                                    >
+                                        <circle cx="11" cy="11" r="7" />
+                                        <path
+                                            strokeLinecap="round"
+                                            d="m20 20-3.5-3.5"
+                                        />
+                                    </svg>
+                                    Rechercher
+                                </button>
+
+                                {(filtres?.recherche || recherche) && (
+                                    <button
+                                        type="button"
+                                        onClick={effacerRecherche}
+                                        className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+                                    >
+                                        Effacer
+                                    </button>
+                                )}
+                            </div>
+
+                            <p className="mt-2 text-xs text-gray-500">
+                                Recherche par code du caféiculteur, caféiculteur,
+                                localisation ou nom de l'enquêteur.
+                            </p>
+                        </div>
+
+                        {/* FILTRES GÉNÉRAUX */}
+
                         <div className="mt-1 flex flex-wrap gap-4">
+
                             {/* Origine */}
+
                             <Etiquette label="Origine">
                                 <select
                                     className={CLASSE_SELECT}
@@ -362,6 +491,7 @@ export default function Index({
                             </Etiquette>
 
                             {/* Questionnaire */}
+
                             <Etiquette label="Questionnaire">
                                 <select
                                     className={CLASSE_SELECT}
@@ -385,6 +515,7 @@ export default function Index({
                             </Etiquette>
 
                             {/* Statut */}
+
                             <Etiquette label="Statut">
                                 <select
                                     className={CLASSE_SELECT}
@@ -406,7 +537,8 @@ export default function Index({
                             </Etiquette>
                         </div>
 
-                        {/* Filtres territoriaux */}
+                        {/* FILTRES TERRITORIAUX */}
+
                         <div className="flex flex-wrap gap-4 border-t border-gray-100 pt-4">
                             <FiltresTerritoriaux
                                 valeurs={filtres ?? {}}
@@ -419,12 +551,16 @@ export default function Index({
                         </div>
                     </div>
 
-                    {/* Exports et tableau */}
+                    {/* ========================================
+                        TABLEAU ET EXPORTS
+                    ======================================== */}
+
                     <div
                         className="anim-sui-carte overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm"
                         style={{ animationDelay: '360ms' }}
                     >
-                        {/* Bannière */}
+                        {/* BANNIÈRE */}
+
                         <div className="sui-banniere relative overflow-hidden">
                             <div
                                 aria-hidden="true"
@@ -442,40 +578,60 @@ export default function Index({
                                             Caféiculteurs suivis
                                         </h3>
                                         <p className="text-sm text-green-100/70">
-                                            caféiculteur(s) trouvé(s)
+                                            {menages?.total ?? 0} Caféiculteurs(s)
+                                            trouvé(s)
                                         </p>
                                     </div>
                                 </div>
 
+                                {/* EXPORTS */}
+
                                 <div className="flex flex-wrap items-center gap-2">
                                     <LienExport
-                                        href={route('suivi-menages.xlsx', filtres)}
+                                        href={route(
+                                            'suivi-menages.xlsx',
+                                            filtres,
+                                        )}
                                     >
                                         Excel
                                     </LienExport>
 
                                     <LienExport
-                                        href={route('suivi-menages.csv', filtres)}
+                                        href={route(
+                                            'suivi-menages.csv',
+                                            filtres,
+                                        )}
                                     >
                                         CSV
                                     </LienExport>
 
                                     <LienExport
-                                        href={route('suivi-menages.pdf', filtres)}
+                                        href={route(
+                                            'suivi-menages.pdf',
+                                            filtres,
+                                        )}
                                     >
                                         PDF
                                     </LienExport>
 
                                     <LienExport
-                                        href={route('suivi-menages.geojson', filtres)}
+                                        href={route(
+                                            'suivi-menages.geojson',
+                                            filtres,
+                                        )}
                                     >
                                         GeoJSON
                                     </LienExport>
                                 </div>
                             </div>
 
-                            <div className="sui-drapeau h-1 w-full" aria-hidden="true" />
+                            <div
+                                className="sui-drapeau h-1 w-full"
+                                aria-hidden="true"
+                            />
                         </div>
+
+                        {/* TABLEAU */}
 
                         <div
                             className={`overflow-x-auto transition-opacity duration-200 ${
@@ -485,25 +641,29 @@ export default function Index({
                             <table className="w-full text-left text-sm">
                                 <thead className="border-b border-green-100 bg-gradient-to-r from-green-50 via-white to-red-50/40 text-xs text-gray-600">
                                     <tr>
-                                        <th className="px-6 py-3 font-semibold">Code</th>
-                                        <th className="px-6 py-3 font-semibold">Origine</th>
+                                        <th className="px-6 py-3 font-semibold">
+                                            Code
+                                        </th>
+                                        <th className="px-6 py-3 font-semibold">
+                                            Origine
+                                        </th>
                                         <th className="px-6 py-3 font-semibold">
                                             Questionnaire
                                         </th>
                                         <th className="px-6 py-3 font-semibold">
-                                            caféiculteur
+                                            Caféiculteur
                                         </th>
                                         <th className="px-6 py-3 font-semibold">
                                             Localisation
                                         </th>
-                                        <th className="px-6 py-3 font-semibold">Statut</th>
+                                        <th className="px-6 py-3 font-semibold">
+                                            Statut
+                                        </th>
                                     </tr>
                                 </thead>
 
                                 <tbody className="divide-y divide-gray-100">
                                     {listeMenages.map((menage, index) => {
-                                        // Évite l'erreur si le statut est inconnu
-                                        // ou si sa valeur est null.
                                         const statut =
                                             detailsStatutMenage(menage.statut);
 
@@ -524,7 +684,10 @@ export default function Index({
 
                                         const ouvrir = () =>
                                             router.visit(
-                                                route('menages.show', menage.id),
+                                                route(
+                                                    'menages.show',
+                                                    menage.id,
+                                                ),
                                             );
 
                                         const aRepondu =
@@ -540,14 +703,20 @@ export default function Index({
                                                 }}
                                                 onClick={ouvrir}
                                                 onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') ouvrir();
+                                                    if (e.key === 'Enter') {
+                                                        ouvrir();
+                                                    }
                                                 }}
                                             >
+                                                {/* CODE */}
+
                                                 <td className="px-6 py-4">
                                                     <span className="rounded-md bg-gray-100 px-2 py-1 font-mono text-xs font-semibold text-gray-800 transition-colors duration-200 group-hover:bg-green-100 group-hover:text-green-900">
                                                         {menage.code_menage ?? '—'}
                                                     </span>
                                                 </td>
+
+                                                {/* ORIGINE */}
 
                                                 <td className="px-6 py-4">
                                                     <span
@@ -562,6 +731,8 @@ export default function Index({
                                                             : 'Pré-enregistré'}
                                                     </span>
                                                 </td>
+
+                                                {/* QUESTIONNAIRE */}
 
                                                 <td className="px-6 py-4">
                                                     <span
@@ -582,13 +753,19 @@ export default function Index({
                                                     </span>
                                                 </td>
 
+                                                {/* CHEF DE MÉNAGE */}
+
                                                 <td className="px-6 py-4 font-medium text-gray-800">
                                                     {chefMenage || '—'}
                                                 </td>
 
+                                                {/* LOCALISATION */}
+
                                                 <td className="px-6 py-4 text-gray-600">
                                                     {localisation || '—'}
                                                 </td>
+
+                                                {/* STATUT */}
 
                                                 <td className="px-6 py-4">
                                                     <span
@@ -603,6 +780,8 @@ export default function Index({
                                             </tr>
                                         );
                                     })}
+
+                                    {/* AUCUN RÉSULTAT */}
 
                                     {listeMenages.length === 0 && (
                                         <tr>
@@ -620,19 +799,26 @@ export default function Index({
                                                             className="h-10 w-10 text-green-700/50"
                                                             aria-hidden="true"
                                                         >
-                                                            <circle cx="11" cy="11" r="7" />
+                                                            <circle
+                                                                cx="11"
+                                                                cy="11"
+                                                                r="7"
+                                                            />
                                                             <path
                                                                 strokeLinecap="round"
                                                                 d="m20 20-3.5-3.5"
                                                             />
                                                         </svg>
                                                     </span>
+
                                                     <p className="font-medium text-gray-700">
                                                         Aucun résultat
                                                     </p>
+
                                                     <p className="text-sm">
-                                                        Aucun Caféiculteur ne correspond aux
-                                                        critères.
+                                                        Aucun caféiculteur ne
+                                                        correspond aux critères
+                                                        de recherche.
                                                     </p>
                                                 </div>
                                             </td>
@@ -642,7 +828,10 @@ export default function Index({
                             </table>
                         </div>
 
-                        {/* Pagination */}
+                        {/* ========================================
+                            PAGINATION
+                        ======================================== */}
+
                         {liensPagination.length > 3 && (
                             <div className="flex flex-wrap gap-1.5 border-t border-gray-100 bg-gray-50/50 p-4">
                                 {liensPagination.map((lien, index) => (

@@ -1,5 +1,5 @@
-import blason from '@/assets/blason-burundi.png';
+import logoOdeca from '@/assets/odeca-logo.jpeg';
 
 export default function ApplicationLogo(props) {
-    return <img src={blason} alt="Armoiries du Burundi" {...props} />;
+    return <img src={logoOdeca} alt="Logo ODECA" {...props} />;
 }

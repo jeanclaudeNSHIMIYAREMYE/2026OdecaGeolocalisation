@@ -1,4 +1,4 @@
-import ApplicationLogo from '@/Components/ApplicationLogo';
+
 import odeca from '@/assets/odeca-logo.jpeg';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
@@ -46,52 +46,97 @@ export default function Login({ status, canResetPassword }) {
 
     return (
         <>
-            <Head title="Connexion" />
+            <Head title="Connexion - ODECA Burundi" />
 
             <style>{`
                 @keyframes logEntree {
                     from { opacity: 0; transform: translateY(20px); }
                     to   { opacity: 1; transform: translateY(0); }
                 }
+
                 @keyframes logGauche {
                     from { opacity: 0; transform: translateX(-24px); }
                     to   { opacity: 1; transform: translateX(0); }
                 }
+
                 @keyframes logFlotte {
                     0%, 100% { transform: translate(0, 0) scale(1); }
                     50%      { transform: translate(24px, -30px) scale(1.1); }
                 }
+
                 @keyframes logHalo {
-                    0%   { transform: scale(1);   opacity: .5; }
+                    0%   { transform: scale(1); opacity: .5; }
                     100% { transform: scale(1.4); opacity: 0; }
                 }
+
                 @keyframes logErreur {
                     0%   { opacity: 0; transform: translateX(-6px); }
                     60%  { transform: translateX(3px); }
                     100% { opacity: 1; transform: translateX(0); }
                 }
-                @keyframes logRotation { to { transform: rotate(360deg); } }
+
+                @keyframes logRotation {
+                    to { transform: rotate(360deg); }
+                }
+
                 @keyframes logBrillance {
                     0%   { transform: translateX(-120%) skewX(-20deg); }
                     100% { transform: translateX(260%) skewX(-20deg); }
                 }
-                .log-entree  { opacity: 0; animation: logEntree .7s cubic-bezier(.2,.7,.2,1) forwards; }
-                .log-gauche  { opacity: 0; animation: logGauche .8s cubic-bezier(.2,.7,.2,1) forwards; }
-                .log-blob    { animation: logFlotte 14s ease-in-out infinite; }
-                .log-halo    { animation: logHalo 2.8s ease-out infinite; }
-                .log-erreur  { animation: logErreur .35s ease-out both; }
-                .log-spin    { animation: logRotation .8s linear infinite; }
-                .log-brille  { position: relative; overflow: hidden; }
+
+                .log-entree {
+                    opacity: 0;
+                    animation: logEntree .7s cubic-bezier(.2,.7,.2,1) forwards;
+                }
+
+                .log-gauche {
+                    opacity: 0;
+                    animation: logGauche .8s cubic-bezier(.2,.7,.2,1) forwards;
+                }
+
+                .log-blob {
+                    animation: logFlotte 14s ease-in-out infinite;
+                }
+
+                .log-halo {
+                    animation: logHalo 2.8s ease-out infinite;
+                }
+
+                .log-erreur {
+                    animation: logErreur .35s ease-out both;
+                }
+
+                .log-spin {
+                    animation: logRotation .8s linear infinite;
+                }
+
+                .log-brille {
+                    position: relative;
+                    overflow: hidden;
+                }
+
                 .log-brille::after {
                     content: '';
                     position: absolute;
                     inset: 0;
                     width: 40%;
-                    background: linear-gradient(90deg, transparent, rgba(255,255,255,.4), transparent);
+                    background: linear-gradient(
+                        90deg,
+                        transparent,
+                        rgba(255,255,255,.4),
+                        transparent
+                    );
                     animation: logBrillance 3.2s ease-in-out infinite;
                 }
+
                 @media (prefers-reduced-motion: reduce) {
-                    .log-entree, .log-gauche, .log-blob, .log-halo, .log-erreur, .log-spin, .log-brille::after {
+                    .log-entree,
+                    .log-gauche,
+                    .log-blob,
+                    .log-halo,
+                    .log-erreur,
+                    .log-spin,
+                    .log-brille::after {
                         animation: none !important;
                         opacity: 1 !important;
                     }
@@ -99,47 +144,67 @@ export default function Login({ status, canResetPassword }) {
             `}</style>
 
             <div className="relative flex min-h-screen bg-gradient-to-br from-red-50 via-white to-green-50">
-                {/* Bandeau drapeau */}
+
+                {/* Bandeau drapeau du Burundi */}
                 <div className="absolute inset-x-0 top-0 z-30 flex h-1.5">
                     <div className="flex-1 bg-burundi-rouge" />
                     <div className="flex-1 bg-white" />
                     <div className="flex-1 bg-burundi-vert" />
                 </div>
 
-                {/* Panneau gauche (écrans larges) */}
+                {/* Panneau gauche : écrans larges */}
                 <aside className="relative hidden w-1/2 overflow-hidden bg-gradient-to-br from-burundi-vert via-green-700 to-green-900 lg:flex lg:flex-col lg:justify-between lg:p-12">
+
                     <div className="log-blob pointer-events-none absolute -left-24 top-10 h-80 w-80 rounded-full bg-white/10 blur-3xl" />
+
                     <div
                         className="log-blob pointer-events-none absolute -bottom-24 right-0 h-96 w-96 rounded-full bg-burundi-rouge/30 blur-3xl"
                         style={{ animationDelay: '-6s' }}
                     />
 
+                    {/* Logo ODECA en arrière-plan */}
                     <img
                         src={odeca}
                         alt=""
                         aria-hidden="true"
-                        className="pointer-events-none absolute left-1/2 top-1/2 h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 opacity-[0.07] blur-sm"
+                        className="pointer-events-none absolute left-1/2 top-1/2 h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.07] blur-sm"
                     />
 
+                    {/* Identité de l'application */}
                     <div className="log-gauche relative flex items-center gap-3 text-white">
-                        <div className="rounded-xl bg-white/90 p-2 shadow-lg">
-                            <ApplicationLogo className="h-9 w-auto" />
+
+                        <div className="rounded-xl bg-white p-2 shadow-lg">
+                            <img
+                                src={odeca}
+                                alt="Logo ODECA Burundi"
+                                className="h-12 w-12 rounded-lg object-contain"
+                            />
                         </div>
+
                         <div className="leading-tight">
-                            <span className="block text-sm font-bold">LNC Burundi</span>
+                            <span className="block text-sm font-bold">
+                                ODECA
+                            </span>
+
                             <span className="block text-[11px] uppercase tracking-wider text-white/70">
                                 Portail ODECA
                             </span>
                         </div>
                     </div>
 
+                    {/* Présentation */}
                     <div className="relative text-white">
-                        <div className="log-gauche relative mb-8 inline-block" style={{ animationDelay: '150ms' }}>
+
+                        <div
+                            className="log-gauche relative mb-8 inline-block"
+                            style={{ animationDelay: '150ms' }}
+                        >
                             <span className="log-halo absolute inset-0 rounded-full bg-white/30" />
+
                             <img
                                 src={odeca}
-                                alt="ODECA"
-                                className="relative h-32 w-32 rounded-full object-cover shadow-2xl ring-4 ring-white/80"
+                                alt="Logo ODECA"
+                                className="relative h-32 w-32 rounded-full bg-white object-contain p-2 shadow-2xl ring-4 ring-white/80"
                             />
                         </div>
 
@@ -149,6 +214,7 @@ export default function Login({ status, canResetPassword }) {
                         >
                             Géolocalisation nationale des plantations de café
                         </h1>
+
                         <p
                             className="log-gauche mt-4 max-w-md text-base leading-relaxed text-white/80"
                             style={{ animationDelay: '450ms' }}
@@ -166,34 +232,50 @@ export default function Login({ status, canResetPassword }) {
                     </p>
                 </aside>
 
-                {/* Formulaire */}
+                {/* Formulaire de connexion */}
                 <main className="relative flex w-full flex-col items-center justify-center overflow-hidden px-6 py-12 lg:w-1/2">
+
                     <div className="log-blob pointer-events-none absolute -right-24 top-10 h-72 w-72 rounded-full bg-red-200/40 blur-3xl lg:hidden" />
 
-                    {/* Logo mobile */}
+                    {/* Logo mobile ODECA */}
                     <div className="log-entree mb-8 flex items-center gap-3 lg:hidden">
-                        <ApplicationLogo className="h-10 w-auto" />
+
+                        <div className="rounded-xl bg-white p-2 shadow-md">
+                            <img
+                                src={odeca}
+                                alt="Logo ODECA Burundi"
+                                className="h-12 w-12 rounded-lg object-contain"
+                            />
+                        </div>
+
                         <div className="leading-tight">
-                            <span className="block text-sm font-bold text-gray-800">LNC Burundi</span>
+                            <span className="block text-sm font-bold text-gray-800">
+                                LNC Burundi
+                            </span>
+
                             <span className="block text-[11px] uppercase tracking-wider text-gray-400">
                                 Portail ODECA
                             </span>
                         </div>
                     </div>
 
+                    {/* Carte de connexion */}
                     <div
                         className="log-entree relative w-full max-w-md rounded-2xl border border-white/80 bg-white/90 p-8 shadow-xl backdrop-blur"
                         style={{ animationDelay: '100ms' }}
                     >
+
                         <div className="mb-8">
                             <h2 className="text-2xl font-bold tracking-tight text-gray-900">
                                 Connexion
                             </h2>
+
                             <p className="mt-1 text-sm text-gray-500">
                                 Entrez vos identifiants pour accéder au portail.
                             </p>
                         </div>
 
+                        {/* Message de statut */}
                         {status && (
                             <div className="log-erreur mb-5 rounded-xl border border-green-200 bg-green-50 p-3 text-sm font-medium text-green-700">
                                 {status}
@@ -201,13 +283,19 @@ export default function Login({ status, canResetPassword }) {
                         )}
 
                         <form onSubmit={submit} className="space-y-5">
-                            <div className="log-entree" style={{ animationDelay: '250ms' }}>
+
+                            {/* Adresse e-mail */}
+                            <div
+                                className="log-entree"
+                                style={{ animationDelay: '250ms' }}
+                            >
                                 <label
                                     htmlFor="email"
                                     className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-500"
                                 >
                                     Adresse e-mail
                                 </label>
+
                                 <div className="relative">
                                     <svg
                                         viewBox="0 0 24 24"
@@ -223,6 +311,7 @@ export default function Login({ status, canResetPassword }) {
                                             d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"
                                         />
                                     </svg>
+
                                     <input
                                         id="email"
                                         type="email"
@@ -239,16 +328,22 @@ export default function Login({ status, canResetPassword }) {
                                         }`}
                                     />
                                 </div>
+
                                 <Erreur message={errors.email} />
                             </div>
 
-                            <div className="log-entree" style={{ animationDelay: '350ms' }}>
+                            {/* Mot de passe */}
+                            <div
+                                className="log-entree"
+                                style={{ animationDelay: '350ms' }}
+                            >
                                 <label
                                     htmlFor="password"
                                     className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-500"
                                 >
                                     Mot de passe
                                 </label>
+
                                 <div className="relative">
                                     <svg
                                         viewBox="0 0 24 24"
@@ -264,6 +359,7 @@ export default function Login({ status, canResetPassword }) {
                                             d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"
                                         />
                                     </svg>
+
                                     <input
                                         id="password"
                                         type={visible ? 'text' : 'password'}
@@ -278,6 +374,7 @@ export default function Login({ status, canResetPassword }) {
                                                 : ''
                                         }`}
                                     />
+
                                     <button
                                         type="button"
                                         onClick={() => setVisible((v) => !v)}
@@ -286,9 +383,11 @@ export default function Login({ status, canResetPassword }) {
                                         {visible ? 'Masquer' : 'Afficher'}
                                     </button>
                                 </div>
+
                                 <Erreur message={errors.password} />
                             </div>
 
+                            {/* Se souvenir de moi et mot de passe oublié */}
                             <div
                                 className="log-entree flex flex-wrap items-center justify-between gap-3"
                                 style={{ animationDelay: '450ms' }}
@@ -301,7 +400,10 @@ export default function Login({ status, canResetPassword }) {
                                         onChange={(e) => setData('remember', e.target.checked)}
                                         className="rounded border-gray-300 text-burundi-vert shadow-sm focus:ring-burundi-vert"
                                     />
-                                    <span className="text-sm text-gray-600">Se souvenir de moi</span>
+
+                                    <span className="text-sm text-gray-600">
+                                        Se souvenir de moi
+                                    </span>
                                 </label>
 
                                 {canResetPassword && (
@@ -314,7 +416,11 @@ export default function Login({ status, canResetPassword }) {
                                 )}
                             </div>
 
-                            <div className="log-entree" style={{ animationDelay: '550ms' }}>
+                            {/* Bouton connexion */}
+                            <div
+                                className="log-entree"
+                                style={{ animationDelay: '550ms' }}
+                            >
                                 <button
                                     type="submit"
                                     disabled={processing}
@@ -336,6 +442,7 @@ export default function Login({ status, canResetPassword }) {
                                                     strokeOpacity=".3"
                                                     strokeWidth="3"
                                                 />
+
                                                 <path
                                                     d="M21 12a9 9 0 0 0-9-9"
                                                     stroke="currentColor"
@@ -343,11 +450,13 @@ export default function Login({ status, canResetPassword }) {
                                                     strokeLinecap="round"
                                                 />
                                             </svg>
+
                                             Connexion…
                                         </>
                                     ) : (
                                         <>
                                             Se connecter
+
                                             <svg
                                                 viewBox="0 0 24 24"
                                                 fill="none"
@@ -369,6 +478,7 @@ export default function Login({ status, canResetPassword }) {
                         </form>
                     </div>
 
+                    {/* Retour à l'accueil */}
                     <Link
                         href="/"
                         className="log-entree mt-6 text-sm text-gray-500 transition hover:text-burundi-vert"

@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="utf-8">
-    <title>Liste des ménages</title>
+    <title>Liste des caféiculteurs</title>
     <style>
         body { font-family: DejaVu Sans, sans-serif; font-size: 10px; color: #1f2937; }
         h1 { font-size: 16px; margin-bottom: 2px; }
@@ -17,13 +17,13 @@
 </head>
 <body>
     <h1>Liste des ménages — Géolocalisation des plantations de caféiers</h1>
-    <p class="meta">Généré le {{ $genereLe }} — {{ $menages->count() }} ménage(s)</p>
+    <p class="meta">Généré le {{ $genereLe }} — {{ $menages->count() }} caféiculteurs(s)</p>
 
     <table>
         <thead>
             <tr>
                 <th>Code</th>
-                <th>Chef de ménage</th>
+                <th>caféiculteur</th>
                 <th>Province</th>
                 <th>Commune</th>
                 <th>Zone</th>

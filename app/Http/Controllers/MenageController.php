@@ -191,9 +191,153 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
 
         $reponse->delete();
 
-        $menage->synchroniserStatut();
+        $this->reinitialiserStatutSiAucuneReponse($menage);
 
         return redirect()->route('menages.show', $menage)->with('succes', 'Réponse supprimée.');
+    }
+
+    /**
+     * Met à jour une réponse du questionnaire d'un ménage.
+     */
+    public function modifierReponse(
+        Request $request,
+        Menage $menage,
+        ReponseQuestionnaire $reponse
+    ): RedirectResponse {
+        $this->authorize('update', $menage);
+
+        // La réponse doit appartenir au ménage affiché dans l'URL.
+        abort_if((int) $reponse->menage_id !== (int) $menage->id, 404);
+
+        $question = $reponse->question;
+        abort_if(! $question, 404, 'Question introuvable.');
+
+        $type = (string) $question->type;
+        $typesMultiples = ['choix_multiple', 'multiple', 'checkbox', 'cases_a_cocher'];
+        $typesNumeriques = ['nombre', 'number', 'entier', 'decimal', 'numerique'];
+        $typesBooleens = ['oui_non', 'booleen', 'boolean'];
+
+        $valeur = $request->input('valeur');
+
+        if (! is_array($valeur)) {
+            return back()->withErrors([
+                'valeur' => 'La réponse envoyée est invalide.',
+            ])->withInput();
+        }
+
+        $options = is_array($question->options) ? $question->options : [];
+
+        // Accepte les options sous forme de chaînes ou d'objets
+        // (value/valeur/libelle/label).
+        $optionsAutorisees = collect($options)->map(function ($option) {
+            if (is_string($option) || is_numeric($option)) {
+                return (string) $option;
+            }
+
+            if (is_array($option)) {
+                return (string) (
+                    $option['value']
+                    ?? $option['valeur']
+                    ?? $option['libelle']
+                    ?? $option['label']
+                    ?? ''
+                );
+            }
+
+            return '';
+        })->filter(fn ($option) => $option !== '')->values()->all();
+
+        $estMultiple = in_array($type, $typesMultiples, true);
+        $estNumerique = in_array($type, $typesNumeriques, true);
+        $estBooleen = in_array($type, $typesBooleens, true);
+
+        if ($estMultiple) {
+            $donnees = $request->validate([
+                'valeur.valeurs' => ['required', 'array'],
+                'valeur.valeurs.*' => ['required', 'string', 'max:255'],
+                'valeur.autreTexte' => ['nullable', 'string', 'max:2000'],
+            ]);
+
+            $choix = $donnees['valeur']['valeurs'];
+
+            if ($optionsAutorisees !== []) {
+                $invalides = array_diff($choix, $optionsAutorisees);
+
+                if ($invalides !== []) {
+                    return back()->withErrors([
+                        'valeur.valeurs' => 'Un ou plusieurs choix ne sont pas autorisés pour cette question.',
+                    ])->withInput();
+                }
+            }
+
+            $nouvelleValeur = [
+                'valeurs' => array_values(array_unique($choix)),
+            ];
+
+            if (isset($donnees['valeur']['autreTexte']) && trim($donnees['valeur']['autreTexte']) !== '') {
+                $nouvelleValeur['autreTexte'] = trim($donnees['valeur']['autreTexte']);
+            }
+        } else {
+            $regleValeur = $estNumerique
+                ? ['required', 'numeric']
+                : ['required', 'string', 'max:10000'];
+
+            $donnees = $request->validate([
+                'valeur.valeur' => $regleValeur,
+                'valeur.autreTexte' => ['nullable', 'string', 'max:2000'],
+            ]);
+
+            $choix = (string) $donnees['valeur']['valeur'];
+
+            if ($optionsAutorisees !== [] && ! $estNumerique && ! $estBooleen
+                && ! in_array($choix, $optionsAutorisees, true)) {
+                return back()->withErrors([
+                    'valeur.valeur' => 'Le choix sélectionné n’est pas autorisé pour cette question.',
+                ])->withInput();
+            }
+
+            $nouvelleValeur = [
+                'valeur' => $donnees['valeur']['valeur'],
+            ];
+
+            if (isset($donnees['valeur']['autreTexte']) && trim($donnees['valeur']['autreTexte']) !== '') {
+                $nouvelleValeur['autreTexte'] = trim($donnees['valeur']['autreTexte']);
+            }
+        }
+
+        $reponse->update([
+            'valeur' => $nouvelleValeur,
+        ]);
+
+        $menage->synchroniserStatut();
+
+        return redirect()
+            ->route('menages.show', $menage)
+            ->with('succes', 'Réponse au questionnaire modifiée avec succès.');
+    }
+
+    public function detruireToutesLesReponses(Menage $menage): RedirectResponse
+    {
+        $this->authorize('update', $menage);
+
+        $menage->reponses()->delete();
+        $this->reinitialiserStatutSiAucuneReponse($menage);
+
+        return redirect()->route('menages.show', $menage)->with('succes', 'Toutes les réponses au questionnaire ont été supprimées.');
+    }
+
+    private function reinitialiserStatutSiAucuneReponse(Menage $menage): void
+    {
+        if (! $menage->reponses()->exists()) {
+            $menage->update([
+                'statut' => 'a_faire',
+                'date_derniere_activite' => now(),
+            ]);
+
+            return;
+        }
+
+        $menage->synchroniserStatut();
     }
 
     private function donneesFormulaire(): array

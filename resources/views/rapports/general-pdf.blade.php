@@ -53,8 +53,8 @@
     <table>
         <thead>
             <tr>
-                <th>Code ménage</th>
-                <th>Chef de ménage</th>
+                <th>Code caféiculteur</th>
+                <th>caféiculteurs</th>
                 <th>Province</th>
                 <th>Commune</th>
                 <th>Zone</th>

@@ -108,16 +108,6 @@ export default function GuestLayout({ children }) {
                             <ApplicationLogo className="h-full w-full object-contain" />
                         </Link>
 
-                        {/* LOGO ODECA */}
-
-                        <div className="h-14 w-14 overflow-hidden rounded-full border-2 border-white bg-white shadow-lg ring-2 ring-burundi-vert/20 sm:h-20 sm:w-20">
-                            <img
-                                src={odeca}
-                                alt="Logo ODECA"
-                                className="h-full w-full object-cover"
-                            />
-                        </div>
-
                     </div>
 
                     {/* TITRE ET DESCRIPTION */}
