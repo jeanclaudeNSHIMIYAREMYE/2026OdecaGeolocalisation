@@ -52,9 +52,9 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
         $menages = Menage::query()
             ->with(['colline.zone.commune.province', 'enqueteur:id,name'])
             ->when($filtres['recherche'] ?? null, fn ($q, $v) => $q->where(
-                fn ($q) => $q->where('code_menage', 'like', "%{$v}%")
-                    ->orWhere('nom_chef_menage', 'like', "%{$v}%")
-                    ->orWhere('prenom_chef_menage', 'like', "%{$v}%")
+                fn ($q) => $q->whereRaw('LOWER(code_menage) LIKE ?', ['%'.mb_strtolower($v).'%'])
+                    ->orWhereRaw('LOWER(nom_chef_menage) LIKE ?', ['%'.mb_strtolower($v).'%'])
+                    ->orWhereRaw('LOWER(prenom_chef_menage) LIKE ?', ['%'.mb_strtolower($v).'%'])
             ))
             ->when($filtres['statut'] ?? null, fn ($q, $v) => $q->where('statut', $v))
             ->when($filtres['enqueteur_id'] ?? null, fn ($q, $v) => $q->where('enqueteur_id', $v))

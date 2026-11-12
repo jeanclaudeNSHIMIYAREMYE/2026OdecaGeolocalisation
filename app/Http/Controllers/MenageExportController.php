@@ -46,11 +46,11 @@ class MenageExportController extends Controller
             ->when($request->filled('colline_id'), fn ($q) => $q->where('colline_id', $request->integer('colline_id')))
             ->when($request->filled('enqueteur_id'), fn ($q) => $q->where('enqueteur_id', $request->integer('enqueteur_id')))
             ->when($request->filled('q'), function ($q) use ($request) {
-                $terme = '%'.$request->string('q').'%';
+                $terme = '%'.mb_strtolower((string) $request->string('q')).'%';
                 $q->where(function ($q) use ($terme) {
-                    $q->where('code_menage', 'like', $terme)
-                        ->orWhere('nom_chef_menage', 'like', $terme)
-                        ->orWhere('prenom_chef_menage', 'like', $terme);
+                    $q->whereRaw('LOWER(code_menage) LIKE ?', [$terme])
+                        ->orWhereRaw('LOWER(nom_chef_menage) LIKE ?', [$terme])
+                        ->orWhereRaw('LOWER(prenom_chef_menage) LIKE ?', [$terme]);
                 });
             })
             // Intervalle par date d'enregistrement du ménage (created_at).

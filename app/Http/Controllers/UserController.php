@@ -77,8 +77,9 @@ public function index(Request $request): Response
 
     if ($recherche !== '') {
         $query->where(function ($q) use ($recherche) {
-            $q->where('name', 'like', "%{$recherche}%")
-                ->orWhere('email', 'like', "%{$recherche}%");
+            $rechercheMinuscule = mb_strtolower($recherche);
+            $q->whereRaw('LOWER(name) LIKE ?', ["%{$rechercheMinuscule}%"])
+                ->orWhereRaw('LOWER(email) LIKE ?', ["%{$rechercheMinuscule}%"]);
 
             if (ctype_digit($recherche)) {
                 $q->orWhere('id', (int) $recherche);
@@ -296,8 +297,9 @@ public function index(Request $request): Response
             ->when(trim((string) $request->query('q', '')) !== '', function ($query) use ($request) {
                 $recherche = trim((string) $request->query('q', ''));
                 $query->where(function ($q) use ($recherche) {
-                    $q->where('name', 'like', "%{$recherche}%")
-                        ->orWhere('email', 'like', "%{$recherche}%");
+                    $rechercheMinuscule = mb_strtolower($recherche);
+                    $q->whereRaw('LOWER(name) LIKE ?', ["%{$rechercheMinuscule}%"])
+                        ->orWhereRaw('LOWER(email) LIKE ?', ["%{$rechercheMinuscule}%"]);
                     if (ctype_digit($recherche)) {
                         $q->orWhere('id', (int) $recherche);
                     }

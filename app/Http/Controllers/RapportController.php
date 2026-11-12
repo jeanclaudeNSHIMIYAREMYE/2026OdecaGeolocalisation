@@ -159,9 +159,9 @@ private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
             ->when($filtres['date_fin'] ?? null, fn($q, $v) => $q->whereDate('parcelles.created_at', '<=', $v))
             ->when($filtres['menage'] ?? null, fn($q, $v) => $q->whereHas(
                 'menage',
-                fn($q) => $q->where('code_menage', 'like', "%{$v}%")
-                    ->orWhere('nom_chef_menage', 'like', "%{$v}%")
-                    ->orWhere('prenom_chef_menage', 'like', "%{$v}%")
+                fn($q) => $q->whereRaw('LOWER(code_menage) LIKE ?', ['%'.mb_strtolower($v).'%'])
+                    ->orWhereRaw('LOWER(nom_chef_menage) LIKE ?', ['%'.mb_strtolower($v).'%'])
+                    ->orWhereRaw('LOWER(prenom_chef_menage) LIKE ?', ['%'.mb_strtolower($v).'%'])
             ));
     }
 
@@ -239,9 +239,12 @@ private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
         $menageCible = null;
         if ($filtres['menage'] ?? null) {
             $menageCible = Menage::query()
-                ->where('code_menage', 'like', "%{$filtres['menage']}%")
-                ->orWhere('nom_chef_menage', 'like', "%{$filtres['menage']}%")
-                ->orWhere('prenom_chef_menage', 'like', "%{$filtres['menage']}%")
+                ->where(function ($q) use ($filtres) {
+                    $terme = '%'.mb_strtolower($filtres['menage']).'%';
+                    $q->whereRaw('LOWER(code_menage) LIKE ?', [$terme])
+                        ->orWhereRaw('LOWER(nom_chef_menage) LIKE ?', [$terme])
+                        ->orWhereRaw('LOWER(prenom_chef_menage) LIKE ?', [$terme]);
+                })
                 ->with(['colline.zone.commune.province', 'enqueteur:id,name', 'parcelles'])
                 ->first();
         }
