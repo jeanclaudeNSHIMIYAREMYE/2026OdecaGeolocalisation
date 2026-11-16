@@ -34,4 +34,11 @@ class Colline extends Model
     {
         return $this->belongsToMany(User::class, 'colline_user')->withTimestamps();
     }
+
+    public function superviseursCommunaux(): BelongsToMany
+    {
+    return $this->belongsToMany(User::class, 'colline_user')
+        ->where('users.role', 'superviseur_communal')
+        ->withTimestamps();
+     }
 }

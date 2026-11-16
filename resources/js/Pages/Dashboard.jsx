@@ -1,3 +1,4 @@
+
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router } from '@inertiajs/react';
 import 'leaflet/dist/leaflet.css';
@@ -14,7 +15,21 @@ const COULEURS_STATUT = {
 };
 
 // ============================================================
-// CARTE LEAFLET DU BURUNDI (logique inchangée)
+// SECURITE : ECHAPPER LE HTML DES POPUPS LEAFLET
+// ============================================================
+
+function echapperHtml(valeur) {
+    return String(valeur ?? '').replace(/[&<>"']/g, (caractere) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;',
+    })[caractere]);
+}
+
+// ============================================================
+// CARTE LEAFLET DU BURUNDI
 // ============================================================
 
 function CarteBurundi({ points = [] }) {
@@ -114,16 +129,54 @@ function CarteBurundi({ points = [] }) {
                           )} ha`
                         : '—';
 
-                const popup =
-                    `<strong>${point.code_menage ?? 'Ménage'}</strong><br>` +
-                    `${point.nom_chef_menage ?? ''}<br>` +
-                    `${point.nombre_pieds ?? '—'} pieds de café<br>` +
-                    `Superficie : ${superficieTexte}<br>` +
-                    `État : ${point.etat_verger ?? '—'}<br>` +
-                    `Type : ${point.type ?? '—'}<br>` +
-                    `Altitude : ${altitudeTexte}`;
+                // ====================================================
+                // NOUVEAU : SUPERVISEUR ET ENQUETEUR
+                // ====================================================
 
-                // POLYGONES DES PARCELLES.
+                const nomSuperviseur =
+                    point.nom_superviseur || 'Non renseigné';
+
+                const nomEnqueteur =
+                    point.nom_enqueteur || 'Non renseigné';
+
+                // Si plusieurs superviseurs sont affectés,
+                // ils sont séparés par des virgules.
+                const superviseurHtml = echapperHtml(nomSuperviseur);
+                const enqueteurHtml = echapperHtml(nomEnqueteur);
+
+                // ====================================================
+                // POPUP COMPLET
+                // ====================================================
+
+                const popup =
+                    `<div style="min-width:190px;">` +
+                    `<strong style="font-size:14px;color:#0d4a2a;">${echapperHtml(point.code_menage ?? 'Ménage')}</strong><br>` +
+                    `<span>${echapperHtml(point.nom_chef_menage ?? '')}</span><br>` +
+                    `<hr style="margin:6px 0;border:0;border-top:1px solid #e5e7eb;">` +
+
+                    `<div style="margin-bottom:5px;">` +
+                    `<strong style="color:#166534;">Superviseur communal :</strong><br>` +
+                    `${superviseurHtml}` +
+                    `</div>` +
+
+                    `<div style="margin-bottom:7px;">` +
+                    `<strong style="color:#166534;">Enquêteur :</strong><br>` +
+                    `${enqueteurHtml}` +
+                    `</div>` +
+
+                    `<hr style="margin:6px 0;border:0;border-top:1px solid #e5e7eb;">` +
+
+                    `<strong>${echapperHtml(point.nombre_pieds ?? '—')}</strong> pieds de café<br>` +
+                    `Superficie : ${echapperHtml(superficieTexte)}<br>` +
+                    `État : ${echapperHtml(point.etat_verger ?? '—')}<br>` +
+                    `Type : ${echapperHtml(point.type ?? '—')}<br>` +
+                    `Altitude : ${echapperHtml(altitudeTexte)}` +
+                    `</div>`;
+
+                // ====================================================
+                // POLYGONES DES PARCELLES
+                // ====================================================
+
                 if (
                     Array.isArray(point.polygone) &&
                     point.polygone.length >= 3
@@ -193,7 +246,10 @@ function CarteBurundi({ points = [] }) {
                     }
                 }
 
-                // POINTS GPS.
+                // ====================================================
+                // POINTS GPS
+                // ====================================================
+
                 if (
                     point.latitude != null &&
                     point.longitude != null
@@ -329,7 +385,6 @@ function CarteBurundi({ points = [] }) {
 
 // ============================================================
 // STYLES ET ANIMATIONS
-// Couleurs du drapeau : rouge #CE1126 · blanc · vert #18B637
 // ============================================================
 
 const STYLES_PAGE = `
@@ -382,7 +437,6 @@ const STYLES_PAGE = `
 .dash-fond-sombre { background: linear-gradient(135deg, #0d4a2a 0%, #07301a 100%); box-shadow: 0 8px 16px -6px rgba(7, 48, 26, .7); }
 .dash-fond-ambre  { background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); box-shadow: 0 8px 16px -6px rgba(217, 119, 6, .55); }
 
-/* Segments de la barre d'avancement : la largeur est animée */
 .dash-segment {
     position: relative;
     overflow: hidden;
@@ -573,18 +627,9 @@ function FiltreSelect({
 
 function LegendeStatut() {
     const elements = [
-        {
-            nom: 'Terminé',
-            couleur: 'bg-green-600',
-        },
-        {
-            nom: 'En attente',
-            couleur: 'bg-amber-500',
-        },
-        {
-            nom: 'À faire',
-            couleur: 'bg-gray-400',
-        },
+        { nom: 'Terminé', couleur: 'bg-green-600' },
+        { nom: 'En attente', couleur: 'bg-amber-500' },
+        { nom: 'À faire', couleur: 'bg-gray-400' },
     ];
 
     return (
@@ -639,7 +684,7 @@ function BanniereAvancement({ kpi, nombre }) {
             <div className="relative p-5 sm:p-6 lg:p-7">
                 <div className="flex flex-wrap items-center justify-between gap-5">
                     <div className="flex items-center gap-4">
-                        <div className="flex h-16 min-w-[4rem] items-center justify-center rounded-2xl bg-white px-3 text-2xl font-bold tabular-nums text-re-800 shadow-lg shadow-black/25 ring-1 ring-white/40">
+                        <div className="flex h-16 min-w-[4rem] items-center justify-center rounded-2xl bg-white px-3 text-2xl font-bold tabular-nums text-green-800 shadow-lg shadow-black/25 ring-1 ring-white/40">
                             {Number(taux).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}%
                         </div>
 
@@ -653,7 +698,7 @@ function BanniereAvancement({ kpi, nombre }) {
                                     <span className="dash-pulse absolute inline-flex h-full w-full rounded-full bg-red-400" />
                                     <span className="relative inline-flex h-2 w-2 rounded-full bg-yellow-400" />
                                 </span>
-                                {nombre(termines)} sur {nombre(total)} Caféiculteur terminés
+                                {nombre(termines)} sur {nombre(total)} Caféiculteurs terminés
                             </p>
                         </div>
                     </div>
@@ -671,7 +716,6 @@ function BanniereAvancement({ kpi, nombre }) {
                     </div>
                 </div>
 
-                {/* Barre d'avancement segmentée */}
                 <div className="mt-5 flex h-3 w-full gap-0.5 overflow-hidden rounded-full bg-black/25 p-0.5">
                     {segments.map((s) => (
                         <div
@@ -744,7 +788,6 @@ export default function Dashboard({
             [cle]: valeur || undefined,
         };
 
-        // Réinitialiser les niveaux territoriaux enfants.
         if (cle === 'province_id') {
             delete nouveauxFiltres.commune_id;
             delete nouveauxFiltres.zone_id;
@@ -793,15 +836,11 @@ export default function Dashboard({
             <div className="w-full py-4 sm:py-6 lg:py-8">
                 <div className="mx-auto w-full max-w-7xl space-y-5 px-3 sm:space-y-6 sm:px-5 lg:px-8">
 
-                    {/* ========================================
-                        AVANCEMENT GLOBAL
-                    ======================================== */}
+                    {/* AVANCEMENT GLOBAL */}
 
                     <BanniereAvancement kpi={kpi} nombre={nombre} />
 
-                    {/* ========================================
-                        FILTRES TERRITORIAUX
-                    ======================================== */}
+                    {/* FILTRES TERRITORIAUX */}
 
                     <section
                         className="anim-dash-carte relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-3 shadow-sm sm:p-5"
@@ -832,10 +871,7 @@ export default function Dashboard({
                                 placeholder="Toutes les provinces"
                                 options={provinces}
                                 onChange={(e) =>
-                                    appliquerFiltre(
-                                        'province_id',
-                                        e.target.value,
-                                    )
+                                    appliquerFiltre('province_id', e.target.value)
                                 }
                             />
 
@@ -846,10 +882,7 @@ export default function Dashboard({
                                 options={communesFiltrees}
                                 disabled={!filtres.province_id}
                                 onChange={(e) =>
-                                    appliquerFiltre(
-                                        'commune_id',
-                                        e.target.value,
-                                    )
+                                    appliquerFiltre('commune_id', e.target.value)
                                 }
                             />
 
@@ -860,10 +893,7 @@ export default function Dashboard({
                                 options={zonesFiltrees}
                                 disabled={!filtres.commune_id}
                                 onChange={(e) =>
-                                    appliquerFiltre(
-                                        'zone_id',
-                                        e.target.value,
-                                    )
+                                    appliquerFiltre('zone_id', e.target.value)
                                 }
                             />
 
@@ -874,18 +904,13 @@ export default function Dashboard({
                                 options={collinesFiltrees}
                                 disabled={!filtres.zone_id}
                                 onChange={(e) =>
-                                    appliquerFiltre(
-                                        'colline_id',
-                                        e.target.value,
-                                    )
+                                    appliquerFiltre('colline_id', e.target.value)
                                 }
                             />
                         </div>
                     </section>
 
-                    {/* ========================================
-                        STATISTIQUES KPI
-                    ======================================== */}
+                    {/* STATISTIQUES KPI */}
 
                     <section>
                         <div className="mb-3">
@@ -900,7 +925,7 @@ export default function Dashboard({
 
                         <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                             <CarteKpi
-                                titre=" Caféiculteurs enquêtés"
+                                titre="Caféiculteurs enquêtés"
                                 valeur={kpi.menages_termines}
                                 formater={nombre}
                                 sousTitre={`${kpi.taux_avancement ?? 0}% d'avancement`}
@@ -966,9 +991,7 @@ export default function Dashboard({
                         </div>
                     </section>
 
-                    {/* ========================================
-                        CARTE GÉOGRAPHIQUE
-                    ======================================== */}
+                    {/* CARTE GÉOGRAPHIQUE */}
 
                     <section
                         className="anim-dash-carte min-w-0 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm"
@@ -1008,6 +1031,7 @@ export default function Dashboard({
                                     <circle cx="12" cy="12" r="9" />
                                     <path strokeLinecap="round" d="M12 8h.01M11 12h1v4h1" />
                                 </svg>
+
                                 <p className="text-xs leading-relaxed text-gray-600">
                                     La taille des points varie selon l'altitude
                                     de la parcelle : plus le point est grand,

@@ -1,3 +1,4 @@
+
 import FiltresTerritoriaux from '@/Components/FiltresTerritoriaux';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
@@ -44,7 +45,6 @@ const CLASSE_SELECT =
 const ICONE_EXPORT =
     'M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3';
 
-// Couleurs du drapeau : rouge #CE1126 · blanc · vert #18B637
 const STYLES_PAGE = `
 @keyframes menEntree {
     from { opacity: 0; transform: translateY(14px); }
@@ -142,7 +142,6 @@ const texteLien = (label = '') =>
         .replace('Next', 'Suivant')
         .trim();
 
-// Alterne vert / rouge pour les avatars, selon l'identifiant
 const degradeAvatar = (id) =>
     Number(id) % 2 === 0
         ? 'from-green-500 to-emerald-700'
@@ -196,12 +195,42 @@ export default function Index({
     zones,
     collines,
     peutCreer,
+    peutSupprimer,
     enqueteurs,
 }) {
     const { flash } = usePage().props;
 
     const [chargement, setChargement] = useState(false);
     const [recherche, setRecherche] = useState(filtres?.recherche ?? '');
+
+    // ========================================================
+    // SUPPRESSION D'UN CAFÉICULTEUR
+    // ========================================================
+
+    const supprimerMenage = (menage) => {
+        const nom = [
+            menage.prenom_chef_menage,
+            menage.nom_chef_menage,
+        ]
+            .filter(Boolean)
+            .join(' ');
+
+        const confirmation = window.confirm(
+            `Voulez-vous vraiment supprimer le Caféiculteur ${
+                nom || menage.code_menage
+            } ?\n\nCette opération peut également supprimer ses données associées. Cette action est irréversible.`
+        );
+
+        if (!confirmation) return;
+
+        router.delete(route('menages.destroy', menage.id), {
+            preserveScroll: true,
+        });
+    };
+
+    // ========================================================
+    // FILTRES
+    // ========================================================
 
     const optionsVisite = {
         preserveState: true,
@@ -215,7 +244,6 @@ export default function Index({
         router.get(route('menages.index'), nouveauxFiltres, optionsVisite);
     };
 
-    // Recherche en direct : on attend 350 ms après la dernière frappe
     const premierRendu = useRef(true);
 
     useEffect(() => {
@@ -257,6 +285,10 @@ export default function Index({
 
     const lignes = menages?.data ?? [];
 
+    // ========================================================
+    // AFFICHAGE
+    // ========================================================
+
     return (
         <AuthenticatedLayout
             header={
@@ -271,6 +303,8 @@ export default function Index({
 
             <div className="py-10">
                 <div className="mx-auto max-w-7xl space-y-5 sm:px-6 lg:px-8">
+
+                    {/* MESSAGE DE SUCCÈS */}
                     {flash?.succes && (
                         <div
                             className="anim-men-alerte flex items-center gap-3 rounded-xl border border-green-200 bg-gradient-to-r from-green-50 to-white p-4 text-sm text-green-800 shadow-sm"
@@ -297,7 +331,7 @@ export default function Index({
                         </div>
                     )}
 
-                    {/* Recherche et filtres */}
+                    {/* RECHERCHE ET FILTRES */}
                     <div
                         className="anim-men-carte relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"
                         style={{ animationDelay: '0ms' }}
@@ -318,6 +352,7 @@ export default function Index({
                                 <label className="mb-1.5 block text-xs font-semibold text-gray-500">
                                     Recherche
                                 </label>
+
                                 <div className="group relative">
                                     <svg
                                         viewBox="0 0 24 24"
@@ -330,6 +365,7 @@ export default function Index({
                                         <circle cx="11" cy="11" r="7" />
                                         <path strokeLinecap="round" d="m20 20-3.5-3.5" />
                                     </svg>
+
                                     <input
                                         type="text"
                                         value={recherche}
@@ -338,6 +374,7 @@ export default function Index({
                                         className={`${CLASSE_SELECT} py-2.5 pl-10 pr-10`}
                                         autoComplete="off"
                                     />
+
                                     {recherche && (
                                         <button
                                             type="button"
@@ -361,10 +398,12 @@ export default function Index({
                                         ✕ Réinitialiser
                                     </button>
                                 )}
+
                                 {peutCreer && <BoutonImporterMenages />}
                             </div>
                         </div>
 
+                        {/* FILTRES */}
                         <div className="mt-4 flex flex-wrap gap-4">
                             <Etiquette label="Statut">
                                 <select
@@ -391,8 +430,7 @@ export default function Index({
                                     onChange={(e) =>
                                         appliquerFiltres({
                                             ...filtres,
-                                            possede_vergers_cafe:
-                                                e.target.value || undefined,
+                                            possede_vergers_cafe: e.target.value || undefined,
                                         })
                                     }
                                 >
@@ -423,7 +461,7 @@ export default function Index({
                             </Etiquette>
                         </div>
 
-                        {/* Filtres territoriaux */}
+                        {/* FILTRES TERRITORIAUX */}
                         <div className="mt-4 flex flex-wrap gap-4 border-t border-gray-100 pt-4">
                             <FiltresTerritoriaux
                                 valeurs={filtres}
@@ -436,12 +474,12 @@ export default function Index({
                         </div>
                     </div>
 
-                    {/* Liste des ménages */}
+                    {/* LISTE DES MÉNAGES */}
                     <div
                         className="anim-men-carte overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm"
                         style={{ animationDelay: '120ms' }}
                     >
-                        {/* Bannière */}
+                        {/* BANNIÈRE */}
                         <div className="men-banniere relative overflow-hidden">
                             <div
                                 aria-hidden="true"
@@ -465,16 +503,31 @@ export default function Index({
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <LienExport href={route('exports.menages-xlsx', filtres)} icone={ICONE_EXPORT}>
+                                    <LienExport
+                                        href={route('exports.menages-xlsx', filtres)}
+                                        icone={ICONE_EXPORT}
+                                    >
                                         Excel
                                     </LienExport>
-                                    <LienExport href={route('exports.menages-csv', filtres)} icone={ICONE_EXPORT}>
+
+                                    <LienExport
+                                        href={route('exports.menages-csv', filtres)}
+                                        icone={ICONE_EXPORT}
+                                    >
                                         CSV
                                     </LienExport>
-                                    <LienExport href={route('exports.menages-pdf', filtres)} icone={ICONE_EXPORT}>
+
+                                    <LienExport
+                                        href={route('exports.menages-pdf', filtres)}
+                                        icone={ICONE_EXPORT}
+                                    >
                                         PDF
                                     </LienExport>
-                                    <LienExport href={route('exports.parcelles-geojson', filtres)} icone={ICONE_EXPORT}>
+
+                                    <LienExport
+                                        href={route('exports.parcelles-geojson', filtres)}
+                                        icone={ICONE_EXPORT}
+                                    >
                                         GeoJSON
                                     </LienExport>
 
@@ -493,6 +546,7 @@ export default function Index({
                             <div className="men-drapeau h-1 w-full" aria-hidden="true" />
                         </div>
 
+                        {/* TABLEAU */}
                         <div
                             className={`overflow-x-auto transition-opacity duration-200 ${
                                 chargement ? 'opacity-60' : 'opacity-100'
@@ -506,13 +560,15 @@ export default function Index({
                                         <th className="px-6 py-3 font-semibold">Localisation</th>
                                         <th className="px-6 py-3 font-semibold">Enquêteur</th>
                                         <th className="px-6 py-3 font-semibold">Statut</th>
+                                        <th className="px-6 py-3 text-center font-semibold">
+                                            Actions
+                                        </th>
                                     </tr>
                                 </thead>
 
                                 <tbody className="divide-y divide-gray-100">
                                     {lignes.map((menage, index) => {
-                                        const statut =
-                                            detailsStatutMenage(menage.statut);
+                                        const statut = detailsStatutMenage(menage.statut);
 
                                         const chefMenage = [
                                             menage.prenom_chef_menage,
@@ -522,6 +578,7 @@ export default function Index({
                                             .join(' ');
 
                                         const colline = menage.colline?.nom;
+
                                         const zoneCommune = [
                                             menage.colline?.zone?.nom,
                                             menage.colline?.zone?.commune?.nom,
@@ -537,33 +594,39 @@ export default function Index({
                                                 key={menage.id}
                                                 tabIndex={0}
                                                 className="anim-men-ligne men-ligne group cursor-pointer transition-all duration-200 hover:bg-gradient-to-r hover:from-green-50/80 hover:to-transparent focus:bg-gradient-to-r focus:from-red-50/60 focus:to-transparent focus:outline-none"
-                                                style={{ animationDelay: `${Math.min(index, 15) * 30}ms` }}
+                                                style={{
+                                                    animationDelay: `${Math.min(index, 15) * 30}ms`,
+                                                }}
                                                 onClick={ouvrir}
                                                 onKeyDown={(e) => {
                                                     if (e.key === 'Enter') ouvrir();
                                                 }}
                                             >
+                                                {/* CODE */}
                                                 <td className="px-6 py-4">
                                                     <span className="rounded-md bg-gray-100 px-2 py-1 font-mono text-xs font-semibold text-gray-800 transition-colors duration-200 group-hover:bg-green-100 group-hover:text-green-900">
                                                         {menage.code_menage ?? '—'}
                                                     </span>
                                                 </td>
 
+                                                {/* CAFÉICULTEUR */}
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-3">
                                                         <div
                                                             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${degradeAvatar(
-                                                                menage.id,
+                                                                menage.id
                                                             )} text-xs font-semibold text-white shadow-md ring-2 ring-white transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6`}
                                                         >
                                                             {initiales(chefMenage) || '—'}
                                                         </div>
+
                                                         <span className="font-medium text-gray-900">
                                                             {chefMenage || '—'}
                                                         </span>
                                                     </div>
                                                 </td>
 
+                                                {/* LOCALISATION */}
                                                 <td className="px-6 py-4">
                                                     {colline || zoneCommune ? (
                                                         <>
@@ -579,25 +642,111 @@ export default function Index({
                                                     )}
                                                 </td>
 
+                                                {/* ENQUÊTEUR */}
                                                 <td className="px-6 py-4 text-gray-600">
                                                     {menage.enqueteur?.name ?? '—'}
                                                 </td>
 
+                                                {/* STATUT */}
                                                 <td className="px-6 py-4">
                                                     <span
                                                         className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${statut.classe}`}
                                                     >
-                                                        <span className={`h-1.5 w-1.5 rounded-full ${statut.point}`} />
+                                                        <span
+                                                            className={`h-1.5 w-1.5 rounded-full ${statut.point}`}
+                                                        />
                                                         {statut.texte}
                                                     </span>
+                                                </td>
+
+                                                {/* ACTIONS */}
+                                                <td className="px-6 py-4 text-center">
+                                                    <div className="flex min-w-max items-center justify-center gap-2">
+
+                                                        {/* VOIR */}
+                                                        <Link
+                                                            href={route('menages.show', menage.id)}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+                                                        >
+                                                            <svg
+                                                                viewBox="0 0 24 24"
+                                                                fill="none"
+                                                                stroke="currentColor"
+                                                                strokeWidth="1.8"
+                                                                className="h-4 w-4"
+                                                                aria-hidden="true"
+                                                            >
+                                                                <path
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                    d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"
+                                                                />
+                                                                <circle cx="12" cy="12" r="3" />
+                                                            </svg>
+                                                            Voir
+                                                        </Link>
+
+                                                        {/* MODIFIER */}
+                                                        <Link
+                                                            href={route('menages.edit', menage.id)}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-100"
+                                                        >
+                                                            <svg
+                                                                viewBox="0 0 24 24"
+                                                                fill="none"
+                                                                stroke="currentColor"
+                                                                strokeWidth="1.8"
+                                                                className="h-4 w-4"
+                                                                aria-hidden="true"
+                                                            >
+                                                                <path
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                    d="m16 4 4 4M4 20l4-.8L19 8a2.1 2.1 0 0 0-3-3L5 16l-1 4Z"
+                                                                />
+                                                            </svg>
+                                                            Modifier
+                                                        </Link>
+
+                                                        {/* SUPPRIMER : ADMIN UNIQUEMENT */}
+                                                        {peutSupprimer && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    supprimerMenage(menage);
+                                                                }}
+                                                                className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                                                            >
+                                                                <svg
+                                                                    viewBox="0 0 24 24"
+                                                                    fill="none"
+                                                                    stroke="currentColor"
+                                                                    strokeWidth="1.8"
+                                                                    className="h-4 w-4"
+                                                                    aria-hidden="true"
+                                                                >
+                                                                    <path
+                                                                        strokeLinecap="round"
+                                                                        strokeLinejoin="round"
+                                                                        d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14M10 11v5m4-5v5"
+                                                                    />
+                                                                </svg>
+                                                                Supprimer
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </td>
                                             </tr>
                                         );
                                     })}
 
+                                    {/* AUCUN RÉSULTAT */}
                                     {lignes.length === 0 && (
                                         <tr>
-                                            <td colSpan={5} className="px-6 py-16 text-center">
+                                            <td colSpan={6} className="px-6 py-16 text-center">
                                                 <div className="anim-men-alerte mx-auto flex max-w-xs flex-col items-center gap-3 text-gray-500">
                                                     <span className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-green-50 to-red-50 ring-1 ring-gray-100">
                                                         <svg
@@ -612,7 +761,11 @@ export default function Index({
                                                             <path strokeLinecap="round" d="m20 20-3.5-3.5" />
                                                         </svg>
                                                     </span>
-                                                    <p className="font-medium text-gray-700">Aucun résultat</p>
+
+                                                    <p className="font-medium text-gray-700">
+                                                        Aucun résultat
+                                                    </p>
+
                                                     <p className="text-sm">
                                                         Aucun Caféiculteur ne correspond aux critères.
                                                     </p>
@@ -624,7 +777,7 @@ export default function Index({
                             </table>
                         </div>
 
-                        {/* Pagination */}
+                        {/* PAGINATION */}
                         {(menages?.links ?? []).length > 3 && (
                             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 bg-gray-50/50 p-4">
                                 <p className="text-sm text-gray-500">

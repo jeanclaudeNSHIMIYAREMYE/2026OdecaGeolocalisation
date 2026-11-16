@@ -8,63 +8,119 @@ use App\Models\Menage;
 use App\Models\Province;
 use App\Models\User;
 use App\Models\Zone;
+use App\Models\Parcelle;
+use App\Models\ReponseQuestionnaire;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
-use App\Models\Parcelle;
-use App\Models\ReponseQuestionnaire;
 
 class MenageController extends Controller
 {
-
-private function altitudeParcelle(Parcelle $parcelle): ?float
+    private function altitudeParcelle(Parcelle $parcelle): ?float
     {
         $polygone = $parcelle->polygone;
 
         if (is_array($polygone) && count($polygone) >= 3) {
             $altitudes = array_values(array_filter(
                 array_map(
-                    fn($s) => isset($s['altitude']) && $s['altitude'] !== null ? (float) $s['altitude'] : null,
+                    fn ($s) => isset($s['altitude']) && $s['altitude'] !== null
+                        ? (float) $s['altitude']
+                        : null,
                     $polygone
                 ),
-                fn($v) => $v !== null
+                fn ($v) => $v !== null
             ));
 
             if (count($altitudes) > 0) {
                 return array_sum($altitudes) / count($altitudes);
             }
 
-            return $parcelle->altitude !== null ? (float) $parcelle->altitude : null;
+            return $parcelle->altitude !== null
+                ? (float) $parcelle->altitude
+                : null;
         }
 
-        return $parcelle->altitude !== null ? (float) $parcelle->altitude : null;
+        return $parcelle->altitude !== null
+            ? (float) $parcelle->altitude
+            : null;
     }
-
 
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', Menage::class);
 
-        $filtres = $request->only(['recherche', 'statut', 'province_id', 'commune_id', 'zone_id', 'colline_id', 'enqueteur_id', 'possede_vergers_cafe']);
+        $filtres = $request->only([
+            'recherche',
+            'statut',
+            'province_id',
+            'commune_id',
+            'zone_id',
+            'colline_id',
+            'enqueteur_id',
+            'possede_vergers_cafe',
+        ]);
 
         $menages = Menage::query()
-            ->with(['colline.zone.commune.province', 'enqueteur:id,name'])
+            ->with([
+                'colline.zone.commune.province',
+                'enqueteur:id,name',
+            ])
             ->when($filtres['recherche'] ?? null, fn ($q, $v) => $q->where(
-                fn ($q) => $q->whereRaw('LOWER(code_menage) LIKE ?', ['%'.mb_strtolower($v).'%'])
-                    ->orWhereRaw('LOWER(nom_chef_menage) LIKE ?', ['%'.mb_strtolower($v).'%'])
-                    ->orWhereRaw('LOWER(prenom_chef_menage) LIKE ?', ['%'.mb_strtolower($v).'%'])
+                fn ($q) => $q->whereRaw(
+                    'LOWER(code_menage) LIKE ?',
+                    ['%' . mb_strtolower($v) . '%']
+                )
+                ->orWhereRaw(
+                    'LOWER(nom_chef_menage) LIKE ?',
+                    ['%' . mb_strtolower($v) . '%']
+                )
+                ->orWhereRaw(
+                    'LOWER(prenom_chef_menage) LIKE ?',
+                    ['%' . mb_strtolower($v) . '%']
+                )
             ))
-            ->when($filtres['statut'] ?? null, fn ($q, $v) => $q->where('statut', $v))
-            ->when($filtres['enqueteur_id'] ?? null, fn ($q, $v) => $q->where('enqueteur_id', $v))
-            ->when($filtres['colline_id'] ?? null, fn ($q, $v) => $q->where(function ($q) use ($v) {
-                $q->where('colline_id', $v)
-                    ->orWhereHas('collines', fn ($colline) => $colline->whereKey($v));
-            }))
-            ->when($filtres['zone_id'] ?? null, fn ($q, $v) => $q->whereHas('colline', fn ($q) => $q->where('zone_id', $v)))
-            ->when($filtres['commune_id'] ?? null, fn ($q, $v) => $q->whereHas('colline.zone', fn ($q) => $q->where('commune_id', $v)))
-            ->when($filtres['province_id'] ?? null, fn ($q, $v) => $q->whereHas('colline.zone.commune', fn ($q) => $q->where('province_id', $v)))
+            ->when(
+                $filtres['statut'] ?? null,
+                fn ($q, $v) => $q->where('statut', $v)
+            )
+            ->when(
+                $filtres['enqueteur_id'] ?? null,
+                fn ($q, $v) => $q->where('enqueteur_id', $v)
+            )
+            ->when(
+                $filtres['colline_id'] ?? null,
+                fn ($q, $v) => $q->where(function ($q) use ($v) {
+                    $q->where('colline_id', $v)
+                        ->orWhereHas(
+                            'collines',
+                            fn ($colline) => $colline->whereKey($v)
+                        );
+                })
+            )
+            ->when(
+                $filtres['zone_id'] ?? null,
+                fn ($q, $v) => $q->whereHas(
+                    'colline',
+                    fn ($q) => $q->where('zone_id', $v)
+                )
+            )
+            ->when(
+                $filtres['commune_id'] ?? null,
+                fn ($q, $v) => $q->whereHas(
+                    'colline.zone',
+                    fn ($q) => $q->where('commune_id', $v)
+                )
+            )
+            ->when(
+                $filtres['province_id'] ?? null,
+                fn ($q, $v) => $q->whereHas(
+                    'colline.zone.commune',
+                    fn ($q) => $q->where('province_id', $v)
+                )
+            )
             ->when(
                 $filtres['possede_vergers_cafe'] ?? null,
                 function ($q, $v) {
@@ -83,12 +139,31 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
         return Inertia::render('Menages/Index', [
             'menages' => $menages,
             'filtres' => $filtres,
-            'provinces' => Province::orderBy('nom')->get(['id', 'nom']),
-            'communes' => Commune::orderBy('nom')->get(['id', 'nom', 'province_id']),
-            'zones' => Zone::orderBy('nom')->get(['id', 'nom', 'commune_id']),
-            'collines' => Colline::orderBy('nom')->get(['id', 'nom', 'zone_id']),
-            'peutCreer' => $request->user()->can('create', Menage::class),
-            'enqueteurs' => User::where('actif', true)->where('role', 'enqueteur')->orderBy('name')->get(['id', 'name']),
+
+            'provinces' => Province::orderBy('nom')
+                ->get(['id', 'nom']),
+
+            'communes' => Commune::orderBy('nom')
+                ->get(['id', 'nom', 'province_id']),
+
+            'zones' => Zone::orderBy('nom')
+                ->get(['id', 'nom', 'commune_id']),
+
+            'collines' => Colline::orderBy('nom')
+                ->get(['id', 'nom', 'zone_id']),
+
+            'peutCreer' => $request->user()->can(
+                'create',
+                Menage::class
+            ),
+
+            // Autorisation d'afficher le bouton de suppression.
+            'peutSupprimer' => $request->user()->role === 'admin',
+
+            'enqueteurs' => User::where('actif', true)
+                ->where('role', 'enqueteur')
+                ->orderBy('name')
+                ->get(['id', 'name']),
         ]);
     }
 
@@ -96,7 +171,10 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
     {
         $this->authorize('create', Menage::class);
 
-        return Inertia::render('Menages/Creer', $this->donneesFormulaire());
+        return Inertia::render(
+            'Menages/Creer',
+            $this->donneesFormulaire()
+        );
     }
 
     public function store(Request $request): RedirectResponse
@@ -111,7 +189,9 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
             'cree_par_id' => $request->user()->id,
         ]);
 
-        return redirect()->route('menages.show', $menage)->with('succes', 'Ménage créé.');
+        return redirect()
+            ->route('menages.show', $menage)
+            ->with('succes', 'Ménage créé.');
     }
 
     public function show(Menage $menage): Response
@@ -127,14 +207,23 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
         ]);
 
         $menage->parcelles->each(function (Parcelle $parcelle) {
-            $parcelle->superficie_ha = $this->superficieHectares($parcelle->polygone);
+            $parcelle->superficie_ha = $this->superficieHectares(
+                $parcelle->polygone
+            );
+
             $parcelle->altitude = $this->altitudeParcelle($parcelle);
         });
 
         return Inertia::render('Menages/Afficher', [
             'menage' => $menage,
-            'peutModifier' => request()->user()->can('update', $menage),
-            'peutDupliquer' => request()->user()->can('create', Menage::class),
+            'peutModifier' => request()->user()->can(
+                'update',
+                $menage
+            ),
+            'peutDupliquer' => request()->user()->can(
+                'create',
+                Menage::class
+            ),
         ]);
     }
 
@@ -144,34 +233,69 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
 
         return Inertia::render('Menages/Modifier', [
             'menage' => $menage->only([
-                'id', 'code_menage', 'nom_chef_menage', 'prenom_chef_menage',
-                'telephone', 'cni', 'colline_id', 'statut', 'enqueteur_id',
+                'id',
+                'code_menage',
+                'nom_chef_menage',
+                'prenom_chef_menage',
+                'telephone',
+                'cni',
+                'colline_id',
+                'statut',
+                'enqueteur_id',
             ]),
             ...$this->donneesFormulaire(),
         ]);
     }
 
-    public function update(Request $request, Menage $menage): RedirectResponse
-    {
+    public function update(
+        Request $request,
+        Menage $menage
+    ): RedirectResponse {
         $this->authorize('update', $menage);
 
         $donnees = $this->valider($request, $menage->id);
+
         $menage->update($donnees);
 
-        return redirect()->route('menages.show', $menage)->with('succes', 'Ménage mis à jour.');
+        return redirect()
+            ->route('menages.show', $menage)
+            ->with('succes', 'Ménage mis à jour.');
     }
 
-    public function destroy(Menage $menage): RedirectResponse
-    {
-        $this->authorize('delete', $menage);
+    /**
+     * Supprimer un ménage / caféiculteur.
+     *
+     * Cette action est protégée par la policy MenagePolicy.
+     */
+   public function destroy(Menage $menage): RedirectResponse
+{
+    // Vérifier que l'utilisateur possède le droit de suppression.
+    $this->authorize('delete', $menage);
 
+    DB::transaction(function () use ($menage) {
+
+        // Supprimer les réponses au questionnaire.
+        $menage->reponses()->delete();
+
+        // Supprimer les parcelles.
+        $menage->parcelles()->delete();
+
+        // Supprimer les associations avec les collines.
+        $menage->collines()->detach();
+
+        // Supprimer le ménage.
         $menage->delete();
+    });
 
-        return redirect()->route('menages.index')->with('succes', 'Ménage supprimé.');
-    }
+    return redirect()
+        ->route('menages.index')
+        ->with('succes', 'Caféiculteur et ses données associées supprimés avec succès.');
+ }
 
-    public function detruireParcelle(Menage $menage, Parcelle $parcelle): RedirectResponse
-    {
+    public function detruireParcelle(
+        Menage $menage,
+        Parcelle $parcelle
+    ): RedirectResponse {
         $this->authorize('update', $menage);
 
         abort_if($parcelle->menage_id !== $menage->id, 404);
@@ -180,11 +304,15 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
 
         $menage->synchroniserStatut();
 
-        return redirect()->route('menages.show', $menage)->with('succes', 'Parcelle supprimée.');
+        return redirect()
+            ->route('menages.show', $menage)
+            ->with('succes', 'Parcelle supprimée.');
     }
 
-    public function detruireReponse(Menage $menage, ReponseQuestionnaire $reponse): RedirectResponse
-    {
+    public function detruireReponse(
+        Menage $menage,
+        ReponseQuestionnaire $reponse
+    ): RedirectResponse {
         $this->authorize('update', $menage);
 
         abort_if($reponse->menage_id !== $menage->id, 404);
@@ -193,7 +321,9 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
 
         $this->reinitialiserStatutSiAucuneReponse($menage);
 
-        return redirect()->route('menages.show', $menage)->with('succes', 'Réponse supprimée.');
+        return redirect()
+            ->route('menages.show', $menage)
+            ->with('succes', 'Réponse supprimée.');
     }
 
     /**
@@ -206,16 +336,37 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
     ): RedirectResponse {
         $this->authorize('update', $menage);
 
-        // La réponse doit appartenir au ménage affiché dans l'URL.
-        abort_if((int) $reponse->menage_id !== (int) $menage->id, 404);
+        abort_if(
+            (int) $reponse->menage_id !== (int) $menage->id,
+            404
+        );
 
         $question = $reponse->question;
+
         abort_if(! $question, 404, 'Question introuvable.');
 
         $type = (string) $question->type;
-        $typesMultiples = ['choix_multiple', 'multiple', 'checkbox', 'cases_a_cocher'];
-        $typesNumeriques = ['nombre', 'number', 'entier', 'decimal', 'numerique'];
-        $typesBooleens = ['oui_non', 'booleen', 'boolean'];
+
+        $typesMultiples = [
+            'choix_multiple',
+            'multiple',
+            'checkbox',
+            'cases_a_cocher',
+        ];
+
+        $typesNumeriques = [
+            'nombre',
+            'number',
+            'entier',
+            'decimal',
+            'numerique',
+        ];
+
+        $typesBooleens = [
+            'oui_non',
+            'booleen',
+            'boolean',
+        ];
 
         $valeur = $request->input('valeur');
 
@@ -225,27 +376,31 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
             ])->withInput();
         }
 
-        $options = is_array($question->options) ? $question->options : [];
+        $options = is_array($question->options)
+            ? $question->options
+            : [];
 
-        // Accepte les options sous forme de chaînes ou d'objets
-        // (value/valeur/libelle/label).
-        $optionsAutorisees = collect($options)->map(function ($option) {
-            if (is_string($option) || is_numeric($option)) {
-                return (string) $option;
-            }
+        $optionsAutorisees = collect($options)
+            ->map(function ($option) {
+                if (is_string($option) || is_numeric($option)) {
+                    return (string) $option;
+                }
 
-            if (is_array($option)) {
-                return (string) (
-                    $option['value']
-                    ?? $option['valeur']
-                    ?? $option['libelle']
-                    ?? $option['label']
-                    ?? ''
-                );
-            }
+                if (is_array($option)) {
+                    return (string) (
+                        $option['value']
+                        ?? $option['valeur']
+                        ?? $option['libelle']
+                        ?? $option['label']
+                        ?? ''
+                    );
+                }
 
-            return '';
-        })->filter(fn ($option) => $option !== '')->values()->all();
+                return '';
+            })
+            ->filter(fn ($option) => $option !== '')
+            ->values()
+            ->all();
 
         $estMultiple = in_array($type, $typesMultiples, true);
         $estNumerique = in_array($type, $typesNumeriques, true);
@@ -254,18 +409,30 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
         if ($estMultiple) {
             $donnees = $request->validate([
                 'valeur.valeurs' => ['required', 'array'],
-                'valeur.valeurs.*' => ['required', 'string', 'max:255'],
-                'valeur.autreTexte' => ['nullable', 'string', 'max:2000'],
+                'valeur.valeurs.*' => [
+                    'required',
+                    'string',
+                    'max:255',
+                ],
+                'valeur.autreTexte' => [
+                    'nullable',
+                    'string',
+                    'max:2000',
+                ],
             ]);
 
             $choix = $donnees['valeur']['valeurs'];
 
             if ($optionsAutorisees !== []) {
-                $invalides = array_diff($choix, $optionsAutorisees);
+                $invalides = array_diff(
+                    $choix,
+                    $optionsAutorisees
+                );
 
                 if ($invalides !== []) {
                     return back()->withErrors([
-                        'valeur.valeurs' => 'Un ou plusieurs choix ne sont pas autorisés pour cette question.',
+                        'valeur.valeurs' =>
+                            'Un ou plusieurs choix ne sont pas autorisés pour cette question.',
                     ])->withInput();
                 }
             }
@@ -274,8 +441,13 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
                 'valeurs' => array_values(array_unique($choix)),
             ];
 
-            if (isset($donnees['valeur']['autreTexte']) && trim($donnees['valeur']['autreTexte']) !== '') {
-                $nouvelleValeur['autreTexte'] = trim($donnees['valeur']['autreTexte']);
+            if (
+                isset($donnees['valeur']['autreTexte'])
+                && trim($donnees['valeur']['autreTexte']) !== ''
+            ) {
+                $nouvelleValeur['autreTexte'] = trim(
+                    $donnees['valeur']['autreTexte']
+                );
             }
         } else {
             $regleValeur = $estNumerique
@@ -284,15 +456,24 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
 
             $donnees = $request->validate([
                 'valeur.valeur' => $regleValeur,
-                'valeur.autreTexte' => ['nullable', 'string', 'max:2000'],
+                'valeur.autreTexte' => [
+                    'nullable',
+                    'string',
+                    'max:2000',
+                ],
             ]);
 
             $choix = (string) $donnees['valeur']['valeur'];
 
-            if ($optionsAutorisees !== [] && ! $estNumerique && ! $estBooleen
-                && ! in_array($choix, $optionsAutorisees, true)) {
+            if (
+                $optionsAutorisees !== []
+                && ! $estNumerique
+                && ! $estBooleen
+                && ! in_array($choix, $optionsAutorisees, true)
+            ) {
                 return back()->withErrors([
-                    'valeur.valeur' => 'Le choix sélectionné n’est pas autorisé pour cette question.',
+                    'valeur.valeur' =>
+                        'Le choix sélectionné n’est pas autorisé pour cette question.',
                 ])->withInput();
             }
 
@@ -300,8 +481,13 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
                 'valeur' => $donnees['valeur']['valeur'],
             ];
 
-            if (isset($donnees['valeur']['autreTexte']) && trim($donnees['valeur']['autreTexte']) !== '') {
-                $nouvelleValeur['autreTexte'] = trim($donnees['valeur']['autreTexte']);
+            if (
+                isset($donnees['valeur']['autreTexte'])
+                && trim($donnees['valeur']['autreTexte']) !== ''
+            ) {
+                $nouvelleValeur['autreTexte'] = trim(
+                    $donnees['valeur']['autreTexte']
+                );
             }
         }
 
@@ -313,21 +499,32 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
 
         return redirect()
             ->route('menages.show', $menage)
-            ->with('succes', 'Réponse au questionnaire modifiée avec succès.');
+            ->with(
+                'succes',
+                'Réponse au questionnaire modifiée avec succès.'
+            );
     }
 
-    public function detruireToutesLesReponses(Menage $menage): RedirectResponse
-    {
+    public function detruireToutesLesReponses(
+        Menage $menage
+    ): RedirectResponse {
         $this->authorize('update', $menage);
 
         $menage->reponses()->delete();
+
         $this->reinitialiserStatutSiAucuneReponse($menage);
 
-        return redirect()->route('menages.show', $menage)->with('succes', 'Toutes les réponses au questionnaire ont été supprimées.');
+        return redirect()
+            ->route('menages.show', $menage)
+            ->with(
+                'succes',
+                'Toutes les réponses au questionnaire ont été supprimées.'
+            );
     }
 
-    private function reinitialiserStatutSiAucuneReponse(Menage $menage): void
-    {
+    private function reinitialiserStatutSiAucuneReponse(
+        Menage $menage
+    ): void {
         if (! $menage->reponses()->exists()) {
             $menage->update([
                 'statut' => 'a_faire',
@@ -343,48 +540,121 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
     private function donneesFormulaire(): array
     {
         return [
-            'provinces' => Province::orderBy('nom')->get(['id', 'nom']),
-            'communes' => Commune::orderBy('nom')->get(['id', 'nom', 'province_id']),
-            'zones' => Zone::orderBy('nom')->get(['id', 'nom', 'commune_id']),
-            'collines' => Colline::orderBy('nom')->get(['id', 'nom', 'zone_id']),
-            'enqueteurs' => User::where('role', 'enqueteur')->where('actif', true)->orderBy('name')->get(['id', 'name']),
+            'provinces' => Province::orderBy('nom')
+                ->get(['id', 'nom']),
+
+            'communes' => Commune::orderBy('nom')
+                ->get(['id', 'nom', 'province_id']),
+
+            'zones' => Zone::orderBy('nom')
+                ->get(['id', 'nom', 'commune_id']),
+
+            'collines' => Colline::orderBy('nom')
+                ->get(['id', 'nom', 'zone_id']),
+
+            'enqueteurs' => User::where('role', 'enqueteur')
+                ->where('actif', true)
+                ->orderBy('name')
+                ->get(['id', 'name']),
         ];
     }
 
-    private function valider(Request $request, ?int $idIgnore = null): array
-    {
+    private function valider(
+        Request $request,
+        ?int $idIgnore = null
+    ): array {
         return $request->validate([
-            'code_menage' => ['required', 'string', 'max:50', Rule::unique('menages', 'code_menage')->ignore($idIgnore)],
-            'nom_chef_menage' => ['nullable', 'string', 'max:255'],
-            'prenom_chef_menage' => ['nullable', 'string', 'max:255'],
-            'sexe' => ['nullable', 'string', 'max:20'],
-            'date_naissance' => ['nullable', 'date'],
-            'telephone' => ['nullable', 'string', 'max:30'],
-            'cni' => ['nullable', 'string', 'max:50'],
-            'colline_id' => ['required', 'exists:collines,id'],
+            'code_menage' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('menages', 'code_menage')->ignore($idIgnore),
+            ],
+
+            'nom_chef_menage' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
+            'prenom_chef_menage' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
+            'sexe' => [
+                'nullable',
+                'string',
+                'max:20',
+            ],
+
+            'date_naissance' => [
+                'nullable',
+                'date',
+            ],
+
+            'telephone' => [
+                'nullable',
+                'string',
+                'max:30',
+            ],
+
+            'cni' => [
+                'nullable',
+                'string',
+                'max:50',
+            ],
+
+            'colline_id' => [
+                'required',
+                'exists:collines,id',
+            ],
+
             'statut' => [
                 'required',
-                Rule::in(['a_faire', 'en_attente', 'termine']),
+                Rule::in([
+                    'a_faire',
+                    'en_attente',
+                    'termine',
+                ]),
             ],
-            'enqueteur_id' => ['nullable', 'exists:users,id'],
+
+            'enqueteur_id' => [
+                'nullable',
+                'exists:users,id',
+            ],
         ]);
     }
 
-
-    private function superficieHectares(mixed $polygone): ?float
-    {
+    private function superficieHectares(
+        mixed $polygone
+    ): ?float {
         if (! is_array($polygone) || count($polygone) < 3) {
             return null;
         }
 
         $coords = collect($polygone)
             ->map(function ($point) {
-                if (is_array($point) && array_key_exists(0, $point) && array_key_exists(1, $point)) {
-                    return [(float) $point[0], (float) $point[1]];
+                if (
+                    is_array($point)
+                    && array_key_exists(0, $point)
+                    && array_key_exists(1, $point)
+                ) {
+                    return [
+                        (float) $point[0],
+                        (float) $point[1],
+                    ];
                 }
 
-                if (is_array($point) && isset($point['latitude'], $point['longitude'])) {
-                    return [(float) $point['latitude'], (float) $point['longitude']];
+                if (
+                    is_array($point)
+                    && isset($point['latitude'], $point['longitude'])
+                ) {
+                    return [
+                        (float) $point['latitude'],
+                        (float) $point['longitude'],
+                    ];
                 }
 
                 return null;
@@ -396,8 +666,9 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
             return null;
         }
 
-        // Rayon équatorial WGS84 (mètres)
+        // Rayon équatorial WGS84 (mètres).
         $rayonTerre = 6378137;
+
         $aire = 0.0;
         $n = $coords->count();
 
@@ -405,60 +676,80 @@ private function altitudeParcelle(Parcelle $parcelle): ?float
             [$lat1, $lng1] = $coords[$i];
             [$lat2, $lng2] = $coords[($i + 1) % $n];
 
-            $aire += deg2rad($lng2 - $lng1) * (2 + sin(deg2rad($lat1)) + sin(deg2rad($lat2)));
+            $aire += deg2rad($lng2 - $lng1)
+                * (
+                    2
+                    + sin(deg2rad($lat1))
+                    + sin(deg2rad($lat2))
+                );
         }
 
-        $aire = abs($aire * $rayonTerre * $rayonTerre / 2);
+        $aire = abs(
+            $aire * $rayonTerre * $rayonTerre / 2
+        );
 
-        return round($aire / 10000, 2); // m² → hectares
+        return round($aire / 10000, 2);
     }
 
-
     public function dupliquer(Menage $menage): Response
-{
-    $this->authorize('view', $menage);
-    $this->authorize('create', Menage::class);
+    {
+        $this->authorize('view', $menage);
+        $this->authorize('create', Menage::class);
 
-    $menage->load('colline.zone.commune');
+        $menage->load('colline.zone.commune');
 
-    return Inertia::render('Menages/Dupliquer', [
-        'menage' => [
-            'id' => $menage->id,
-            'code_menage' => $menage->code_menage,
-            'nom_chef_menage' => $menage->nom_chef_menage,
-            'prenom_chef_menage' => $menage->prenom_chef_menage,
-            'telephone' => $menage->telephone,
-            'cni' => $menage->cni,
-            'enqueteur_id' => $menage->enqueteur_id,
-            'colline_id' => $menage->colline_id,
-            'zone_id' => $menage->colline?->zone_id,
-            'commune_id' => $menage->colline?->zone?->commune_id,
-            'province_id' => $menage->colline?->zone?->commune?->province_id,
-        ],
-        ...$this->donneesFormulaire(),
-    ]);
-}
-
-public function enregistrerCopie(Request $request, Menage $menage): RedirectResponse
-{
-    $this->authorize('view', $menage);
-    $this->authorize('create', Menage::class);
-
-    $donnees = $request->validate([
-        'colline_id' => ['required', 'exists:collines,id'],
-        'enqueteur_id' => ['nullable', 'exists:users,id'],
-    ]);
-
-    $menage->collines()->syncWithoutDetaching([$donnees['colline_id']]);
-
-    if (!empty($donnees['enqueteur_id'])) {
-        $menage->update([
-            'enqueteur_id' => $donnees['enqueteur_id'],
+        return Inertia::render('Menages/Dupliquer', [
+            'menage' => [
+                'id' => $menage->id,
+                'code_menage' => $menage->code_menage,
+                'nom_chef_menage' => $menage->nom_chef_menage,
+                'prenom_chef_menage' => $menage->prenom_chef_menage,
+                'telephone' => $menage->telephone,
+                'cni' => $menage->cni,
+                'enqueteur_id' => $menage->enqueteur_id,
+                'colline_id' => $menage->colline_id,
+                'zone_id' => $menage->colline?->zone_id,
+                'commune_id' => $menage->colline?->zone?->commune_id,
+                'province_id' => $menage->colline?->zone?->commune?->province_id,
+            ],
+            ...$this->donneesFormulaire(),
         ]);
     }
 
-    return redirect()
-        ->route('menages.show', $menage)
-        ->with('succes', "Le ménage {$menage->code_menage} a été affecté à la colline sélectionnée.");
-}
+    public function enregistrerCopie(
+        Request $request,
+        Menage $menage
+    ): RedirectResponse {
+        $this->authorize('view', $menage);
+        $this->authorize('create', Menage::class);
+
+        $donnees = $request->validate([
+            'colline_id' => [
+                'required',
+                'exists:collines,id',
+            ],
+
+            'enqueteur_id' => [
+                'nullable',
+                'exists:users,id',
+            ],
+        ]);
+
+        $menage->collines()->syncWithoutDetaching([
+            $donnees['colline_id'],
+        ]);
+
+        if (! empty($donnees['enqueteur_id'])) {
+            $menage->update([
+                'enqueteur_id' => $donnees['enqueteur_id'],
+            ]);
+        }
+
+        return redirect()
+            ->route('menages.show', $menage)
+            ->with(
+                'succes',
+                "Le ménage {$menage->code_menage} a été affecté à la colline sélectionnée."
+            );
+    }
 }

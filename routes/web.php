@@ -103,7 +103,6 @@ Route::delete('/menages/{menage}/parcelles/{parcelle}', [MenageController::class
     ->middleware(['auth', 'verified', 'role:admin,superviseur_national,superviseur_provincial,superviseur_communal'])
     ->name('menages.parcelles.destroy');
 
-// À ajouter dans routes/web.php, juste après la route menages.reponses.destroy :
 
 Route::put('/menages/{menage}/reponses/{reponse}', [MenageController::class, 'modifierReponse'])
     ->middleware(['auth', 'verified', 'role:admin,superviseur_national,superviseur_provincial,superviseur_communal'])
