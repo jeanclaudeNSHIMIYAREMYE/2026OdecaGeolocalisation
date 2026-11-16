@@ -278,7 +278,7 @@ function ContenuNavigation({ user, onNavigate }) {
                 onNavigate={onNavigate}
                 ordre={3}
             >
-                Caféiculteurs
+                 Caféiculteurs
             </LienNav>
 
             <LienNav

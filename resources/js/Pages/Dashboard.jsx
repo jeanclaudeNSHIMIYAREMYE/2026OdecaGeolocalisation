@@ -29,6 +29,30 @@ function echapperHtml(valeur) {
 }
 
 // ============================================================
+// RECUPERATION DES SUPERVISEURS
+// ============================================================
+
+function recupererNomsSuperviseurs(point) {
+    let noms = [];
+
+    if (Array.isArray(point.noms_superviseurs)) {
+        noms = point.noms_superviseurs;
+    } else if (point.noms_superviseurs) {
+        noms = [point.noms_superviseurs];
+    }
+
+    if (noms.length === 0 && point.nom_superviseur) {
+        noms = String(point.nom_superviseur).split(',');
+    }
+
+    return [...new Set(
+        noms
+            .map((nom) => String(nom ?? '').trim())
+            .filter(Boolean)
+    )].join(', ') || 'Non renseigné';
+}
+
+// ============================================================
 // CARTE LEAFLET DU BURUNDI
 // ============================================================
 
@@ -38,276 +62,380 @@ function CarteBurundi({ points = [] }) {
     const coucheMarqueursRef = useRef(null);
     const couchePolygonesRef = useRef(null);
 
-    // Initialisation et mise à jour de la carte.
+    // Initialisation de Leaflet une seule fois.
+    useEffect(() => {
+        let annule = false;
+        let minuteur = null;
+
+        import('leaflet')
+            .then((L) => {
+                if (annule || !conteneurRef.current) return;
+
+                if (!carteRef.current) {
+                    const carte = L.map(conteneurRef.current, {
+                        zoomControl: true,
+                        scrollWheelZoom: true,
+                    }).setView([-3.373, 29.918], 8);
+
+                    carteRef.current = carte;
+
+                    L.tileLayer(
+                        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        {
+                            attribution: '&copy; OpenStreetMap',
+                            maxZoom: 18,
+                        },
+                    ).addTo(carte);
+
+                    coucheMarqueursRef.current =
+                        L.layerGroup().addTo(carte);
+
+                    couchePolygonesRef.current =
+                        L.layerGroup().addTo(carte);
+                }
+
+                afficherPoints(L, points);
+
+                minuteur = setTimeout(() => {
+                    if (!annule && carteRef.current) {
+                        carteRef.current.invalidateSize();
+                    }
+                }, 150);
+            })
+            .catch((erreur) => {
+                console.error(
+                    'Erreur lors du chargement de Leaflet :',
+                    erreur,
+                );
+            });
+
+        return () => {
+            annule = true;
+
+            if (minuteur) {
+                clearTimeout(minuteur);
+            }
+        };
+    }, []);
+
+    // Mise à jour des points lorsque les données changent.
     useEffect(() => {
         let annule = false;
 
-        import('leaflet').then((L) => {
-            if (annule || !conteneurRef.current) return;
+        import('leaflet')
+            .then((L) => {
+                if (annule || !carteRef.current) return;
 
-            // Création de la carte une seule fois.
-            if (!carteRef.current) {
-                carteRef.current = L.map(conteneurRef.current, {
-                    zoomControl: true,
-                    scrollWheelZoom: true,
-                }).setView([-3.373, 29.918], 8);
-
-                L.tileLayer(
-                    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    {
-                        attribution: '&copy; OpenStreetMap',
-                        maxZoom: 18,
-                    },
-                ).addTo(carteRef.current);
-
-                coucheMarqueursRef.current =
-                    L.layerGroup().addTo(carteRef.current);
-
-                couchePolygonesRef.current =
-                    L.layerGroup().addTo(carteRef.current);
-            }
-
-            // Nettoyer les anciennes couches.
-            coucheMarqueursRef.current.clearLayers();
-            couchePolygonesRef.current.clearLayers();
-
-            const toutesLesCoordonnees = [];
-
-            // Calcul des altitudes valides.
-            const altitudesValides = points
-                .map((p) => Number(p.altitude))
-                .filter((a) => Number.isFinite(a));
-
-            const altitudeMin = altitudesValides.length
-                ? Math.min(...altitudesValides)
-                : null;
-
-            const altitudeMax = altitudesValides.length
-                ? Math.max(...altitudesValides)
-                : null;
-
-            const RAYON_MIN = 5;
-            const RAYON_MAX = 12;
-
-            const rayonPourAltitude = (altitude) => {
-                if (
-                    altitude === null ||
-                    altitude === undefined ||
-                    !Number.isFinite(Number(altitude)) ||
-                    altitudeMin === null ||
-                    altitudeMax === null ||
-                    altitudeMax === altitudeMin
-                ) {
-                    return RAYON_MIN;
-                }
-
-                const ratio =
-                    (Number(altitude) - altitudeMin) /
-                    (altitudeMax - altitudeMin);
-
-                return RAYON_MIN + ratio * (RAYON_MAX - RAYON_MIN);
-            };
-
-            points.forEach((point) => {
-                const couleur =
-                    COULEURS_STATUT[point.statut_menage] ?? '#CE1126';
-
-                const altitudeTexte =
-                    point.altitude !== null &&
-                    point.altitude !== undefined &&
-                    Number.isFinite(Number(point.altitude))
-                        ? `${Number(point.altitude).toFixed(0)} m`
-                        : '—';
-
-                const superficieTexte =
-                    point.superficie_ha !== null &&
-                    point.superficie_ha !== undefined &&
-                    Number.isFinite(Number(point.superficie_ha))
-                        ? `${Number(point.superficie_ha).toLocaleString(
-                              'fr-FR',
-                              { maximumFractionDigits: 2 },
-                          )} ha`
-                        : '—';
-
-                // ====================================================
-                // NOUVEAU : SUPERVISEUR ET ENQUETEUR
-                // ====================================================
-
-                const nomSuperviseur =
-                    point.nom_superviseur || 'Non renseigné';
-
-                const nomEnqueteur =
-                    point.nom_enqueteur || 'Non renseigné';
-
-                // Si plusieurs superviseurs sont affectés,
-                // ils sont séparés par des virgules.
-                const superviseurHtml = echapperHtml(nomSuperviseur);
-                const enqueteurHtml = echapperHtml(nomEnqueteur);
-
-                // ====================================================
-                // POPUP COMPLET
-                // ====================================================
-
-                const popup =
-                    `<div style="min-width:190px;">` +
-                    `<strong style="font-size:14px;color:#0d4a2a;">${echapperHtml(point.code_menage ?? 'Ménage')}</strong><br>` +
-                    `<span>${echapperHtml(point.nom_chef_menage ?? '')}</span><br>` +
-                    `<hr style="margin:6px 0;border:0;border-top:1px solid #e5e7eb;">` +
-
-                    `<div style="margin-bottom:5px;">` +
-                    `<strong style="color:#166534;">Superviseur communal :</strong><br>` +
-                    `${superviseurHtml}` +
-                    `</div>` +
-
-                    `<div style="margin-bottom:7px;">` +
-                    `<strong style="color:#166534;">Enquêteur :</strong><br>` +
-                    `${enqueteurHtml}` +
-                    `</div>` +
-
-                    `<hr style="margin:6px 0;border:0;border-top:1px solid #e5e7eb;">` +
-
-                    `<strong>${echapperHtml(point.nombre_pieds ?? '—')}</strong> pieds de café<br>` +
-                    `Superficie : ${echapperHtml(superficieTexte)}<br>` +
-                    `État : ${echapperHtml(point.etat_verger ?? '—')}<br>` +
-                    `Type : ${echapperHtml(point.type ?? '—')}<br>` +
-                    `Altitude : ${echapperHtml(altitudeTexte)}` +
-                    `</div>`;
-
-                // ====================================================
-                // POLYGONES DES PARCELLES
-                // ====================================================
-
-                if (
-                    Array.isArray(point.polygone) &&
-                    point.polygone.length >= 3
-                ) {
-                    const coordinates = point.polygone
-                        .map((coord) => {
-                            if (
-                                Array.isArray(coord) &&
-                                coord.length >= 2
-                            ) {
-                                return [
-                                    Number(coord[0]),
-                                    Number(coord[1]),
-                                ];
-                            }
-
-                            if (
-                                coord &&
-                                coord.latitude != null &&
-                                coord.longitude != null
-                            ) {
-                                return [
-                                    Number(coord.latitude),
-                                    Number(coord.longitude),
-                                ];
-                            }
-
-                            return null;
-                        })
-                        .filter(
-                            (coord) =>
-                                coord &&
-                                Number.isFinite(coord[0]) &&
-                                Number.isFinite(coord[1]),
-                        );
-
-                    if (coordinates.length >= 3) {
-                        const polygoneLayer = L.polygon(coordinates, {
-                            color: couleur,
-                            fillColor: couleur,
-                            fillOpacity: 0.25,
-                            weight: 2,
-                        }).bindPopup(popup);
-
-                        if (
-                            point.superficie_ha !== null &&
-                            point.superficie_ha !== undefined
-                        ) {
-                            polygoneLayer.bindTooltip(
-                                `${Number(point.superficie_ha).toLocaleString(
-                                    'fr-FR',
-                                    { maximumFractionDigits: 2 },
-                                )} ha`,
-                                {
-                                    permanent: true,
-                                    direction: 'center',
-                                    className: 'etiquette-superficie',
-                                },
-                            );
-                        }
-
-                        polygoneLayer.addTo(
-                            couchePolygonesRef.current,
-                        );
-
-                        toutesLesCoordonnees.push(...coordinates);
-                    }
-                }
-
-                // ====================================================
-                // POINTS GPS
-                // ====================================================
-
-                if (
-                    point.latitude != null &&
-                    point.longitude != null
-                ) {
-                    const latitude = Number(point.latitude);
-                    const longitude = Number(point.longitude);
-
-                    if (
-                        Number.isFinite(latitude) &&
-                        Number.isFinite(longitude)
-                    ) {
-                        L.circleMarker(
-                            [latitude, longitude],
-                            {
-                                radius: rayonPourAltitude(point.altitude),
-                                color: couleur,
-                                fillColor: couleur,
-                                fillOpacity: 0.8,
-                                weight: 1,
-                            },
-                        )
-                            .bindPopup(popup)
-                            .addTo(coucheMarqueursRef.current);
-
-                        toutesLesCoordonnees.push([
-                            latitude,
-                            longitude,
-                        ]);
-                    }
-                }
+                afficherPoints(
+                    L,
+                    Array.isArray(points) ? points : [],
+                );
+            })
+            .catch((erreur) => {
+                console.error(
+                    'Erreur de mise à jour de la carte :',
+                    erreur,
+                );
             });
-
-            // Adapter le zoom aux points affichés.
-            if (toutesLesCoordonnees.length > 0) {
-                const bornes = L.latLngBounds(toutesLesCoordonnees);
-
-                carteRef.current.fitBounds(bornes, {
-                    padding: [30, 30],
-                    maxZoom: 15,
-                });
-            } else {
-                carteRef.current.setView([-3.373, 29.918], 8);
-            }
-
-            // Corriger l'affichage Leaflet après initialisation.
-            setTimeout(() => {
-                if (!annule && carteRef.current) {
-                    carteRef.current.invalidateSize();
-                }
-            }, 100);
-        });
 
         return () => {
             annule = true;
         };
     }, [points]);
 
-    // Redimensionnement de la carte.
+    // ========================================================
+    // AFFICHAGE DES POINTS ET DES POLYGONES
+    // ========================================================
+
+    function afficherPoints(L, donnees) {
+        if (
+            !carteRef.current ||
+            !coucheMarqueursRef.current ||
+            !couchePolygonesRef.current
+        ) {
+            return;
+        }
+
+        coucheMarqueursRef.current.clearLayers();
+        couchePolygonesRef.current.clearLayers();
+
+        const toutesLesCoordonnees = [];
+
+        // Altitudes valides.
+        const altitudesValides = donnees
+            .map((point) => Number(point.altitude))
+            .filter((altitude) => Number.isFinite(altitude));
+
+        const altitudeMin = altitudesValides.length
+            ? Math.min(...altitudesValides)
+            : null;
+
+        const altitudeMax = altitudesValides.length
+            ? Math.max(...altitudesValides)
+            : null;
+
+        // Taille du marqueur selon l'altitude.
+        const rayonPourAltitude = (altitude) => {
+            const valeur = Number(altitude);
+
+            if (
+                altitude === null ||
+                altitude === undefined ||
+                altitude === '' ||
+                !Number.isFinite(valeur) ||
+                altitudeMin === null ||
+                altitudeMax === null ||
+                altitudeMax === altitudeMin
+            ) {
+                return 5;
+            }
+
+            const ratio =
+                (valeur - altitudeMin) /
+                (altitudeMax - altitudeMin);
+
+            return 5 + ratio * 7;
+        };
+
+        donnees.forEach((point) => {
+            const couleur =
+                COULEURS_STATUT[point.statut_menage] ?? '#CE1126';
+
+            // Altitude.
+            const altitude = Number(point.altitude);
+
+            const altitudeTexte =
+                point.altitude !== null &&
+                point.altitude !== undefined &&
+                point.altitude !== '' &&
+                Number.isFinite(altitude)
+                    ? `${altitude.toFixed(0)} m`
+                    : '—';
+
+            // Superficie.
+            const superficie = Number(point.superficie_ha);
+
+            const superficieTexte =
+                point.superficie_ha !== null &&
+                point.superficie_ha !== undefined &&
+                point.superficie_ha !== '' &&
+                Number.isFinite(superficie)
+                    ? `${superficie.toLocaleString('fr-FR', {
+                          maximumFractionDigits: 2,
+                      })} ha`
+                    : '—';
+
+            // Superviseur communal.
+            const nomSuperviseur =
+                recupererNomsSuperviseurs(point);
+
+            // Enquêteur.
+            const nomEnqueteur =
+                String(point.nom_enqueteur ?? '').trim() ||
+                'Non renseigné';
+
+            // ====================================================
+            // POPUP DE LA PARCELLE
+            // ====================================================
+
+            const popup = `
+                <div style="min-width:190px;">
+
+                    <strong style="font-size:14px;color:#0d4a2a;">
+                        ${echapperHtml(point.code_menage ?? 'Ménage')}
+                    </strong>
+
+                    <br>
+
+                    <span>
+                        ${echapperHtml(point.nom_chef_menage ?? '')}
+                    </span>
+
+                    <hr style="margin:6px 0;border:0;border-top:1px solid #e5e7eb;">
+
+                    <div style="margin-bottom:5px;">
+                        <strong style="color:#166534;">
+                            Superviseur communal :
+                        </strong>
+                        <br>
+                        ${echapperHtml(nomSuperviseur)}
+                    </div>
+
+                    <div style="margin-bottom:7px;">
+                        <strong style="color:#166534;">
+                            Enquêteur :
+                        </strong>
+                        <br>
+                        ${echapperHtml(nomEnqueteur)}
+                    </div>
+
+                    <hr style="margin:6px 0;border:0;border-top:1px solid #e5e7eb;">
+
+                    <strong>
+                        ${echapperHtml(point.nombre_pieds ?? '—')}
+                    </strong>
+                    pieds de café
+
+                    <br>
+
+                    Superficie :
+                    ${echapperHtml(superficieTexte)}
+
+                    <br>
+
+                    État :
+                    ${echapperHtml(point.etat_verger ?? '—')}
+
+                    <br>
+
+                    Type :
+                    ${echapperHtml(point.type ?? '—')}
+
+                    <br>
+
+                    Altitude :
+                    ${echapperHtml(altitudeTexte)}
+
+                </div>
+            `;
+
+            // ====================================================
+            // POLYGONES DES PARCELLES
+            // ====================================================
+
+            if (
+                Array.isArray(point.polygone) &&
+                point.polygone.length >= 3
+            ) {
+                const coordinates = point.polygone
+                    .map((coord) => {
+                        if (
+                            Array.isArray(coord) &&
+                            coord.length >= 2
+                        ) {
+                            return [
+                                Number(coord[0]),
+                                Number(coord[1]),
+                            ];
+                        }
+
+                        if (
+                            coord &&
+                            coord.latitude != null &&
+                            coord.longitude != null
+                        ) {
+                            return [
+                                Number(coord.latitude),
+                                Number(coord.longitude),
+                            ];
+                        }
+
+                        return null;
+                    })
+                    .filter((coord) => {
+                        return (
+                            coord &&
+                            Number.isFinite(coord[0]) &&
+                            Number.isFinite(coord[1]) &&
+                            Math.abs(coord[0]) <= 90 &&
+                            Math.abs(coord[1]) <= 180
+                        );
+                    });
+
+                if (coordinates.length >= 3) {
+                    const polygone = L.polygon(coordinates, {
+                        color: couleur,
+                        fillColor: couleur,
+                        fillOpacity: 0.25,
+                        weight: 2,
+                    }).bindPopup(popup);
+
+                    if (
+                        point.superficie_ha !== null &&
+                        point.superficie_ha !== undefined &&
+                        point.superficie_ha !== '' &&
+                        Number.isFinite(superficie)
+                    ) {
+                        polygone.bindTooltip(
+                            `${superficie.toLocaleString('fr-FR', {
+                                maximumFractionDigits: 2,
+                            })} ha`,
+                            {
+                                permanent: true,
+                                direction: 'center',
+                                className: 'etiquette-superficie',
+                            },
+                        );
+                    }
+
+                    polygone.addTo(couchePolygonesRef.current);
+
+                    toutesLesCoordonnees.push(...coordinates);
+                }
+            }
+
+            // ====================================================
+            // POINTS GPS
+            // ====================================================
+
+            if (
+                point.latitude !== null &&
+                point.latitude !== undefined &&
+                point.longitude !== null &&
+                point.longitude !== undefined
+            ) {
+                const latitude = Number(point.latitude);
+                const longitude = Number(point.longitude);
+
+                if (
+                    Number.isFinite(latitude) &&
+                    Number.isFinite(longitude) &&
+                    Math.abs(latitude) <= 90 &&
+                    Math.abs(longitude) <= 180
+                ) {
+                    L.circleMarker(
+                        [latitude, longitude],
+                        {
+                            radius: rayonPourAltitude(point.altitude),
+                            color: couleur,
+                            fillColor: couleur,
+                            fillOpacity: 0.8,
+                            weight: 1,
+                        },
+                    )
+                        .bindPopup(popup)
+                        .addTo(coucheMarqueursRef.current);
+
+                    toutesLesCoordonnees.push([
+                        latitude,
+                        longitude,
+                    ]);
+                }
+            }
+        });
+
+        // ====================================================
+        // ADAPTATION AUTOMATIQUE DU ZOOM
+        // ====================================================
+
+        if (toutesLesCoordonnees.length > 0) {
+            const bornes = L.latLngBounds(toutesLesCoordonnees);
+
+            carteRef.current.fitBounds(bornes, {
+                padding: [30, 30],
+                maxZoom: 15,
+            });
+        } else {
+            carteRef.current.setView([-3.373, 29.918], 8);
+        }
+
+        carteRef.current.invalidateSize();
+    }
+
+    // ========================================================
+    // REDIMENSIONNEMENT
+    // ========================================================
+
     useEffect(() => {
         const redimensionner = () => {
             carteRef.current?.invalidateSize();
@@ -320,11 +448,17 @@ function CarteBurundi({ points = [] }) {
         };
     }, []);
 
-    // Nettoyage de la carte.
+    // ========================================================
+    // NETTOYAGE DE LA CARTE
+    // ========================================================
+
     useEffect(() => {
         return () => {
             carteRef.current?.remove();
+
             carteRef.current = null;
+            coucheMarqueursRef.current = null;
+            couchePolygonesRef.current = null;
         };
     }, []);
 
@@ -413,35 +547,62 @@ const STYLES_PAGE = `
     100% { transform: scale(2.2); opacity: 0; }
 }
 
-.anim-dash-carte { opacity: 0; animation: dashEntree .55s cubic-bezier(.22, 1, .36, 1) forwards; }
-.anim-dash-barre { animation: dashBarre 1s ease-in-out infinite; }
+.anim-dash-carte {
+    opacity: 0;
+    animation: dashEntree .55s cubic-bezier(.22, 1, .36, 1) forwards;
+}
+
+.anim-dash-barre {
+    animation: dashBarre 1s ease-in-out infinite;
+}
 
 .dash-drapeau {
     background: linear-gradient(90deg, #ce1126, #ffffff, #18b637, #ce1126);
     background-size: 200% 100%;
     animation: dashDrapeau 7s linear infinite;
 }
+
 .dash-banniere {
     background:
         radial-gradient(90% 120% at 100% 0%, rgba(24, 182, 55, .30) 0%, transparent 60%),
         linear-gradient(160deg, #0a3b21 0%, #0d4a2a 55%, #07301a 100%);
 }
+
 .dash-halo {
     background: radial-gradient(circle, rgba(206, 17, 38, .55) 0%, transparent 70%);
     animation: dashHalo 9s ease-in-out infinite;
 }
-.dash-pulse { animation: dashPulse 2s ease-out infinite; }
 
-.dash-fond-vert   { background: linear-gradient(135deg, #18b637 0%, #0d6b2c 100%); box-shadow: 0 8px 16px -6px rgba(13, 107, 44, .6); }
-.dash-fond-rouge  { background: linear-gradient(135deg, #e11d36 0%, #ce1126 55%, #9f0d1d 100%); box-shadow: 0 8px 16px -6px rgba(206, 17, 38, .65); }
-.dash-fond-sombre { background: linear-gradient(135deg, #0d4a2a 0%, #07301a 100%); box-shadow: 0 8px 16px -6px rgba(7, 48, 26, .7); }
-.dash-fond-ambre  { background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); box-shadow: 0 8px 16px -6px rgba(217, 119, 6, .55); }
+.dash-pulse {
+    animation: dashPulse 2s ease-out infinite;
+}
+
+.dash-fond-vert {
+    background: linear-gradient(135deg, #18b637 0%, #0d6b2c 100%);
+    box-shadow: 0 8px 16px -6px rgba(13, 107, 44, .6);
+}
+
+.dash-fond-rouge {
+    background: linear-gradient(135deg, #e11d36 0%, #ce1126 55%, #9f0d1d 100%);
+    box-shadow: 0 8px 16px -6px rgba(206, 17, 38, .65);
+}
+
+.dash-fond-sombre {
+    background: linear-gradient(135deg, #0d4a2a 0%, #07301a 100%);
+    box-shadow: 0 8px 16px -6px rgba(7, 48, 26, .7);
+}
+
+.dash-fond-ambre {
+    background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+    box-shadow: 0 8px 16px -6px rgba(217, 119, 6, .55);
+}
 
 .dash-segment {
     position: relative;
     overflow: hidden;
     transition: width 1.1s cubic-bezier(.22, 1, .36, 1);
 }
+
 .dash-segment::after {
     content: '';
     position: absolute;
@@ -453,30 +614,57 @@ const STYLES_PAGE = `
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .anim-dash-carte, .anim-dash-barre, .dash-drapeau, .dash-halo,
-    .dash-pulse, .dash-segment::after {
+    .anim-dash-carte,
+    .anim-dash-barre,
+    .dash-drapeau,
+    .dash-halo,
+    .dash-pulse,
+    .dash-segment::after {
         animation: none !important;
     }
-    .anim-dash-carte { opacity: 1 !important; }
-    .dash-segment { transition: none !important; }
+
+    .anim-dash-carte {
+        opacity: 1 !important;
+    }
+
+    .dash-segment {
+        transition: none !important;
+    }
 }
 `;
 
+// ============================================================
+// ICONES
+// ============================================================
+
 const ICONES = {
     termine: 'm8.5 12 2.25 2.25L15.5 9.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
+
     attente: 'M12 6v6l4 2m5-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
+
     restants: 'M3 3v1.5M3 21v-6m0 0 2.77-.693a9 9 0 0 1 6.208.682l.108.054a9 9 0 0 0 6.086.71l3.114-.732a48.524 48.524 0 0 1-.005-10.499l-3.11.732a9 9 0 0 1-6.085-.711l-.108-.054a9 9 0 0 0-6.208-.682L3 4.5M3 15V4.5',
+
     total: 'M17 20h5v-2a3 3 0 0 0-5.196-2.05M17 20H7m10 0v-2c0-.7-.12-1.37-.34-1.98M7 20H2v-2a3 3 0 0 1 5.196-2.05M7 20v-2c0-.7.12-1.37.34-1.98m0 0a5 5 0 0 1 9.32 0M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z',
+
     parcelles: 'M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z',
+
     pieds: 'M12 21V9m0 0c0-3 2-5 6-5 0 4-2 6-6 5Zm0 3c0-2.5-1.8-4-5-4 0 3.2 1.8 5 5 4Z',
+
     superficie: 'M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z',
 };
+
+// ============================================================
+// DETECTION DU MOUVEMENT REDUIT
+// ============================================================
 
 const mouvementReduit = () =>
     typeof window !== 'undefined' &&
     window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-/** Compteur qui monte progressivement jusqu'à la valeur. */
+// ============================================================
+// COMPTEUR ANIME
+// ============================================================
+
 function useCompteurAnime(cible, duree = 1000) {
     const valeurCible = Number(cible ?? 0);
     const [valeur, setValeur] = useState(0);
@@ -491,7 +679,11 @@ function useCompteurAnime(cible, duree = 1000) {
         const debut = performance.now();
 
         const etape = (maintenant) => {
-            const progression = Math.min((maintenant - debut) / duree, 1);
+            const progression = Math.min(
+                (maintenant - debut) / duree,
+                1,
+            );
+
             const adoucie = 1 - Math.pow(1 - progression, 3);
 
             if (progression >= 1) {
@@ -504,6 +696,7 @@ function useCompteurAnime(cible, duree = 1000) {
                     ? Math.round(valeurCible * adoucie)
                     : Math.round(valeurCible * adoucie * 100) / 100,
             );
+
             image = requestAnimationFrame(etape);
         };
 
@@ -515,13 +708,21 @@ function useCompteurAnime(cible, duree = 1000) {
     return valeur;
 }
 
-/** Renvoie false au premier rendu, puis true : permet d'animer les barres. */
+// ============================================================
+// ANIMATION DES BARRES
+// ============================================================
+
 function useMonte(retard = 120) {
     const [monte, setMonte] = useState(mouvementReduit());
 
     useEffect(() => {
         if (monte) return;
-        const minuteur = setTimeout(() => setMonte(true), retard);
+
+        const minuteur = setTimeout(
+            () => setMonte(true),
+            retard,
+        );
+
         return () => clearTimeout(minuteur);
     }, [monte, retard]);
 
@@ -549,7 +750,10 @@ function CarteKpi({
             className={`anim-dash-carte group relative min-w-0 overflow-hidden rounded-2xl border border-gray-100 bg-white p-3 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg sm:p-5 lg:p-6 ${className}`}
             style={{ animationDelay: `${ordre * 70}ms` }}
         >
-            <span aria-hidden="true" className={`${fond} absolute inset-x-0 top-0 h-1`} />
+            <span
+                aria-hidden="true"
+                className={`${fond} absolute inset-x-0 top-0 h-1`}
+            />
 
             <div className="flex items-start justify-between gap-2">
                 <p className="text-xs font-medium text-gray-500 sm:text-sm">
@@ -567,7 +771,11 @@ function CarteKpi({
                         className="h-4 w-4 sm:h-5 sm:w-5"
                         aria-hidden="true"
                     >
-                        <path strokeLinecap="round" strokeLinejoin="round" d={icone} />
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d={icone}
+                        />
                     </svg>
                 </span>
             </div>
@@ -609,9 +817,11 @@ function FiltreSelect({
                 disabled={disabled}
                 className="w-full min-w-0 rounded-xl border-gray-200 bg-gray-50/60 text-sm shadow-sm transition duration-200 hover:border-green-300 focus:border-green-600 focus:bg-white focus:ring-2 focus:ring-green-600/25 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 disabled:hover:border-gray-200"
             >
-                <option value="">{placeholder}</option>
+                <option value="">
+                    {placeholder}
+                </option>
 
-                {options.map((option) => (
+                {(Array.isArray(options) ? options : []).map((option) => (
                     <option key={option.id} value={option.id}>
                         {option.nom}
                     </option>
@@ -622,7 +832,7 @@ function FiltreSelect({
 }
 
 // ============================================================
-// LÉGENDE DE LA CARTE
+// LEGENDE DE LA CARTE
 // ============================================================
 
 function LegendeStatut() {
@@ -642,6 +852,7 @@ function LegendeStatut() {
                     <span
                         className={`h-2.5 w-2.5 shrink-0 rounded-full ${element.couleur}`}
                     />
+
                     {element.nom}
                 </div>
             ))}
@@ -650,10 +861,10 @@ function LegendeStatut() {
 }
 
 // ============================================================
-// BANNIÈRE D'AVANCEMENT
+// BANNIERE D'AVANCEMENT
 // ============================================================
 
-function BanniereAvancement({ kpi, nombre }) {
+function BanniereAvancement({ kpi = {}, nombre }) {
     const monte = useMonte();
 
     const total = Number(kpi.menages_total ?? 0);
@@ -661,14 +872,33 @@ function BanniereAvancement({ kpi, nombre }) {
     const attente = Number(kpi.menages_en_attente ?? 0);
     const aFaire = Number(kpi.menages_a_faire ?? 0);
 
-    const part = (valeur) => (total > 0 ? (valeur / total) * 100 : 0);
+    const part = (valeur) =>
+        total > 0 ? (valeur / total) * 100 : 0;
 
     const taux = useCompteurAnime(kpi.taux_avancement ?? 0);
 
     const segments = [
-        { cle: 'termine', nom: 'Terminés', valeur: termines, classe: 'bg-green-400', point: 'bg-green-400' },
-        { cle: 'attente', nom: 'En attente', valeur: attente, classe: 'bg-amber-400', point: 'bg-amber-400' },
-        { cle: 'afaire', nom: 'À faire', valeur: aFaire, classe: 'bg-white/40', point: 'bg-white/50' },
+        {
+            cle: 'termine',
+            nom: 'Terminés',
+            valeur: termines,
+            classe: 'bg-green-400',
+            point: 'bg-green-400',
+        },
+        {
+            cle: 'attente',
+            nom: 'En attente',
+            valeur: attente,
+            classe: 'bg-amber-400',
+            point: 'bg-amber-400',
+        },
+        {
+            cle: 'afaire',
+            nom: 'À faire',
+            valeur: aFaire,
+            classe: 'bg-white/40',
+            point: 'bg-white/50',
+        },
     ];
 
     return (
@@ -685,7 +915,9 @@ function BanniereAvancement({ kpi, nombre }) {
                 <div className="flex flex-wrap items-center justify-between gap-5">
                     <div className="flex items-center gap-4">
                         <div className="flex h-16 min-w-[4rem] items-center justify-center rounded-2xl bg-white px-3 text-2xl font-bold tabular-nums text-green-800 shadow-lg shadow-black/25 ring-1 ring-white/40">
-                            {Number(taux).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}%
+                            {Number(taux).toLocaleString('fr-FR', {
+                                maximumFractionDigits: 1,
+                            })}%
                         </div>
 
                         <div>
@@ -698,6 +930,7 @@ function BanniereAvancement({ kpi, nombre }) {
                                     <span className="dash-pulse absolute inline-flex h-full w-full rounded-full bg-red-400" />
                                     <span className="relative inline-flex h-2 w-2 rounded-full bg-yellow-400" />
                                 </span>
+
                                 {nombre(termines)} sur {nombre(total)} Caféiculteurs terminés
                             </p>
                         </div>
@@ -705,9 +938,16 @@ function BanniereAvancement({ kpi, nombre }) {
 
                     <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
                         {segments.map((s) => (
-                            <div key={s.cle} className="flex items-center gap-2 text-xs text-green-50/80">
-                                <span className={`h-2.5 w-2.5 rounded-full ${s.point}`} />
+                            <div
+                                key={s.cle}
+                                className="flex items-center gap-2 text-xs text-green-50/80"
+                            >
+                                <span
+                                    className={`h-2.5 w-2.5 rounded-full ${s.point}`}
+                                />
+
                                 <span>{s.nom}</span>
+
                                 <span className="font-semibold tabular-nums text-white">
                                     {nombre(s.valeur)}
                                 </span>
@@ -721,14 +961,19 @@ function BanniereAvancement({ kpi, nombre }) {
                         <div
                             key={s.cle}
                             className={`dash-segment h-full rounded-full ${s.classe}`}
-                            style={{ width: monte ? `${part(s.valeur)}%` : '0%' }}
+                            style={{
+                                width: monte ? `${part(s.valeur)}%` : '0%',
+                            }}
                             title={`${s.nom} : ${nombre(s.valeur)}`}
                         />
                     ))}
                 </div>
             </div>
 
-            <div className="dash-drapeau h-1 w-full" aria-hidden="true" />
+            <div
+                className="dash-drapeau h-1 w-full"
+                aria-hidden="true"
+            />
         </div>
     );
 }
@@ -738,19 +983,33 @@ function BanniereAvancement({ kpi, nombre }) {
 // ============================================================
 
 export default function Dashboard({
-    kpi,
-    pointsCarte,
-    filtres,
-    provinces,
-    communes,
-    zones,
-    collines,
+    kpi = {},
+    pointsCarte = [],
+    filtres = {},
+    provinces = [],
+    communes = [],
+    zones = [],
+    collines = [],
 }) {
     const [chargement, setChargement] = useState(false);
 
+    // Sécurisation des tableaux.
+    const listeProvinces = Array.isArray(provinces) ? provinces : [];
+    const listeCommunes = Array.isArray(communes) ? communes : [];
+    const listeZones = Array.isArray(zones) ? zones : [];
+    const listeCollines = Array.isArray(collines) ? collines : [];
+
+    const listePointsCarte = Array.isArray(pointsCarte)
+        ? pointsCarte
+        : [];
+
+    // ========================================================
+    // FILTRES TERRITORIAUX
+    // ========================================================
+
     const communesFiltrees = useMemo(
         () =>
-            communes.filter(
+            listeCommunes.filter(
                 (c) =>
                     !filtres.province_id ||
                     Number(c.province_id) === Number(filtres.province_id),
@@ -760,7 +1019,7 @@ export default function Dashboard({
 
     const zonesFiltrees = useMemo(
         () =>
-            zones.filter(
+            listeZones.filter(
                 (z) =>
                     !filtres.commune_id ||
                     Number(z.commune_id) === Number(filtres.commune_id),
@@ -770,7 +1029,7 @@ export default function Dashboard({
 
     const collinesFiltrees = useMemo(
         () =>
-            collines.filter(
+            listeCollines.filter(
                 (c) =>
                     !filtres.zone_id ||
                     Number(c.zone_id) === Number(filtres.zone_id),
@@ -802,10 +1061,16 @@ export default function Dashboard({
         router.get(route('dashboard'), nouveauxFiltres, {
             preserveState: true,
             preserveScroll: true,
+
             onStart: () => setChargement(true),
+
             onFinish: () => setChargement(false),
         });
     };
+
+    // ========================================================
+    // FORMATAGE DES NOMBRES
+    // ========================================================
 
     const nombre = (valeur) =>
         Number(valeur ?? 0).toLocaleString('fr-FR');
@@ -838,7 +1103,10 @@ export default function Dashboard({
 
                     {/* AVANCEMENT GLOBAL */}
 
-                    <BanniereAvancement kpi={kpi} nombre={nombre} />
+                    <BanniereAvancement
+                        kpi={kpi}
+                        nombre={nombre}
+                    />
 
                     {/* FILTRES TERRITORIAUX */}
 
@@ -865,13 +1133,17 @@ export default function Dashboard({
                         </div>
 
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+
                             <FiltreSelect
                                 label="Province"
                                 valeur={filtres.province_id}
                                 placeholder="Toutes les provinces"
-                                options={provinces}
+                                options={listeProvinces}
                                 onChange={(e) =>
-                                    appliquerFiltre('province_id', e.target.value)
+                                    appliquerFiltre(
+                                        'province_id',
+                                        e.target.value,
+                                    )
                                 }
                             />
 
@@ -882,7 +1154,10 @@ export default function Dashboard({
                                 options={communesFiltrees}
                                 disabled={!filtres.province_id}
                                 onChange={(e) =>
-                                    appliquerFiltre('commune_id', e.target.value)
+                                    appliquerFiltre(
+                                        'commune_id',
+                                        e.target.value,
+                                    )
                                 }
                             />
 
@@ -893,7 +1168,10 @@ export default function Dashboard({
                                 options={zonesFiltrees}
                                 disabled={!filtres.commune_id}
                                 onChange={(e) =>
-                                    appliquerFiltre('zone_id', e.target.value)
+                                    appliquerFiltre(
+                                        'zone_id',
+                                        e.target.value,
+                                    )
                                 }
                             />
 
@@ -904,9 +1182,13 @@ export default function Dashboard({
                                 options={collinesFiltrees}
                                 disabled={!filtres.zone_id}
                                 onChange={(e) =>
-                                    appliquerFiltre('colline_id', e.target.value)
+                                    appliquerFiltre(
+                                        'colline_id',
+                                        e.target.value,
+                                    )
                                 }
                             />
+
                         </div>
                     </section>
 
@@ -919,11 +1201,13 @@ export default function Dashboard({
                                     aria-hidden="true"
                                     className="h-4 w-1 rounded-full bg-gradient-to-b from-red-600 via-white to-green-600 ring-1 ring-gray-200"
                                 />
+
                                 Indicateurs clés
                             </h3>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+
                             <CarteKpi
                                 titre="Caféiculteurs enquêtés"
                                 valeur={kpi.menages_termines}
@@ -988,38 +1272,44 @@ export default function Dashboard({
                                 ordre={8}
                                 className="col-span-2"
                             />
+
                         </div>
                     </section>
 
-                    {/* CARTE GÉOGRAPHIQUE */}
+                    {/* CARTE GEOGRAPHIQUE */}
 
                     <section
                         className="anim-dash-carte min-w-0 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm"
                         style={{ animationDelay: '200ms' }}
                     >
                         <div className="flex flex-col gap-3 border-b border-gray-100 bg-gradient-to-r from-green-50/70 via-white to-red-50/30 px-3 py-4 sm:px-5 xl:flex-row xl:items-center xl:justify-between">
+
                             <div className="min-w-0">
                                 <h3 className="flex items-center gap-2.5 text-sm font-bold text-gray-800 sm:text-base">
                                     <span
                                         aria-hidden="true"
                                         className="h-4 w-1 rounded-full bg-gradient-to-b from-red-600 via-white to-green-600 ring-1 ring-gray-200"
                                     />
+
                                     Carte des plantations géolocalisées
                                 </h3>
 
                                 <p className="mt-1 pl-3.5 text-xs text-gray-500">
                                     <span className="font-semibold text-green-700">
-                                        {nombre(pointsCarte.length)}
+                                        {nombre(listePointsCarte.length)}
                                     </span>{' '}
                                     points géographiques affichés
                                 </p>
                             </div>
 
                             <LegendeStatut />
+
                         </div>
 
                         <div className="p-3 sm:p-5">
+
                             <div className="mb-3 flex items-start gap-2.5 rounded-xl bg-green-50/70 p-3 ring-1 ring-green-100">
+
                                 <svg
                                     viewBox="0 0 24 24"
                                     fill="none"
@@ -1029,7 +1319,10 @@ export default function Dashboard({
                                     aria-hidden="true"
                                 >
                                     <circle cx="12" cy="12" r="9" />
-                                    <path strokeLinecap="round" d="M12 8h.01M11 12h1v4h1" />
+                                    <path
+                                        strokeLinecap="round"
+                                        d="M12 8h.01M11 12h1v4h1"
+                                    />
                                 </svg>
 
                                 <p className="text-xs leading-relaxed text-gray-600">
@@ -1037,13 +1330,18 @@ export default function Dashboard({
                                     de la parcelle : plus le point est grand,
                                     plus l'altitude est élevée.
                                 </p>
+
                             </div>
 
                             <div className="overflow-hidden rounded-xl ring-1 ring-gray-200">
-                                <CarteBurundi points={pointsCarte} />
+                                <CarteBurundi
+                                    points={listePointsCarte}
+                                />
                             </div>
+
                         </div>
                     </section>
+
                 </div>
             </div>
         </AuthenticatedLayout>

@@ -45,8 +45,6 @@ class DashboardController extends Controller
 
     public function index(Request $request): Response
     {
-        $utilisateur = $request->user();
-
         $filtres = $request->only([
             'province_id',
             'commune_id',
@@ -56,9 +54,7 @@ class DashboardController extends Controller
 
         /*
          * MENAGES
-         *
-         * Les scopes territoriaux des modèles sont conservés.
-         * Les filtres explicites sont ajoutés selon le choix de l'utilisateur.
+         * Les scopes territoriaux existants sont conservés.
          */
         $menages = Menage::query()
             ->when(
@@ -106,6 +102,7 @@ class DashboardController extends Controller
          */
         $parcelles = Parcelle::query()
             ->whereHas('menage', function ($q) use ($filtres) {
+
                 $q->when(
                     $filtres['colline_id'] ?? null,
                     fn ($q, $v) => $q->where('colline_id', $v)
@@ -136,18 +133,35 @@ class DashboardController extends Controller
         /*
          * POINTS DE LA CARTE
          *
-         * On charge :
-         * - Le ménage associé à la parcelle.
-         * - L'enquêteur du ménage.
-         * - La colline du ménage.
-         * - Les superviseurs communaux affectés à cette colline.
+         * Chargement anticipé des relations pour éviter
+         * les requêtes répétitives.
          */
         $pointsCarte = (clone $parcelles)
             ->with([
+
+                // MENAGE
                 'menage:id,enqueteur_id,colline_id,code_menage,nom_chef_menage,statut',
+
+                // ENQUETEUR
                 'menage.enqueteur:id,name',
+
+                // COLLINE
                 'menage.colline:id,zone_id',
+
+                // SUPERVISEURS AFFECTES DIRECTEMENT A LA COLLINE
                 'menage.colline.superviseursCommunaux:id,name',
+
+                // ZONE
+                'menage.colline.zone:id,commune_id',
+
+                // COMMUNE
+                'menage.colline.zone.commune:id',
+
+                // SUPERVISEURS VIA LA TABLE commune_user
+                'menage.colline.zone.commune.superviseursCommunaux:id,name',
+
+                // ANCIENNES AFFECTATIONS VIA users.commune_id
+                'menage.colline.zone.commune.superviseursCommunauxLegacy:id,commune_id,name',
             ])
             ->get([
                 'id',
@@ -162,6 +176,9 @@ class DashboardController extends Controller
             ])
             ->map(function (Parcelle $parcelle) {
 
+                /*
+                 * SUPERFICIE
+                 */
                 $superficieHa = $this->superficieHectares(
                     $parcelle->polygone
                 );
@@ -177,11 +194,41 @@ class DashboardController extends Controller
                 $nomEnqueteur = $parcelle->menage?->enqueteur?->name;
 
                 /*
-                 * INFORMATIONS DES SUPERVISEURS COMMUNAUX
+                 * SUPERVISEURS COMMUNAUX
                  */
-                $superviseurs = $parcelle->menage?->colline?->superviseursCommunaux
+
+                $colline = $parcelle->menage?->colline;
+
+                $commune = $colline?->zone?->commune;
+
+                // Affectations directes à la colline
+                $superviseursColline = $colline?->superviseursCommunaux
                     ?? collect();
 
+                // Affectations via commune_user
+                $superviseursCommune = $commune?->superviseursCommunaux
+                    ?? collect();
+
+                // Anciennes affectations via users.commune_id
+                $superviseursLegacy = $commune?->superviseursCommunauxLegacy
+                    ?? collect();
+
+                /*
+                 * COMBINER LES TROIS SOURCES
+                 *
+                 * IMPORTANT :
+                 * Ne pas filtrer avec $superviseur->role ici.
+                 * Les relations filtrent déjà le rôle.
+                 * Le champ role n'est pas sélectionné dans les
+                 * relations chargées avec id,name.
+                 */
+                $superviseurs = $superviseursColline
+                    ->concat($superviseursCommune)
+                    ->concat($superviseursLegacy)
+                    ->unique('id')
+                    ->values();
+
+                // Récupérer les noms sans doublons
                 $nomsSuperviseurs = $superviseurs
                     ->pluck('name')
                     ->filter()
@@ -205,6 +252,9 @@ class DashboardController extends Controller
                     ], $polygone)
                     : null;
 
+                /*
+                 * DONNEES TRANSMISES A REACT / INERTIA
+                 */
                 return [
                     'id' => $parcelle->id,
 
@@ -235,10 +285,10 @@ class DashboardController extends Controller
 
                     'statut_menage' => $parcelle->menage?->statut,
 
-                    // NOUVEAU : NOM DE L'ENQUETEUR
+                    // INFORMATIONS DE L'ENQUETEUR
                     'nom_enqueteur' => $nomEnqueteur,
 
-                    // NOUVEAU : NOM DU OU DES SUPERVISEURS
+                    // INFORMATIONS DES SUPERVISEURS
                     'nom_superviseur' => $nomSuperviseur !== ''
                         ? $nomSuperviseur
                         : null,
@@ -345,7 +395,7 @@ class DashboardController extends Controller
             return null;
         }
 
-        // Rayon équatorial WGS84 en mètres.
+        // Rayon équatorial WGS84 en mètres
         $rayonTerre = 6378137;
 
         $aire = 0.0;

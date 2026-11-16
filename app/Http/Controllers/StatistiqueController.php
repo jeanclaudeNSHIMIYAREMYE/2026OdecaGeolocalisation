@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Colline;
-use App\Models\Commune;
 use App\Models\Menage;
 use App\Models\Parcelle;
 use App\Models\Province;
-use App\Models\SyncLog;
-use App\Models\User;
+use App\Models\Commune;
 use App\Models\Zone;
+use App\Models\Colline;
+use App\Models\User;
+use App\Models\SyncLog;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -17,223 +18,561 @@ use Inertia\Response;
 
 class StatistiqueController extends Controller
 {
-    private const CLES_FILTRES = ['province_id', 'commune_id', 'zone_id', 'colline_id', 'enqueteur_id', 'date_debut', 'date_fin'];
+    private const CLES_FILTRES = [
+        'province_id',
+        'commune_id',
+        'zone_id',
+        'colline_id',
+        'enqueteur_id',
+        'date_debut',
+        'date_fin',
+    ];
 
-    /** Applique les filtres sur une requête portant sur la table menages. */
-    private function appliquerFiltresMenage($q, array $f)
+    /**
+     * Accès national : super administrateur, administrateur,
+     * superviseur national.
+     */
+    private function accesNational(User $user): bool
     {
-        return $q
-            ->when($f['colline_id'] ?? null, fn ($q, $v) => $q->where('menages.colline_id', $v))
-            ->when($f['zone_id'] ?? null, fn ($q, $v) => $q->whereHas('colline', fn ($q) => $q->where('zone_id', $v)))
-            ->when($f['commune_id'] ?? null, fn ($q, $v) => $q->whereHas('colline.zone', fn ($q) => $q->where('commune_id', $v)))
-            ->when($f['province_id'] ?? null, fn ($q, $v) => $q->whereHas('colline.zone.commune', fn ($q) => $q->where('province_id', $v)))
-            ->when($f['enqueteur_id'] ?? null, fn ($q, $v) => $q->where('menages.enqueteur_id', $v))
-            ->when($f['date_debut'] ?? null, fn ($q, $v) => $q->whereDate('menages.created_at', '>=', $v))
-            ->when($f['date_fin'] ?? null, fn ($q, $v) => $q->whereDate('menages.created_at', '<=', $v));
+        return $user->estSuperAdmin()
+            || $user->estAdmin()
+            || $user->role === 'superviseur_national';
     }
 
-    /** Requête (non exécutée) sur les ménages filtrés : SANS with() ni get(). */
-    private function menagesFiltres(array $f)
-    {
-        return $this->appliquerFiltresMenage(Menage::query(), $f);
-    }
-
-    /** Requête (non exécutée) sur les parcelles des ménages filtrés. */
-    private function parcellesFiltrees(array $f)
-    {
-        return Parcelle::query()->whereHas('menage', fn ($q) => $this->appliquerFiltresMenage($q, $f));
-    }
-
-    private function enqueteursFiltres(array $filtres)
-    {
-        $query = User::where('role', 'enqueteur');
-
-        if ($collineId = $filtres['colline_id'] ?? null) {
-            $query->whereHas('collines', fn ($q) => $q->where('collines.id', $collineId));
-        } elseif ($zoneId = $filtres['zone_id'] ?? null) {
-            $query->whereHas('collines', fn ($q) => $q->where('zone_id', $zoneId));
-        } elseif ($communeId = $filtres['commune_id'] ?? null) {
-            $query->whereHas('collines.zone', fn ($q) => $q->where('commune_id', $communeId));
-        } elseif ($provinceId = $filtres['province_id'] ?? null) {
-            $query->whereHas('collines.zone.commune', fn ($q) => $q->where('province_id', $provinceId));
+    /**
+     * Applique le périmètre territorial autorisé sur les ménages.
+     */
+    private function appliquerPorteeTerritoriale(
+        Builder $query,
+        User $user
+    ): Builder {
+        if ($this->accesNational($user)) {
+            return $query;
         }
 
-        return $query->orderBy('name')->get(['id', 'name']);
+        if ($user->role === 'superviseur_provincial') {
+            if (!$user->province_id) {
+                return $query->whereRaw('1 = 0');
+            }
+
+            return $query->whereHas(
+                'colline.zone.commune',
+                fn (Builder $q) => $q->where(
+                    'province_id',
+                    $user->province_id
+                )
+            );
+        }
+
+        if ($user->role === 'superviseur_communal') {
+            $collineIds = $user->collinesIdsAutorisees();
+
+            if (empty($collineIds)) {
+                return $query->whereRaw('1 = 0');
+            }
+
+            return $query->where(function (Builder $q) use ($collineIds) {
+                $q->whereIn('colline_id', $collineIds)
+                    ->orWhereHas(
+                        'collines',
+                        fn (Builder $colline) => $colline->whereIn(
+                            'collines.id',
+                            $collineIds
+                        )
+                    );
+            });
+        }
+
+        if ($user->role === 'enqueteur') {
+            return $query->where('enqueteur_id', $user->id);
+        }
+
+        return $query->whereRaw('1 = 0');
     }
 
-    public function index(Request $request): Response
-    {
+    /**
+     * Applique les filtres territoriaux et les dates.
+     */
+    private function appliquerFiltresMenage(
+        Builder $query,
+        Request $request,
+        User $user
+    ): Builder {
+        $this->appliquerPorteeTerritoriale($query, $user);
+
         $filtres = $request->only(self::CLES_FILTRES);
 
-        // ---------- KPI ----------
-        $totalMenages = (clone $this->menagesFiltres($filtres))->count();
-
-        $statsParcelles = $this->parcellesFiltrees($filtres)
-            ->selectRaw('COUNT(*) AS total')
-            ->selectRaw('COUNT(*) FILTER (WHERE parcelles.latitude IS NOT NULL AND parcelles.longitude IS NOT NULL) AS geo')
-            ->selectRaw('COALESCE(SUM(parcelles.nombre_pieds), 0) AS pieds')
-            ->first();
-
-        $totalParcelles = (int) $statsParcelles->total;
-        $totalParcellesGeolocalisees = (int) $statsParcelles->geo;
-        $totalPieds = (int) $statsParcelles->pieds;
-
-        // ---------- Avancement ----------
-        $parStatut = $this->menagesFiltres($filtres)
-            ->select('menages.statut', DB::raw('COUNT(*) AS total'))
-            ->groupBy('menages.statut')
-            ->pluck('total', 'statut');
-
-        $libellesStatuts = ['a_faire' => 'À faire', 'en_attente' => 'En attente', 'termine' => 'Terminé'];
-        $avancement = collect($libellesStatuts)->map(fn ($label, $statut) => [
-            'statut' => $statut,
-            'label' => $label,
-            'total' => (int) ($parStatut[$statut] ?? 0),
-            'pourcentage' => $totalMenages > 0 ? round((($parStatut[$statut] ?? 0) / $totalMenages) * 100, 1) : 0,
-        ])->values();
-
-        // ---------- Par province ----------
-        $exprProvince = "COALESCE(provinces.nom, 'Non renseigné')";
-
-        $menagesProvince = $this->menagesFiltres($filtres)
-            ->leftJoin('collines', 'collines.id', '=', 'menages.colline_id')
-            ->leftJoin('zones', 'zones.id', '=', 'collines.zone_id')
-            ->leftJoin('communes', 'communes.id', '=', 'zones.commune_id')
-            ->leftJoin('provinces', 'provinces.id', '=', 'communes.province_id')
-            ->selectRaw("$exprProvince AS province, COUNT(*) AS menages, COUNT(*) FILTER (WHERE menages.statut = 'termine') AS menages_termines")
-            ->groupBy(DB::raw($exprProvince))
-            ->get()->keyBy('province');
-
-        $parcellesProvince = $this->parcellesFiltrees($filtres)
-            ->join('menages', 'menages.id', '=', 'parcelles.menage_id')
-            ->leftJoin('collines', 'collines.id', '=', 'menages.colline_id')
-            ->leftJoin('zones', 'zones.id', '=', 'collines.zone_id')
-            ->leftJoin('communes', 'communes.id', '=', 'zones.commune_id')
-            ->leftJoin('provinces', 'provinces.id', '=', 'communes.province_id')
-            ->selectRaw("$exprProvince AS province, COUNT(*) AS parcelles, COALESCE(SUM(parcelles.nombre_pieds),0) AS pieds")
-            ->groupBy(DB::raw($exprProvince))
-            ->get()->keyBy('province');
-
-        $parProvince = $menagesProvince->map(fn ($m, $nom) => [
-            'province' => $nom,
-            'menages' => (int) $m->menages,
-            'menages_termines' => (int) $m->menages_termines,
-            'parcelles' => (int) ($parcellesProvince[$nom]->parcelles ?? 0),
-            'pieds' => (int) ($parcellesProvince[$nom]->pieds ?? 0),
-        ])->sortByDesc('menages')->values();
-
-        // ---------- Par enquêteur (clé = id) ----------
-        $menagesEnq = $this->menagesFiltres($filtres)
-            ->whereNotNull('menages.enqueteur_id')
-            ->selectRaw("menages.enqueteur_id, COUNT(*) AS menages, COUNT(*) FILTER (WHERE menages.statut = 'termine') AS menages_termines")
-            ->groupBy('menages.enqueteur_id')
-            ->get()->keyBy('enqueteur_id');
-
-        $parcellesEnq = $this->parcellesFiltrees($filtres)
-            ->join('menages', 'menages.id', '=', 'parcelles.menage_id')
-            ->whereNotNull('menages.enqueteur_id')
-            ->selectRaw('menages.enqueteur_id, COUNT(*) AS parcelles, COALESCE(SUM(parcelles.nombre_pieds),0) AS pieds')
-            ->groupBy('menages.enqueteur_id')
-            ->get()->keyBy('enqueteur_id');
-
-        $noms = User::whereIn('id', $menagesEnq->keys())->pluck('name', 'id');
-
-        $statsParEnqueteurId = $menagesEnq->map(fn ($m, $id) => [
-            'menages' => (int) $m->menages,
-            'menages_termines' => (int) $m->menages_termines,
-            'parcelles' => (int) ($parcellesEnq[$id]->parcelles ?? 0),
-            'pieds' => (int) ($parcellesEnq[$id]->pieds ?? 0),
-        ]);
-
-        $parEnqueteur = $statsParEnqueteurId
-            ->map(fn ($s, $id) => ['enqueteur' => $noms[$id] ?? 'Non assigné'] + $s)
-            ->sortByDesc('parcelles')->values();
-
-        // ---------- Répartitions qualitatives ----------
-        $repartition = fn (string $colonne) => $this->parcellesFiltrees($filtres)
-            ->whereNotNull("parcelles.$colonne")
-            ->select("parcelles.$colonne", DB::raw('COUNT(*) AS total'))
-            ->groupBy("parcelles.$colonne")
-            ->pluck('total', $colonne);
-
-        $parEtatVerger = $repartition('etat_verger')->sortDesc();
-        $parModePositionnement = $repartition('mode_positionnement');
-        $parModeAcquisition = $repartition('mode_acquisition');
-
-        $parTypeMenage = $this->menagesFiltres($filtres)
-            ->select('menages.type_menage', DB::raw('COUNT(*) AS total'))
-            ->groupBy('menages.type_menage')
-            ->pluck('total', 'type_menage');
-
-        // ---------- Évolution par semaine (PostgreSQL) ----------
-        $evolution = $this->parcellesFiltrees($filtres)
-            ->whereNotNull('parcelles.latitude')
-            ->selectRaw("date_trunc('week', parcelles.created_at)::date AS semaine, COUNT(*) AS total")
-            ->groupBy('semaine')
-            ->orderBy('semaine')
-            ->get()
-            ->mapWithKeys(fn ($r) => [\Carbon\Carbon::parse($r->semaine)->format('d/m/Y') => (int) $r->total]);
-
-        // ---------- Enquêteurs de la colline sélectionnée ----------
-        $collineSelectionnee = null;
-        $enqueteursColline = collect();
-
-        if ($collineId = $filtres['colline_id'] ?? null) {
-            $collineSelectionnee = Colline::find($collineId, ['id', 'nom']);
-
-            $vide = ['menages' => 0, 'menages_termines' => 0, 'parcelles' => 0, 'pieds' => 0];
-
-            $enqueteursColline = User::where('role', 'enqueteur')
-                ->whereHas('collines', fn ($q) => $q->where('collines.id', $collineId))
-                ->orderBy('name')
-                ->get(['id', 'name', 'actif'])
-                ->map(fn ($u) => array_merge([
-                    'id' => $u->id,
-                    'enqueteur' => $u->name,
-                    'actif' => (bool) $u->actif,
-                ], $statsParEnqueteurId->get($u->id, $vide)))
-                ->values();
+        if (!empty($filtres['province_id'])) {
+            $query->whereHas(
+                'colline.zone.commune',
+                fn (Builder $q) => $q->where(
+                    'province_id',
+                    $filtres['province_id']
+                )
+            );
         }
 
-        // ---------- Synchronisation ----------
-        $parStatutSync = SyncLog::query()
-            ->when($filtres['enqueteur_id'] ?? null, fn ($q, $v) => $q->where('enqueteur_id', $v))
-            ->when($filtres['date_debut'] ?? null, fn ($q, $v) => $q->whereDate('created_at', '>=', $v))
-            ->when($filtres['date_fin'] ?? null, fn ($q, $v) => $q->whereDate('created_at', '<=', $v))
-            ->select('statut', DB::raw('COUNT(*) AS total'))
+        if (!empty($filtres['commune_id'])) {
+            $query->whereHas(
+                'colline.zone',
+                fn (Builder $q) => $q->where(
+                    'commune_id',
+                    $filtres['commune_id']
+                )
+            );
+        }
+
+        if (!empty($filtres['zone_id'])) {
+            $query->whereHas(
+                'colline',
+                fn (Builder $q) => $q->where(
+                    'zone_id',
+                    $filtres['zone_id']
+                )
+            );
+        }
+
+        if (!empty($filtres['colline_id'])) {
+            $query->where('colline_id', $filtres['colline_id']);
+        }
+
+        if (!empty($filtres['enqueteur_id'])) {
+            $query->where('enqueteur_id', $filtres['enqueteur_id']);
+        }
+
+        if (!empty($filtres['date_debut'])) {
+            $query->whereDate('created_at', '>=', $filtres['date_debut']);
+        }
+
+        if (!empty($filtres['date_fin'])) {
+            $query->whereDate('created_at', '<=', $filtres['date_fin']);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Requête des ménages autorisés.
+     */
+    private function menagesFiltres(
+        Request $request,
+        User $user
+    ): Builder {
+        return $this->appliquerFiltresMenage(
+            Menage::query(),
+            $request,
+            $user
+        );
+    }
+
+    /**
+     * Requête des parcelles appartenant aux ménages autorisés.
+     */
+    private function parcellesFiltrees(
+        Request $request,
+        User $user
+    ): Builder {
+        $menages = $this->menagesFiltres($request, $user);
+
+        return Parcelle::query()->whereIn(
+            'menage_id',
+            (clone $menages)->select('menages.id')
+        );
+    }
+
+    /**
+     * Liste les enquêteurs accessibles selon le rôle.
+     */
+    private function enqueteursFiltres(User $user): Builder
+    {
+        $query = User::query()->where('role', 'enqueteur');
+
+        if ($this->accesNational($user)) {
+            return $query;
+        }
+
+        if ($user->role === 'superviseur_provincial') {
+            if (!$user->province_id) {
+                return $query->whereRaw('1 = 0');
+            }
+
+            return $query->where(function (Builder $q) use ($user) {
+                $q->where('province_id', $user->province_id)
+                    ->orWhereHas(
+                        'commune',
+                        fn (Builder $commune) => $commune->where(
+                            'province_id',
+                            $user->province_id
+                        )
+                    )
+                    ->orWhereHas(
+                        'communes',
+                        fn (Builder $commune) => $commune->where(
+                            'province_id',
+                            $user->province_id
+                        )
+                    )
+                    ->orWhereHas(
+                        'collines.zone.commune',
+                        fn (Builder $commune) => $commune->where(
+                            'province_id',
+                            $user->province_id
+                        )
+                    );
+            });
+        }
+
+        if ($user->role === 'superviseur_communal') {
+            $collineIds = $user->collinesIdsAutorisees();
+
+            if (empty($collineIds)) {
+                return $query->whereRaw('1 = 0');
+            }
+
+            return $query->whereHas(
+                'collines',
+                fn (Builder $q) => $q->whereIn(
+                    'collines.id',
+                    $collineIds
+                )
+            );
+        }
+
+        if ($user->role === 'enqueteur') {
+            return $query->whereKey($user->id);
+        }
+
+        return $query->whereRaw('1 = 0');
+    }
+
+    /**
+     * Retourne les listes géographiques autorisées.
+     */
+    private function listesGeographiques(User $user): array
+    {
+        $provinces = Province::query();
+        $communes = Commune::query();
+        $zones = Zone::query();
+        $collines = Colline::query();
+
+        if ($this->accesNational($user)) {
+            return [
+                'provinces' => $provinces->orderBy('nom')->get(),
+                'communes' => $communes->orderBy('nom')->get(),
+                'zones' => $zones->orderBy('nom')->get(),
+                'collines' => $collines->orderBy('nom')->get(),
+            ];
+        }
+
+        if ($user->role === 'superviseur_provincial') {
+            $provinceId = $user->province_id;
+
+            if (!$provinceId) {
+                return [
+                    'provinces' => collect(),
+                    'communes' => collect(),
+                    'zones' => collect(),
+                    'collines' => collect(),
+                ];
+            }
+
+            $communes->where('province_id', $provinceId);
+
+            $zones->whereHas(
+                'commune',
+                fn (Builder $q) => $q->where(
+                    'province_id',
+                    $provinceId
+                )
+            );
+
+            $collines->whereHas(
+                'zone.commune',
+                fn (Builder $q) => $q->where(
+                    'province_id',
+                    $provinceId
+                )
+            );
+
+            return [
+                'provinces' => $provinces->whereKey($provinceId)->get(),
+                'communes' => $communes->orderBy('nom')->get(),
+                'zones' => $zones->orderBy('nom')->get(),
+                'collines' => $collines->orderBy('nom')->get(),
+            ];
+        }
+
+        if ($user->role === 'superviseur_communal') {
+            $communeIds = $user->communesIds();
+            $collineIds = $user->collinesIdsAutorisees();
+
+            $communes->whereIn('id', $communeIds);
+            $zones->whereIn('commune_id', $communeIds);
+            $collines->whereIn('id', $collineIds);
+
+            $provinces->whereHas(
+                'communes',
+                fn (Builder $q) => $q->whereIn(
+                    'communes.id',
+                    $communeIds
+                )
+            );
+
+            return [
+                'provinces' => $provinces->orderBy('nom')->get(),
+                'communes' => $communes->orderBy('nom')->get(),
+                'zones' => $zones->orderBy('nom')->get(),
+                'collines' => $collines->orderBy('nom')->get(),
+            ];
+        }
+
+        return [
+            'provinces' => collect(),
+            'communes' => collect(),
+            'zones' => collect(),
+            'collines' => collect(),
+        ];
+    }
+
+    /**
+     * Page principale des statistiques.
+     */
+    public function index(Request $request): Response
+    {
+        $user = auth()->user();
+
+        $menages = $this->menagesFiltres($request, $user);
+        $parcelles = $this->parcellesFiltrees($request, $user);
+
+        // ----------------------------------------------------
+        // INDICATEURS PRINCIPAUX
+        // ----------------------------------------------------
+
+        $totalMenages = (clone $menages)->count();
+
+        $totalParcelles = (clone $parcelles)->count();
+
+        $parcellesGeolocalisees = (clone $parcelles)
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->count();
+
+        $totalPieds = (clone $parcelles)->sum('nombre_pieds');
+
+        // ----------------------------------------------------
+        // MENAGES PAR STATUT
+        // ----------------------------------------------------
+
+        $menagesParStatut = (clone $menages)
+            ->select('statut', DB::raw('COUNT(*) as total'))
             ->groupBy('statut')
-            ->pluck('total', 'statut');
+            ->orderBy('statut')
+            ->get();
+
+        // ----------------------------------------------------
+        // STATISTIQUES PAR PROVINCE
+        // ----------------------------------------------------
+
+        $statistiquesProvinces = (clone $menages)
+            ->join('collines', 'menages.colline_id', '=', 'collines.id')
+            ->join('zones', 'collines.zone_id', '=', 'zones.id')
+            ->join('communes', 'zones.commune_id', '=', 'communes.id')
+            ->join('provinces', 'communes.province_id', '=', 'provinces.id')
+            ->select(
+                'provinces.id',
+                'provinces.nom',
+                DB::raw('COUNT(DISTINCT menages.id) as total_menages')
+            )
+            ->groupBy('provinces.id', 'provinces.nom')
+            ->orderBy('provinces.nom')
+            ->get();
+
+        // ----------------------------------------------------
+        // STATISTIQUES PAR ENQUETEUR
+        // ----------------------------------------------------
+
+        $listeEnqueteurs = $this->enqueteursFiltres($user)
+            ->select('users.id', 'users.name', 'users.actif')
+            ->orderBy('users.name')
+            ->get();
+
+        $statistiquesEnqueteurs = $listeEnqueteurs->map(
+            function (User $enqueteur) use ($request, $user) {
+                $menagesEnqueteur = $this->menagesFiltres(
+                    $request,
+                    $user
+                )->where('enqueteur_id', $enqueteur->id);
+
+                $parcellesEnqueteur = Parcelle::query()->whereIn(
+                    'menage_id',
+                    (clone $menagesEnqueteur)->select('menages.id')
+                );
+
+                return [
+                    'id' => $enqueteur->id,
+                    'nom' => $enqueteur->name,
+                    'actif' => (bool) $enqueteur->actif,
+                    'total_menages' => (clone $menagesEnqueteur)->count(),
+                    'total_parcelles' => (clone $parcellesEnqueteur)->count(),
+                    'total_pieds' => (clone $parcellesEnqueteur)
+                        ->sum('nombre_pieds'),
+                ];
+            }
+        )->values();
+
+        // ----------------------------------------------------
+        // ENQUETEURS ACTIFS ET INACTIFS
+        // ----------------------------------------------------
+
+        $enqueteursActifs = $listeEnqueteurs
+            ->filter(fn (User $u) => (bool) $u->actif)
+            ->values()
+            ->map(fn (User $u) => [
+                'id' => $u->id,
+                'name' => $u->name,
+            ]);
+
+        $enqueteursInactifs = $listeEnqueteurs
+            ->filter(fn (User $u) => !(bool) $u->actif)
+            ->values()
+            ->map(fn (User $u) => [
+                'id' => $u->id,
+                'name' => $u->name,
+            ]);
+
+        // ----------------------------------------------------
+        // REPARTITIONS DES PARCELLES
+        // ----------------------------------------------------
+
+        $repartitionEtatVerger = (clone $parcelles)
+            ->select('etat_verger', DB::raw('COUNT(*) as total'))
+            ->groupBy('etat_verger')
+            ->orderBy('etat_verger')
+            ->get();
+
+        $repartitionPositionnement = (clone $parcelles)
+            ->select('mode_positionnement', DB::raw('COUNT(*) as total'))
+            ->groupBy('mode_positionnement')
+            ->orderBy('mode_positionnement')
+            ->get();
+
+        $repartitionAcquisition = (clone $parcelles)
+            ->select('mode_acquisition', DB::raw('COUNT(*) as total'))
+            ->groupBy('mode_acquisition')
+            ->orderBy('mode_acquisition')
+            ->get();
+
+        $repartitionTypeParcelle = (clone $parcelles)
+            ->select('type_parcelle', DB::raw('COUNT(*) as total'))
+            ->groupBy('type_parcelle')
+            ->orderBy('type_parcelle')
+            ->get();
+
+        // ----------------------------------------------------
+        // EVOLUTION HEBDOMADAIRE DES MENAGES
+        // PostgreSQL
+        // ----------------------------------------------------
+
+        $evolutionHebdomadaire = (clone $menages)
+            ->selectRaw(
+                "DATE_TRUNC('week', menages.created_at) as semaine,
+                 COUNT(*) as total"
+            )
+            ->whereNotNull('menages.created_at')
+            ->groupByRaw("DATE_TRUNC('week', menages.created_at)")
+            ->orderBy('semaine')
+            ->get();
+
+        // ----------------------------------------------------
+        // SYNCHRONISATIONS
+        // ----------------------------------------------------
+
+        $syncLogs = SyncLog::query();
+
+        if (!$this->accesNational($user)) {
+            if ($user->role === 'enqueteur') {
+                $syncLogs->where('enqueteur_id', $user->id);
+            } else {
+                $idsEnqueteurs = (clone $this->enqueteursFiltres($user))
+                    ->select('users.id');
+
+                $syncLogs->whereIn('enqueteur_id', $idsEnqueteurs);
+            }
+        }
+
+        $statistiquesSynchronisation = $syncLogs
+            ->select('statut', DB::raw('COUNT(*) as total'))
+            ->groupBy('statut')
+            ->orderBy('statut')
+            ->get();
+
+        // ----------------------------------------------------
+        // ENQUETEURS AFFECTES A LA COLLINE SELECTIONNEE
+        // ----------------------------------------------------
+
+        $enqueteursColline = collect();
+
+        if ($request->filled('colline_id')) {
+            $collineId = $request->input('colline_id');
+
+            $enqueteursColline = $listeEnqueteurs
+                ->filter(
+                    fn (User $enqueteur) => $enqueteur->collines()
+                        ->where('collines.id', $collineId)
+                        ->exists()
+                )
+                ->values()
+                ->map(fn (User $u) => [
+                    'id' => $u->id,
+                    'name' => $u->name,
+                    'actif' => (bool) $u->actif,
+                ]);
+        }
+
+        // ----------------------------------------------------
+        // LISTES GEOGRAPHIQUES
+        // ----------------------------------------------------
+
+        $geographie = $this->listesGeographiques($user);
+
+        // ----------------------------------------------------
+        // REPONSE INERTIA
+        // ----------------------------------------------------
 
         return Inertia::render('Statistiques/Index', [
-            'filtres' => $filtres,
-            'provinces' => Province::orderBy('nom')->get(['id', 'nom']),
-            'communes' => Commune::orderBy('nom')->get(['id', 'nom', 'province_id']),
-            'zones' => Zone::orderBy('nom')->get(['id', 'nom', 'commune_id']),
-            'collines' => Colline::orderBy('nom')->get(['id', 'nom', 'zone_id']),
-            'enqueteurs' => $this->enqueteursFiltres($filtres),
+            'filtres' => $request->only(self::CLES_FILTRES),
 
-            'kpis' => [
+            'indicateurs' => [
                 'total_menages' => $totalMenages,
                 'total_parcelles' => $totalParcelles,
-                'total_parcelles_geolocalisees' => $totalParcellesGeolocalisees,
-                'taux_geolocalisation' => $totalParcelles > 0
-                    ? round(($totalParcellesGeolocalisees / $totalParcelles) * 100, 1) : 0,
-                'total_pieds' => $totalPieds,
-                'moyenne_pieds_par_parcelle' => $totalParcellesGeolocalisees > 0
-                    ? (int) round($totalPieds / $totalParcellesGeolocalisees) : 0,
+                'parcelles_geolocalisees' => $parcellesGeolocalisees,
+                'total_pieds' => (int) $totalPieds,
             ],
 
-            'avancement' => $avancement,
-            'parProvince' => $parProvince,
-            'parEnqueteur' => $parEnqueteur,
-            'collineSelectionnee' => $collineSelectionnee,
+            'menagesParStatut' => $menagesParStatut,
+            'statistiquesProvinces' => $statistiquesProvinces,
+            'statistiquesEnqueteurs' => $statistiquesEnqueteurs,
+
+            'enqueteursActifs' => $enqueteursActifs,
+            'enqueteursInactifs' => $enqueteursInactifs,
+
+            'totalEnqueteurs' => $listeEnqueteurs->count(),
+            'totalEnqueteursActifs' => $enqueteursActifs->count(),
+            'totalEnqueteursInactifs' => $enqueteursInactifs->count(),
+
+            'repartitionEtatVerger' => $repartitionEtatVerger,
+            'repartitionPositionnement' => $repartitionPositionnement,
+            'repartitionAcquisition' => $repartitionAcquisition,
+            'repartitionTypeParcelle' => $repartitionTypeParcelle,
+
+            'evolutionHebdomadaire' => $evolutionHebdomadaire,
+            'statistiquesSynchronisation' => $statistiquesSynchronisation,
             'enqueteursColline' => $enqueteursColline,
-            'parEtatVerger' => $parEtatVerger,
-            'parModePositionnement' => $parModePositionnement,
-            'parModeAcquisition' => $parModeAcquisition,
-            'parTypeMenage' => $parTypeMenage,
-            'evolution' => $evolution,
-            'parStatutSync' => $parStatutSync,
+
+            'provinces' => $geographie['provinces'],
+            'communes' => $geographie['communes'],
+            'zones' => $geographie['zones'],
+            'collines' => $geographie['collines'],
         ]);
     }
 }
