@@ -61,4 +61,38 @@ class MenagePolicy
             'superviseur_communal',
         ], true) && $menage->source === 'terrain';
     }
+
+    public function deleteParcelle(User $utilisateur, Menage $menage): bool
+    {
+        return $this->peutGererDonneesAssociees($utilisateur, $menage);
+    }
+
+    public function deleteReponse(User $utilisateur, Menage $menage): bool
+    {
+        return $this->peutGererDonneesAssociees($utilisateur, $menage);
+    }
+
+    public function updateReponse(User $utilisateur, Menage $menage): bool
+    {
+        return $this->peutGererDonneesAssociees($utilisateur, $menage);
+    }
+
+    private function peutGererDonneesAssociees(
+        User $utilisateur,
+        Menage $menage
+    ): bool {
+        if ($utilisateur->estAdmin()) {
+            return true;
+        }
+
+        if (in_array($utilisateur->role, [
+            'superviseur_provincial',
+            'superviseur_communal',
+        ], true)) {
+            return true;
+        }
+
+        return $utilisateur->role === 'superviseur_national'
+            && $menage->source === 'terrain';
+    }
 }

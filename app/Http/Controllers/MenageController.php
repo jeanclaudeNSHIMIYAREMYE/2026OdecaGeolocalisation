@@ -217,8 +217,20 @@ class MenageController extends Controller
                 'update',
                 $menage
             ),
+            'peutModifierReponse' => request()->user()->can(
+                'updateReponse',
+                $menage
+            ),
             'peutSupprimer' => request()->user()->can(
                 'delete',
+                $menage
+            ),
+            'peutSupprimerParcelle' => request()->user()->can(
+                'deleteParcelle',
+                $menage
+            ),
+            'peutSupprimerReponse' => request()->user()->can(
+                'deleteReponse',
                 $menage
             ),
             'peutDupliquer' => request()->user()->can(
@@ -297,7 +309,7 @@ class MenageController extends Controller
         Menage $menage,
         Parcelle $parcelle
     ): RedirectResponse {
-        $this->authorize('update', $menage);
+        $this->authorize('deleteParcelle', $menage);
 
         abort_if($parcelle->menage_id !== $menage->id, 404);
 
@@ -314,7 +326,7 @@ class MenageController extends Controller
         Menage $menage,
         ReponseQuestionnaire $reponse
     ): RedirectResponse {
-        $this->authorize('update', $menage);
+        $this->authorize('deleteReponse', $menage);
 
         abort_if($reponse->menage_id !== $menage->id, 404);
 
@@ -335,7 +347,7 @@ class MenageController extends Controller
         Menage $menage,
         ReponseQuestionnaire $reponse
     ): RedirectResponse {
-        $this->authorize('update', $menage);
+        $this->authorize('updateReponse', $menage);
 
         abort_if(
             (int) $reponse->menage_id !== (int) $menage->id,
@@ -509,7 +521,7 @@ class MenageController extends Controller
     public function detruireToutesLesReponses(
         Menage $menage
     ): RedirectResponse {
-        $this->authorize('update', $menage);
+        $this->authorize('deleteReponse', $menage);
 
         $menage->reponses()->delete();
 

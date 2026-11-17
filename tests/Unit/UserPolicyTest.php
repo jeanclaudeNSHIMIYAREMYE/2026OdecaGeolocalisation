@@ -31,4 +31,15 @@ class UserPolicyTest extends TestCase
 
         $this->assertFalse((new UserPolicy)->update($superviseur, $cible));
     }
+
+    public function test_national_supervisor_cannot_edit_a_provincial_supervisor(): void
+    {
+        $superviseur = new User;
+        $superviseur->role = 'superviseur_national';
+
+        $cible = new User;
+        $cible->role = 'superviseur_provincial';
+
+        $this->assertFalse((new UserPolicy)->update($superviseur, $cible));
+    }
 }

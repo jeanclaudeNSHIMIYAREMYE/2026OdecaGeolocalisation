@@ -739,7 +739,10 @@ function EditeurReponse({ reponse, menageId, onAnnuler }) {
 export default function Afficher({
     menage,
     peutModifier,
+    peutModifierReponse,
     peutSupprimer,
+    peutSupprimerParcelle,
+    peutSupprimerReponse,
     peutDupliquer,
 }) {
     const { flash } = usePage().props;
@@ -1033,7 +1036,7 @@ export default function Afficher({
                         description={pluriel(reponses.length, 'réponse', '') + (reponses.length > 1 ? ' enregistrées' : ' enregistrée')}
                         icone={ICONES.questionnaire}
                         droite={
-                            peutModifier && reponses.length > 0 ? (
+                            peutSupprimerReponse && reponses.length > 0 ? (
                                 <BoutonSupprimer onClick={supprimerToutesLesReponses}>
                                     Supprimer toutes les réponses
                                 </BoutonSupprimer>
@@ -1065,25 +1068,29 @@ export default function Afficher({
                                                                 'Question inconnue'}
                                                         </p>
 
-                                                        {peutModifier && (
+                                                        {(peutModifierReponse || peutSupprimerReponse) && (
                                                             <div className="flex shrink-0 flex-wrap gap-2">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() =>
-                                                                        setReponseEnCours(
-                                                                            enEdition ? null : reponse.id,
-                                                                        )
-                                                                    }
-                                                                    className="af-action inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#D9A441]/40 bg-[#FFF5D9] px-3 py-1.5 text-xs font-bold text-[#805B16] shadow-sm hover:border-[#D9A441] hover:bg-[#D9A441]/25 focus:outline-none focus:ring-2 focus:ring-[#D9A441]/40"
-                                                                >
-                                                                    {enEdition ? 'Fermer' : 'Modifier'}
-                                                                </button>
+                                                                {peutModifierReponse && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            setReponseEnCours(
+                                                                                enEdition ? null : reponse.id,
+                                                                            )
+                                                                        }
+                                                                        className="af-action inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#D9A441]/40 bg-[#FFF5D9] px-3 py-1.5 text-xs font-bold text-[#805B16] shadow-sm hover:border-[#D9A441] hover:bg-[#D9A441]/25 focus:outline-none focus:ring-2 focus:ring-[#D9A441]/40"
+                                                                    >
+                                                                        {enEdition ? 'Fermer' : 'Modifier'}
+                                                                    </button>
+                                                                )}
 
-                                                                <BoutonSupprimer
-                                                                    onClick={() => supprimerReponse(reponse)}
-                                                                >
-                                                                    Supprimer
-                                                                </BoutonSupprimer>
+                                                                {peutSupprimerReponse && (
+                                                                    <BoutonSupprimer
+                                                                        onClick={() => supprimerReponse(reponse)}
+                                                                    >
+                                                                        Supprimer
+                                                                    </BoutonSupprimer>
+                                                                )}
                                                             </div>
                                                         )}
                                                     </div>
@@ -1116,7 +1123,7 @@ export default function Afficher({
                                                         </p>
                                                     </div>
 
-                                                    {enEdition && (
+                                                    {enEdition && peutModifierReponse && (
                                                         <EditeurReponse
                                                             reponse={reponse}
                                                             menageId={menage.id}
@@ -1215,7 +1222,7 @@ export default function Afficher({
                                                 />
                                             </div>
 
-                                            {peutModifier && (
+                                            {peutSupprimerParcelle && (
                                                 <div className="flex justify-end border-t border-[#EFE3D0] pt-3">
                                                     <BoutonSupprimer
                                                         onClick={() => supprimerParcelle(parcelle)}

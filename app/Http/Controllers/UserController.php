@@ -463,7 +463,7 @@ public function index(Request $request): Response
         } elseif ($utilisateurConnecte?->role === 'superviseur_communal') {
             $roles = Arr::only($roles, ['enqueteur']);
         } elseif ($utilisateurConnecte?->role === 'superviseur_national') {
-            $roles = Arr::except($roles, ['admin']);
+            $roles = Arr::except($roles, ['admin', 'superviseur_provincial']);
         }
 
         $provinces = Province::query();
@@ -528,7 +528,7 @@ public function index(Request $request): Response
         return match ($utilisateur->role) {
             'superviseur_provincial' => Arr::only($roles, ['superviseur_communal', 'enqueteur']),
             'superviseur_communal' => Arr::only($roles, ['enqueteur']),
-            'superviseur_national' => Arr::except($roles, ['admin']),
+            'superviseur_national' => Arr::except($roles, ['admin', 'superviseur_provincial']),
             default => $roles,
         };
     }

@@ -36,7 +36,7 @@ class UserPolicy
         }
 
         if ($utilisateur->role === 'superviseur_national') {
-            return ! $cible->estAdmin();
+            return ! in_array($cible->role, ['admin', 'superviseur_provincial'], true);
         }
 
         if ($utilisateur->role === 'superviseur_provincial') {
