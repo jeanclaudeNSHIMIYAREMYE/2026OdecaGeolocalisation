@@ -695,30 +695,32 @@ export default function Index({
                                                 {peutModifier && (
                                                     <td className="whitespace-nowrap px-6 py-4">
                                                         <div className="flex items-center justify-end gap-2">
-                                                            <Link
-                                                                href={route('utilisateurs.edit', utilisateur.id)}
-                                                                title="Modifier l'utilisateur"
-                                                                aria-label={`Modifier ${utilisateur.name}`}
-                                                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
-                                                            >
-                                                                <svg
-                                                                    xmlns="http://www.w3.org/2000/svg"
-                                                                    viewBox="0 0 24 24"
-                                                                    fill="none"
-                                                                    stroke="currentColor"
-                                                                    strokeWidth="1.8"
-                                                                    className="h-4 w-4 transition-transform duration-200 group-hover:-rotate-12"
-                                                                    aria-hidden="true"
+                                                            {utilisateur.peut_modifier && (
+                                                                <Link
+                                                                    href={route('utilisateurs.edit', utilisateur.id)}
+                                                                    title="Modifier l'utilisateur"
+                                                                    aria-label={`Modifier ${utilisateur.name}`}
+                                                                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
                                                                 >
-                                                                    <path
-                                                                        strokeLinecap="round"
-                                                                        strokeLinejoin="round"
-                                                                        d="m16.862 4.487 1.687-1.687a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z"
-                                                                    />
-                                                                </svg>
-                                                            </Link>
+                                                                    <svg
+                                                                        xmlns="http://www.w3.org/2000/svg"
+                                                                        viewBox="0 0 24 24"
+                                                                        fill="none"
+                                                                        stroke="currentColor"
+                                                                        strokeWidth="1.8"
+                                                                        className="h-4 w-4 transition-transform duration-200 group-hover:-rotate-12"
+                                                                        aria-hidden="true"
+                                                                    >
+                                                                        <path
+                                                                            strokeLinecap="round"
+                                                                            strokeLinejoin="round"
+                                                                            d="m16.862 4.487 1.687-1.687a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z"
+                                                                        />
+                                                                    </svg>
+                                                                </Link>
+                                                            )}
 
-                                                            {peutDesactiver && !utilisateur.is_super_admin && (
+                                                            {utilisateur.peut_desactiver && !utilisateur.is_super_admin && (
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => basculerStatut(utilisateur)}

@@ -40,6 +40,10 @@ class UserPolicy
         }
 
         if ($utilisateur->role === 'superviseur_provincial') {
+            if (! in_array($cible->role, ['superviseur_communal', 'enqueteur'], true)) {
+                return false;
+            }
+
             return (int) $cible->province_id === (int) $utilisateur->province_id
                 || $cible->commune()->where('province_id', $utilisateur->province_id)->exists()
                 || $cible->communes()->where('province_id', $utilisateur->province_id)->exists()
@@ -49,6 +53,10 @@ class UserPolicy
         }
 
         if ($utilisateur->role === 'superviseur_communal') {
+            if (! $cible->estEnqueteur()) {
+                return false;
+            }
+
             $collineIds = $utilisateur->collinesIdsAutorisees();
             if ($collineIds === []) {
                 return false;

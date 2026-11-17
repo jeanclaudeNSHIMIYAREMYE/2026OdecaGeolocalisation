@@ -10,6 +10,7 @@ use App\Models\Zone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
@@ -138,6 +139,17 @@ public function index(Request $request): Response
         ->paginate($perPage)
         ->withQueryString();
 
+    $utilisateurs->getCollection()->each(function (User $cible) use ($request): void {
+        $cible->setAttribute(
+            'peut_modifier',
+            $request->user()->can('update', $cible),
+        );
+        $cible->setAttribute(
+            'peut_desactiver',
+            $request->user()->can('delete', $cible),
+        );
+    });
+
     return Inertia::render('Utilisateurs/Index', [
         'utilisateurs' => $utilisateurs,
         'peutGerer' => $request->user()->estAdmin(),
@@ -185,19 +197,21 @@ public function index(Request $request): Response
         $donnees = $this->valider($request);
         $donnees = $this->normaliserPorteeTerritoriale($request->user(), $donnees);
 
-        $utilisateur = User::create([
-            ...Arr::except($donnees, ['communes_ids', 'collines_ids', 'password']),
-            'password' => bcrypt($donnees['password']),
-        ]);
+        DB::transaction(function () use ($donnees): void {
+            $utilisateur = User::create([
+                ...Arr::except($donnees, ['communes_ids', 'collines_ids', 'password']),
+                'password' => bcrypt($donnees['password']),
+            ]);
 
-        $utilisateur->collines()->sync(
-            in_array($donnees['role'], ['enqueteur', 'superviseur_communal'], true)
-                ? ($donnees['collines_ids'] ?? [])
-                : []
-        );
-        $utilisateur->communes()->sync(
-            $donnees['role'] === 'superviseur_communal' ? ($donnees['communes_ids'] ?? []) : []
-        );
+            $utilisateur->collines()->sync(
+                in_array($donnees['role'], ['enqueteur', 'superviseur_communal'], true)
+                    ? ($donnees['collines_ids'] ?? [])
+                    : []
+            );
+            $utilisateur->communes()->sync(
+                $donnees['role'] === 'superviseur_communal' ? ($donnees['communes_ids'] ?? []) : []
+            );
+        });
 
         return redirect()->route('utilisateurs.index')->with('succes', 'Compte créé.');
     }
@@ -240,23 +254,25 @@ public function index(Request $request): Response
         $donnees = $this->valider($request, $utilisateur->id);
         $donnees = $this->normaliserPorteeTerritoriale($request->user(), $donnees, $utilisateur);
 
-        $utilisateur->update([
-            'name' => $donnees['name'],
-            'email' => $donnees['email'],
-            'role' => $donnees['role'],
-            'province_id' => $donnees['province_id'] ?? null,
-            'commune_id' => $donnees['commune_id'] ?? null,
-            ...(filled($donnees['password'] ?? null) ? ['password' => bcrypt($donnees['password'])] : []),
-        ]);
+        DB::transaction(function () use ($utilisateur, $donnees): void {
+            $utilisateur->update([
+                'name' => $donnees['name'],
+                'email' => $donnees['email'],
+                'role' => $donnees['role'],
+                'province_id' => $donnees['province_id'] ?? null,
+                'commune_id' => $donnees['commune_id'] ?? null,
+                ...(filled($donnees['password'] ?? null) ? ['password' => bcrypt($donnees['password'])] : []),
+            ]);
 
-        $utilisateur->collines()->sync(
-            in_array($donnees['role'], ['enqueteur', 'superviseur_communal'], true)
-                ? ($donnees['collines_ids'] ?? [])
-                : []
-        );
-        $utilisateur->communes()->sync(
-            $donnees['role'] === 'superviseur_communal' ? ($donnees['communes_ids'] ?? []) : []
-        );
+            $utilisateur->collines()->sync(
+                in_array($donnees['role'], ['enqueteur', 'superviseur_communal'], true)
+                    ? ($donnees['collines_ids'] ?? [])
+                    : []
+            );
+            $utilisateur->communes()->sync(
+                $donnees['role'] === 'superviseur_communal' ? ($donnees['communes_ids'] ?? []) : []
+            );
+        });
 
         return redirect()->route('utilisateurs.index')->with('succes', 'Compte mis à jour.');
     }
