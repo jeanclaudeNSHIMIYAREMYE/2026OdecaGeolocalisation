@@ -148,6 +148,8 @@ class MenageController extends Controller
         StoreMenageRequest $request,
         Menage $menage
     ) {
+        $this->authorize('update', $menage);
+
         AccesTerritorial::verifierMenage(
             $request->user(),
             (int) $menage->id
@@ -215,15 +217,7 @@ class MenageController extends Controller
         Request $request,
         Menage $menage
     ) {
-        abort_unless(
-            in_array(
-                $request->user()->role,
-                ['admin', 'superviseur_national'],
-                true
-            ),
-            403,
-            "Vous n'avez pas les droits pour supprimer ce ménage."
-        );
+        $this->authorize('delete', $menage);
 
         /*
          * Delete stored photos.

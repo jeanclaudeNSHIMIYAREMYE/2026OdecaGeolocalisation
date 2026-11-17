@@ -157,9 +157,6 @@ class MenageController extends Controller
                 Menage::class
             ),
 
-            // Autorisation d'afficher le bouton de suppression.
-            'peutSupprimer' => $request->user()->role === 'admin',
-
             'enqueteurs' => User::where('actif', true)
                 ->where('role', 'enqueteur')
                 ->orderBy('name')
@@ -218,6 +215,10 @@ class MenageController extends Controller
             'menage' => $menage,
             'peutModifier' => request()->user()->can(
                 'update',
+                $menage
+            ),
+            'peutSupprimer' => request()->user()->can(
+                'delete',
                 $menage
             ),
             'peutDupliquer' => request()->user()->can(

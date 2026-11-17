@@ -9,73 +9,125 @@ use App\Http\Controllers\Api\V1\QuestionnaireController;
 use App\Http\Controllers\Api\V1\ReponseController;
 use App\Http\Controllers\Api\V1\SyncPushController;
 use App\Http\Controllers\Api\V1\SyncPullController;
-//use App\Http\Controllers\Api\V1\TestController;
+
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
 | API Routes - lnc-burundi (v1)
 |--------------------------------------------------------------------------
-|
-| Consommées par l'application mobile de terrain (géolocalisation des
-| plantations de café). Auth par token Sanctum (Bearer), conçue pour un
-| usage offline-first : les enquêteurs travaillent hors connexion sur le
-| terrain et synchronisent leurs données (ménages, parcelles, réponses)
-| lors du retour de connectivité via /sync/push et /sync/pull.
-|
 */
 
-Route::prefix('v1')->name('api.v1.')->group(function () {
+Route::prefix('v1')
+    ->name('api.v1.')
+    ->middleware('throttle:public-api')
+    ->group(function () {
 
-    // --- Authentification (publique) ---
-    Route::post('/login', [AuthController::class, 'login'])->name('login');
-    Route::get('/ping', function () {
-        return response()->json(['status' => 'ok'], 200);
-    });
+        /*
+        |--------------------------------------------------------------------------
+        | Authentification publique
+        |--------------------------------------------------------------------------
+        */
 
-    //Route::get('/test',[TestController::class])->name("hello");
+        Route::post('/login', [AuthController::class, 'login'])
+            ->middleware('throttle:login')
+            ->name('login');
 
-    Route::get('/diagnostic-database', [ReponseController::class, 'diagnosticSqlite' ]);
-
-    // --- Données de référence géographiques (à mettre en cache côté mobile) ---
-    Route::prefix('geo')->name('geo.')->group(function () {
-            Route::get('/provinces', [GeoReferenceController::class, 'provinces'])->name('provinces');
-            Route::get('/communes', [GeoReferenceController::class, 'communes'])->name('communes');
-            Route::get('/zones', [GeoReferenceController::class, 'zones'])->name('zones');
-            Route::get('/collines', [GeoReferenceController::class, 'collines'])->name('collines');
-            Route::get('/arborescence', [GeoReferenceController::class, 'arborescence'])->name('arborescence');
+        Route::get('/ping', function () {
+            return response()->json(['status' => 'ok']);
         });
 
-    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/diagnostic-database', [
+            ReponseController::class,
+            'diagnosticSqlite'
+        ]);
 
-        // --- Session / compte ---
-        Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-        Route::get('/me', [AuthController::class, 'me'])->name('me');
+        /*
+        |--------------------------------------------------------------------------
+        | Références géographiques
+        |--------------------------------------------------------------------------
+        */
 
+        Route::prefix('geo')->name('geo.')->group(function () {
 
+            Route::get('/provinces', [GeoReferenceController::class, 'provinces'])
+                ->name('provinces');
 
-        // --- Questionnaire actif (formulaire dynamique côté mobile) ---
-        Route::get('/questionnaire/actif', [QuestionnaireController::class, 'actif'])->name('questionnaire.actif');
+            Route::get('/communes', [GeoReferenceController::class, 'communes'])
+                ->name('communes');
 
-        // --- Ménages assignés à l'enquêteur (portée territoriale appliquée automatiquement) ---
-        Route::apiResource('menages', MenageController::class);
+            Route::get('/zones', [GeoReferenceController::class, 'zones'])
+                ->name('zones');
 
-        // --- Parcelles géolocalisées (points/polygones GPS) ---
-        Route::apiResource('menages.parcelles', ParcelleController::class)
-            ->shallow();
+            Route::get('/collines', [GeoReferenceController::class, 'collines'])
+                ->name('collines');
 
-        Route::get('/accueil', [AccueilController::class, 'index'])
-            ->name('accueil.index');
+            Route::get('/arborescence', [GeoReferenceController::class, 'arborescence'])
+                ->name('arborescence');
+        });
 
-        // --- Réponses au questionnaire ---
-        Route::post('/reponses', [ReponseController::class, 'store'])->name('reponses.store');
-        Route::post('/reponses/lot', [ReponseController::class, 'storeLot'])->name('reponses.lot');
-        Route::get('/arborescence/connected', [GeoReferenceController::class, 'arborescence'])->name('arborescence');
+        /*
+        |--------------------------------------------------------------------------
+        | Routes protégées par Sanctum
+        |--------------------------------------------------------------------------
+        */
 
-        // --- Synchronisation offline-first ---
-        Route::prefix('sync')->name('sync.')->group(function () {
-            Route::post('/push', [SyncPushController::class, 'push'])->name('push');
-            Route::get('/pull', [SyncPullController::class, 'pull'])->name('pull');
+        Route::middleware('auth:sanctum')->group(function () {
+
+            Route::middleware('throttle:authenticated-api')->group(function () {
+
+                // Session et compte
+                Route::post('/logout', [AuthController::class, 'logout'])
+                    ->name('logout');
+
+                Route::get('/me', [AuthController::class, 'me'])
+                    ->name('me');
+
+                // Questionnaire
+                Route::get('/questionnaire/actif', [
+                    QuestionnaireController::class,
+                    'actif'
+                ])->name('questionnaire.actif');
+
+                // Ménages
+                Route::apiResource('menages', MenageController::class);
+
+                // Parcelles
+                Route::apiResource('menages.parcelles', ParcelleController::class)
+                    ->shallow();
+
+                // Accueil
+                Route::get('/accueil', [AccueilController::class, 'index'])
+                    ->name('accueil.index');
+
+                // Réponses
+                Route::post('/reponses', [ReponseController::class, 'store'])
+                    ->name('reponses.store');
+
+                Route::post('/reponses/lot', [ReponseController::class, 'storeLot'])
+                    ->name('reponses.lot');
+
+                Route::get('/arborescence/connected', [
+                    GeoReferenceController::class,
+                    'arborescence'
+                ])->name('arborescence');
+            });
+
+            /*
+            |--------------------------------------------------------------------------
+            | Synchronisation offline-first
+            |--------------------------------------------------------------------------
+            */
+            Route::prefix('sync')
+                ->name('sync.')
+                ->middleware('throttle:sync')
+                ->group(function () {
+
+                Route::post('/push', [SyncPushController::class, 'push'])
+                    ->name('push');
+
+                Route::get('/pull', [SyncPullController::class, 'pull'])
+                    ->name('pull');
+            });
         });
     });
-});

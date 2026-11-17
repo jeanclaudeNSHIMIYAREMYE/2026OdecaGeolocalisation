@@ -33,7 +33,7 @@ class StoreParcelleRequest extends FormRequest
 
             'surface_verger' => [
                 'nullable',
-                'string'
+                'string',
             ],
 
             'etat_verger' => [
@@ -48,12 +48,17 @@ class StoreParcelleRequest extends FormRequest
                 'max:255',
             ],
 
+            /*
+             * Type de parcelle
+             * Obligatoirement verger ou sous_verger.
+             */
             'type_parcelle' => [
-                'nullable',
-                'string',
-                'max:255',
+                'required',
+                Rule::in([
+                    'verger',
+                    'sous_verger',
+                ]),
             ],
-
 
             /*
              * Localisation
@@ -92,6 +97,7 @@ class StoreParcelleRequest extends FormRequest
                 'numeric',
                 'between:-180,180',
             ],
+
             'polygone.*.altitude' => [
                 'nullable',
                 'numeric',
@@ -129,9 +135,9 @@ class StoreParcelleRequest extends FormRequest
              */
             'piece_justificative_photo' => [
                 'nullable',
-                // 'image',
-                // 'mimes:jpeg,jpg,png,webp',
-                'max:10240', // 10 MB
+                'file',
+                'mimes:jpeg,jpg,png,webp',
+                'max:10240',
             ],
 
             /*

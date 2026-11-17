@@ -195,7 +195,6 @@ export default function Index({
     zones,
     collines,
     peutCreer,
-    peutSupprimer,
     enqueteurs,
 }) {
     const { flash } = usePage().props;
@@ -206,27 +205,6 @@ export default function Index({
     // ========================================================
     // SUPPRESSION D'UN CAFÉICULTEUR
     // ========================================================
-
-    const supprimerMenage = (menage) => {
-        const nom = [
-            menage.prenom_chef_menage,
-            menage.nom_chef_menage,
-        ]
-            .filter(Boolean)
-            .join(' ');
-
-        const confirmation = window.confirm(
-            `Voulez-vous vraiment supprimer le Caféiculteur ${
-                nom || menage.code_menage
-            } ?\n\nCette opération peut également supprimer ses données associées. Cette action est irréversible.`
-        );
-
-        if (!confirmation) return;
-
-        router.delete(route('menages.destroy', menage.id), {
-            preserveScroll: true,
-        });
-    };
 
     // ========================================================
     // FILTRES
@@ -687,56 +665,6 @@ export default function Index({
                                                             Voir
                                                         </Link>
 
-                                                        {/* MODIFIER */}
-                                                        <Link
-                                                            href={route('menages.edit', menage.id)}
-                                                            onClick={(e) => e.stopPropagation()}
-                                                            className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-100"
-                                                        >
-                                                            <svg
-                                                                viewBox="0 0 24 24"
-                                                                fill="none"
-                                                                stroke="currentColor"
-                                                                strokeWidth="1.8"
-                                                                className="h-4 w-4"
-                                                                aria-hidden="true"
-                                                            >
-                                                                <path
-                                                                    strokeLinecap="round"
-                                                                    strokeLinejoin="round"
-                                                                    d="m16 4 4 4M4 20l4-.8L19 8a2.1 2.1 0 0 0-3-3L5 16l-1 4Z"
-                                                                />
-                                                            </svg>
-                                                            Modifier
-                                                        </Link>
-
-                                                        {/* SUPPRIMER : ADMIN UNIQUEMENT */}
-                                                        {peutSupprimer && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    supprimerMenage(menage);
-                                                                }}
-                                                                className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                                                            >
-                                                                <svg
-                                                                    viewBox="0 0 24 24"
-                                                                    fill="none"
-                                                                    stroke="currentColor"
-                                                                    strokeWidth="1.8"
-                                                                    className="h-4 w-4"
-                                                                    aria-hidden="true"
-                                                                >
-                                                                    <path
-                                                                        strokeLinecap="round"
-                                                                        strokeLinejoin="round"
-                                                                        d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14M10 11v5m4-5v5"
-                                                                    />
-                                                                </svg>
-                                                                Supprimer
-                                                            </button>
-                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>

@@ -29,8 +29,21 @@ class MenagePolicy
 
     public function update(User $utilisateur, Menage $menage): bool
     {
-        if ($utilisateur->estAdmin() || $utilisateur->estSuperviseur()) {
+        if ($utilisateur->estAdmin()) {
             return true;
+        }
+
+        // Les superviseurs provincial et communal peuvent uniquement
+        // corriger les ménages/caféiculteurs nouvellement collectés sur le
+        // terrain. Les ménages pré-enregistrés restent en lecture seule.
+        if (
+            in_array($utilisateur->role, [
+                'superviseur_national',
+                'superviseur_provincial',
+                'superviseur_communal',
+            ], true)
+        ) {
+            return $menage->source === 'terrain';
         }
 
         return $utilisateur->role === 'enqueteur' && $menage->enqueteur_id === $utilisateur->id;
@@ -38,6 +51,14 @@ class MenagePolicy
 
     public function delete(User $utilisateur, Menage $menage): bool
     {
-        return $utilisateur->estAdmin();
+        if ($utilisateur->estAdmin()) {
+            return true;
+        }
+
+        return in_array($utilisateur->role, [
+            'superviseur_national',
+            'superviseur_provincial',
+            'superviseur_communal',
+        ], true) && $menage->source === 'terrain';
     }
 }

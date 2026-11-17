@@ -96,7 +96,7 @@ Route::post('menages/{menage}/dupliquer', [MenageController::class, 'enregistrer
     ->name('menages.dupliquer.store');
 
 Route::delete('/menages/{menage}', [MenageController::class, 'destroy'])
-    ->middleware(['auth', 'verified', 'role:admin'])
+    ->middleware(['auth', 'verified', 'role:admin,superviseur_national,superviseur_provincial,superviseur_communal'])
     ->name('menages.destroy');
 
 Route::delete('/menages/{menage}/parcelles/{parcelle}', [MenageController::class, 'detruireParcelle'])

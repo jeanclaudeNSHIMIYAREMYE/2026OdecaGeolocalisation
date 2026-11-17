@@ -736,7 +736,12 @@ function EditeurReponse({ reponse, menageId, onAnnuler }) {
 // PAGE PRINCIPALE
 // ============================================================
 
-export default function Afficher({ menage, peutModifier, peutDupliquer }) {
+export default function Afficher({
+    menage,
+    peutModifier,
+    peutSupprimer,
+    peutDupliquer,
+}) {
     const { flash } = usePage().props;
     const [reponseEnCours, setReponseEnCours] = useState(null);
 
@@ -804,6 +809,22 @@ export default function Afficher({ menage, peutModifier, peutDupliquer }) {
         });
     };
 
+    const supprimerMenage = () => {
+        const nom = [menage.prenom_chef_menage, menage.nom_chef_menage]
+            .filter(Boolean)
+            .join(' ');
+
+        if (!window.confirm(
+            `Voulez-vous vraiment supprimer le caféiculteur ${
+                nom || menage.code_menage
+            } ?\n\nCette opération supprimera également ses données associées. Cette action est irréversible.`
+        )) {
+            return;
+        }
+
+        router.delete(route('menages.destroy', menage.id));
+    };
+
     const collinesAffichees = [menage.colline, ...(menage.collines ?? [])].filter(
         (colline, index, collines) =>
             colline && collines.findIndex((c) => c?.id === colline.id) === index,
@@ -857,6 +878,15 @@ export default function Afficher({ menage, peutModifier, peutDupliquer }) {
                             >
                                 <PrimaryButton type="button">Modifier</PrimaryButton>
                             </Link>
+                        )}
+                        {peutSupprimer && (
+                            <button
+                                type="button"
+                                onClick={supprimerMenage}
+                                className="af-action inline-flex min-h-9 items-center justify-center rounded-lg border border-[#B8322A]/30 bg-white px-3 py-2 text-xs font-semibold text-[#B8322A] hover:border-[#B8322A] hover:bg-[#B8322A] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#B8322A]/40"
+                            >
+                                Supprimer
+                            </button>
                         )}
                     </div>
                 </div>
