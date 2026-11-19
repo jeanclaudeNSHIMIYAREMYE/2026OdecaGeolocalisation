@@ -293,7 +293,7 @@ public function calculerStatut(): string
 
     // Le questionnaire n'est pas encore terminé.
     if (!$this->questionnaireEstComplet()) {
-        return 'deja_commence';
+        return 'en_attente';
     }
 
     // Le ménage ne possède pas de vergers : questionnaire terminé.
@@ -305,7 +305,7 @@ public function calculerStatut(): string
 
     // Impossible de confirmer la fin sans connaître le nombre déclaré.
     if ($declares === null) {
-        return 'deja_commence';
+        return 'en_attente';
     }
 
     // Toutes les parcelles déclarées doivent être enregistrées.
@@ -313,7 +313,7 @@ public function calculerStatut(): string
         return 'termine';
     }
 
-    return 'deja_commence';
+    return 'en_attente';
 }
 
 /**

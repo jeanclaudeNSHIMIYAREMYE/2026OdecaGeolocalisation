@@ -612,6 +612,9 @@ export default function Index({
                     {/* Exports */}
                     <div className={`${CLASSE_CARTE} overflow-hidden`} style={{ animationDelay: '180ms' }}>
                         <TitreCarte>Exports disponibles</TitreCarte>
+                        <p className="px-5 pt-1 text-sm text-gray-500">
+                            Les exports respectent votre rôle, vos affectations territoriales et les filtres sélectionnés. Le nom de l’enquêteur est inclus dans chaque ligne.
+                        </p>
 
                         <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
                             {exports.map((exp, index) => (

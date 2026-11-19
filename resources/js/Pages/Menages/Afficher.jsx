@@ -741,6 +741,7 @@ export default function Afficher({
     peutModifier,
     peutModifierReponse,
     peutSupprimer,
+    peutModifierParcelle,
     peutSupprimerParcelle,
     peutSupprimerReponse,
     peutDupliquer,
@@ -1210,6 +1211,10 @@ export default function Afficher({
                                             <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
                                                 <Ligne libelle="État du verger" valeur={parcelle.etat_verger} />
                                                 <Ligne libelle="Type" valeur={parcelle.type} />
+                                                <Ligne
+                                                    libelle="Catégorie"
+                                                    valeur={parcelle.type_parcelle === 'sous_verger' ? 'Sous-verger' : 'Verger'}
+                                                />
                                                 <Ligne libelle="Latitude" valeur={parcelle.latitude} />
                                                 <Ligne libelle="Longitude" valeur={parcelle.longitude} />
                                                 <Ligne
@@ -1222,8 +1227,16 @@ export default function Afficher({
                                                 />
                                             </div>
 
-                                            {peutSupprimerParcelle && (
+                                            {(peutModifierParcelle || peutSupprimerParcelle) && (
                                                 <div className="flex justify-end border-t border-[#EFE3D0] pt-3">
+                                                    {peutModifierParcelle && (
+                                                        <Link
+                                                            href={route('menages.parcelles.edit', [menage.id, parcelle.id])}
+                                                            className="mr-2 inline-flex items-center rounded-lg border border-[#2F7D4F]/30 bg-[#2F7D4F]/10 px-3 py-2 text-xs font-bold text-[#25663F] hover:bg-[#2F7D4F]/20"
+                                                        >
+                                                            Modifier
+                                                        </Link>
+                                                    )}
                                                     <BoutonSupprimer
                                                         onClick={() => supprimerParcelle(parcelle)}
                                                     >

@@ -120,6 +120,7 @@ class MenageController extends Controller
     }
 
         $menage = Menage::create($data);
+        $menage->synchroniserStatut();
 
         return (new MenageResource(
             $menage->load('colline')
@@ -207,6 +208,7 @@ class MenageController extends Controller
         $data['date_derniere_activite'] = now();
 
         $menage->update($data);
+        $menage->synchroniserStatut();
 
         return new MenageResource(
             $menage->fresh(['colline', 'parcelles'])

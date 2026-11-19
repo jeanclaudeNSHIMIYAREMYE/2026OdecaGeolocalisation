@@ -257,10 +257,10 @@ class StatistiqueController extends Controller
 
         if ($this->accesNational($user)) {
             return [
-                'provinces' => $provinces->orderBy('nom')->get(),
-                'communes' => $communes->orderBy('nom')->get(),
-                'zones' => $zones->orderBy('nom')->get(),
-                'collines' => $collines->orderBy('nom')->get(),
+                'provinces' => $provinces->orderBy('nom')->get(['id', 'nom']),
+                'communes' => $communes->orderBy('nom')->get(['id', 'nom', 'province_id']),
+                'zones' => $zones->orderBy('nom')->get(['id', 'nom', 'commune_id']),
+                'collines' => $collines->orderBy('nom')->get(['id', 'nom', 'zone_id']),
             ];
         }
 
@@ -295,10 +295,10 @@ class StatistiqueController extends Controller
             );
 
             return [
-                'provinces' => $provinces->whereKey($provinceId)->get(),
-                'communes' => $communes->orderBy('nom')->get(),
-                'zones' => $zones->orderBy('nom')->get(),
-                'collines' => $collines->orderBy('nom')->get(),
+                'provinces' => $provinces->whereKey($provinceId)->get(['id', 'nom']),
+                'communes' => $communes->orderBy('nom')->get(['id', 'nom', 'province_id']),
+                'zones' => $zones->orderBy('nom')->get(['id', 'nom', 'commune_id']),
+                'collines' => $collines->orderBy('nom')->get(['id', 'nom', 'zone_id']),
             ];
         }
 
@@ -319,10 +319,10 @@ class StatistiqueController extends Controller
             );
 
             return [
-                'provinces' => $provinces->orderBy('nom')->get(),
-                'communes' => $communes->orderBy('nom')->get(),
-                'zones' => $zones->orderBy('nom')->get(),
-                'collines' => $collines->orderBy('nom')->get(),
+                'provinces' => $provinces->orderBy('nom')->get(['id', 'nom']),
+                'communes' => $communes->orderBy('nom')->get(['id', 'nom', 'province_id']),
+                'zones' => $zones->orderBy('nom')->get(['id', 'nom', 'commune_id']),
+                'collines' => $collines->orderBy('nom')->get(['id', 'nom', 'zone_id']),
             ];
         }
 
@@ -348,16 +348,13 @@ class StatistiqueController extends Controller
         // INDICATEURS PRINCIPAUX
         // ----------------------------------------------------
 
-        $totalMenages = (clone $menages)->count();
+        $statistiquesParcelle = (clone $parcelles)
+            ->selectRaw('COUNT(*) as total, SUM(CASE WHEN latitude IS NOT NULL AND longitude IS NOT NULL THEN 1 ELSE 0 END) as geolocalisees, COALESCE(SUM(nombre_pieds), 0) as pieds')
+            ->first();
 
-        $totalParcelles = (clone $parcelles)->count();
-
-        $parcellesGeolocalisees = (clone $parcelles)
-            ->whereNotNull('latitude')
-            ->whereNotNull('longitude')
-            ->count();
-
-        $totalPieds = (clone $parcelles)->sum('nombre_pieds');
+        $totalParcelles = (int) ($statistiquesParcelle->total ?? 0);
+        $parcellesGeolocalisees = (int) ($statistiquesParcelle->geolocalisees ?? 0);
+        $totalPieds = (int) ($statistiquesParcelle->pieds ?? 0);
 
         // ----------------------------------------------------
         // MENAGES PAR STATUT
@@ -368,6 +365,9 @@ class StatistiqueController extends Controller
             ->groupBy('statut')
             ->orderBy('statut')
             ->get();
+
+        // Le total est déduit du regroupement précédent : une requête de moins.
+        $totalMenages = (int) $menagesParStatut->sum('total');
 
         // ----------------------------------------------------
         // STATISTIQUES PAR PROVINCE
@@ -396,29 +396,42 @@ class StatistiqueController extends Controller
             ->orderBy('users.name')
             ->get();
 
-        $statistiquesEnqueteurs = $listeEnqueteurs->map(
-            function (User $enqueteur) use ($request, $user) {
-                $menagesEnqueteur = $this->menagesFiltres(
-                    $request,
-                    $user
-                )->where('enqueteur_id', $enqueteur->id);
+        // Agrégations globales : évite 3 requêtes par enquêteur.
+        $menagesParEnqueteur = (clone $menages)
+            ->select('enqueteur_id', DB::raw('COUNT(*) as total_menages'))
+            ->whereNotNull('enqueteur_id')
+            ->groupBy('enqueteur_id')
+            ->get()
+            ->keyBy('enqueteur_id');
 
-                $parcellesEnqueteur = Parcelle::query()->whereIn(
-                    'menage_id',
-                    (clone $menagesEnqueteur)->select('menages.id')
-                );
+        $parcellesParEnqueteur = (clone $parcelles)
+            ->join('menages', 'parcelles.menage_id', '=', 'menages.id')
+            ->select(
+                'menages.enqueteur_id',
+                DB::raw('COUNT(parcelles.id) as total_parcelles'),
+                DB::raw('COALESCE(SUM(parcelles.nombre_pieds), 0) as total_pieds')
+            )
+            ->whereNotNull('menages.enqueteur_id')
+            ->groupBy('menages.enqueteur_id')
+            ->get()
+            ->keyBy('enqueteur_id');
 
-                return [
-                    'id' => $enqueteur->id,
-                    'nom' => $enqueteur->name,
-                    'actif' => (bool) $enqueteur->actif,
-                    'total_menages' => (clone $menagesEnqueteur)->count(),
-                    'total_parcelles' => (clone $parcellesEnqueteur)->count(),
-                    'total_pieds' => (clone $parcellesEnqueteur)
-                        ->sum('nombre_pieds'),
-                ];
-            }
-        )->values();
+        $statistiquesEnqueteurs = $listeEnqueteurs->map(function (User $enqueteur) use (
+            $menagesParEnqueteur,
+            $parcellesParEnqueteur
+        ) {
+            $statsMenages = $menagesParEnqueteur->get($enqueteur->id);
+            $statsParcelles = $parcellesParEnqueteur->get($enqueteur->id);
+
+            return [
+                'id' => $enqueteur->id,
+                'nom' => $enqueteur->name,
+                'actif' => (bool) $enqueteur->actif,
+                'total_menages' => (int) ($statsMenages->total_menages ?? 0),
+                'total_parcelles' => (int) ($statsParcelles->total_parcelles ?? 0),
+                'total_pieds' => (int) ($statsParcelles->total_pieds ?? 0),
+            ];
+        })->values();
 
         // ----------------------------------------------------
         // ENQUETEURS ACTIFS ET INACTIFS
@@ -515,12 +528,12 @@ class StatistiqueController extends Controller
         if ($request->filled('colline_id')) {
             $collineId = $request->input('colline_id');
 
+            $idsEnqueteursColline = DB::table('colline_user')
+                ->where('colline_id', $collineId)
+                ->pluck('user_id');
+
             $enqueteursColline = $listeEnqueteurs
-                ->filter(
-                    fn (User $enqueteur) => $enqueteur->collines()
-                        ->where('collines.id', $collineId)
-                        ->exists()
-                )
+                ->whereIn('id', $idsEnqueteursColline)
                 ->values()
                 ->map(fn (User $u) => [
                     'id' => $u->id,

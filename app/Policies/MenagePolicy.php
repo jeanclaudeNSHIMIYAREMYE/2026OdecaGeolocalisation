@@ -67,6 +67,15 @@ class MenagePolicy
         return $this->peutGererDonneesAssociees($utilisateur, $menage);
     }
 
+    public function updateParcelle(User $utilisateur, Menage $menage): bool
+    {
+        return $utilisateur->estAdmin()
+            || in_array($utilisateur->role, [
+                'superviseur_provincial',
+                'superviseur_communal',
+            ], true);
+    }
+
     public function deleteReponse(User $utilisateur, Menage $menage): bool
     {
         return $this->peutGererDonneesAssociees($utilisateur, $menage);

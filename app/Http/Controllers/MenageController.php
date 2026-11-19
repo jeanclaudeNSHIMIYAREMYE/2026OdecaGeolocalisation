@@ -13,6 +13,7 @@ use App\Models\ReponseQuestionnaire;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -62,6 +63,11 @@ class MenageController extends Controller
             'enqueteur_id',
             'possede_vergers_cafe',
         ]);
+
+        // Compatibilité avec l'ancien libellé mobile.
+        if (($filtres['statut'] ?? null) === 'deja_commence') {
+            $filtres['statut'] = 'en_attente';
+        }
 
         $menages = Menage::query()
             ->with([
@@ -185,6 +191,7 @@ class MenageController extends Controller
             'source' => 'pre_enregistre',
             'cree_par_id' => $request->user()->id,
         ]);
+        $menage->synchroniserStatut();
 
         return redirect()
             ->route('menages.show', $menage)
@@ -229,6 +236,10 @@ class MenageController extends Controller
                 'deleteParcelle',
                 $menage
             ),
+            'peutModifierParcelle' => request()->user()->can(
+                'updateParcelle',
+                $menage
+            ),
             'peutSupprimerReponse' => request()->user()->can(
                 'deleteReponse',
                 $menage
@@ -269,6 +280,7 @@ class MenageController extends Controller
         $donnees = $this->valider($request, $menage->id);
 
         $menage->update($donnees);
+        $menage->synchroniserStatut();
 
         return redirect()
             ->route('menages.show', $menage)
@@ -320,6 +332,81 @@ class MenageController extends Controller
         return redirect()
             ->route('menages.show', $menage)
             ->with('succes', 'Parcelle supprimée.');
+    }
+
+    public function editParcelle(Menage $menage, Parcelle $parcelle): Response
+    {
+        $this->authorize('updateParcelle', $menage);
+        abort_if($parcelle->menage_id !== $menage->id, 404);
+
+        // Toujours relire les valeurs persistées avant d'ouvrir le formulaire.
+        $menage->refresh();
+        $parcelle->refresh();
+
+        return Inertia::render('Menages/Parcelles/Modifier', [
+            'menage' => $menage->only(['id', 'code_menage', 'nom_chef_menage', 'prenom_chef_menage']),
+            'parcelle' => $parcelle->only([
+                'id', 'nombre_pieds', 'annee_mise_en_place', 'surface_verger',
+                'etat_verger', 'type', 'type_parcelle', 'mode_acquisition',
+                'latitude', 'longitude', 'altitude',
+            ]),
+        ]);
+    }
+
+    public function updateParcelle(
+        Request $request,
+        Menage $menage,
+        Parcelle $parcelle
+    ): RedirectResponse {
+        $this->authorize('updateParcelle', $menage);
+        abort_if($parcelle->menage_id !== $menage->id, 404);
+
+        $donnees = $request->validate([
+            'nombre_pieds' => ['nullable', 'integer', 'min:0'],
+            'annee_mise_en_place' => ['nullable', 'integer', 'min:1900', 'max:' . (date('Y') + 1)],
+            'surface_verger' => ['nullable', 'numeric', 'min:0'],
+            'etat_verger' => ['nullable', Rule::in(['Bon', 'Moyen', 'Mauvais'])],
+            'type' => ['nullable', Rule::in(['Arabica', 'Robusta'])],
+            'type_parcelle' => ['required', Rule::in(['verger', 'sous_verger'])],
+            'mode_acquisition' => ['nullable', Rule::in([
+                'Concession',
+                'Heritage',
+                'Achat',
+                'Donations',
+                'Cessions',
+                'Location',
+            ])],
+        ]);
+
+        try {
+            DB::transaction(function () use ($menage, $parcelle, $donnees) {
+                $parcelleVerrouillee = Parcelle::query()
+                    ->whereKey($parcelle->id)
+                    ->where('menage_id', $menage->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                // Les coordonnées GPS et le polygone ne sont pas modifiables sur le web.
+                $parcelleVerrouillee->update($donnees);
+                $menage->synchroniserStatut();
+            });
+        } catch (\Throwable $exception) {
+            Log::error('Échec de la modification d’une parcelle.', [
+                'menage_id' => $menage->id,
+                'parcelle_id' => $parcelle->id,
+                'exception' => $exception,
+            ]);
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'parcelle' => 'La modification n’a pas pu être enregistrée. Les données existantes ont été conservées.',
+                ]);
+        }
+
+        return redirect()
+            ->route('menages.show', $menage)
+            ->with('succes', 'Parcelle mise à jour avec succès.');
     }
 
     public function detruireReponse(
@@ -628,6 +715,7 @@ class MenageController extends Controller
                 'required',
                 Rule::in([
                     'a_faire',
+                    'deja_commence',
                     'en_attente',
                     'termine',
                 ]),
@@ -762,7 +850,7 @@ class MenageController extends Controller
             ->route('menages.show', $menage)
             ->with(
                 'succes',
-                "Le ménage {$menage->code_menage} a été affecté à la colline sélectionnée."
+                "Le  cafeiculteur {$menage->code_menage} a été affecté à la colline sélectionnée."
             );
     }
 }

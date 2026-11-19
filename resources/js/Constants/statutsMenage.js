@@ -6,7 +6,13 @@ export const STATUTS_MENAGE = {
         couleur: '#9ca3af',
     },
     en_attente: {
-        texte: 'En attente',
+        texte: 'Déjà commencé',
+        classe: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
+        point: 'bg-amber-500',
+        couleur: '#f59e0b',
+    },
+    deja_commence: {
+        texte: 'Déjà commencé',
         classe: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
         point: 'bg-amber-500',
         couleur: '#f59e0b',

@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Colline;
+use App\Models\Commune;
 use App\Models\Menage;
 use App\Models\Parcelle;
 use App\Models\Province;
 use App\Models\User;
+use App\Models\Zone;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -130,11 +132,33 @@ private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
         $filtres = $request->only(['province_id', 'commune_id', 'zone_id', 'colline_id', 'enqueteur_id', 'date_debut', 'date_fin', 'menage']);
 
         return Parcelle::query()
+            ->select([
+                'id',
+                'menage_id',
+                'nombre_pieds',
+                'annee_mise_en_place',
+                'etat_verger',
+                'latitude',
+                'longitude',
+                'altitude',
+                'polygone',
+                'mode_positionnement',
+                'mode_acquisition',
+                'type',
+                'created_at',
+            ])
             ->where(function ($q) {
                 $q->whereNotNull('latitude')->whereNotNull('longitude')
                     ->orWhereNotNull('polygone');
             })
-            ->with(['menage.colline.zone.commune.province', 'menage.enqueteur:id,name'])
+            ->with([
+                'menage:id,code_menage,type_menage,nom_chef_menage,prenom_chef_menage,cni,telephone,colline_id,enqueteur_id',
+                'menage.colline:id,nom,zone_id',
+                'menage.colline.zone:id,nom,commune_id',
+                'menage.colline.zone.commune:id,nom,province_id',
+                'menage.colline.zone.commune.province:id,nom',
+                'menage.enqueteur:id,name',
+            ])
             ->when($filtres['colline_id'] ?? null, fn($q, $v) => $q->whereHas(
                 'menage',
                 fn($q) => $q->where('colline_id', $v)
@@ -172,9 +196,33 @@ private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
      * un enquêteur n'apparaît dans ce filtre que s'il est affecté
      * (colline_user) quelque part dans le périmètre déjà choisi.
      */
-    private function enqueteursFiltres(array $filtres)
+    private function enqueteursFiltres(array $filtres, ?User $utilisateur = null)
     {
         $query = User::where('role', 'enqueteur');
+
+        $utilisateur ??= request()->user();
+
+        if ($utilisateur?->role === 'superviseur_provincial') {
+            if (!$utilisateur->province_id) {
+                return $query->whereRaw('1 = 0')->orderBy('name')->get(['id', 'name', 'actif']);
+            }
+
+            $query->whereHas(
+                'collines.zone.commune',
+                fn ($q) => $q->where('province_id', $utilisateur->province_id)
+            );
+        } elseif ($utilisateur?->role === 'superviseur_communal') {
+            $collineIds = $utilisateur->collinesIdsAutorisees();
+
+            if (empty($collineIds)) {
+                return $query->whereRaw('1 = 0')->orderBy('name')->get(['id', 'name', 'actif']);
+            }
+
+            $query->whereHas(
+                'collines',
+                fn ($q) => $q->whereIn('collines.id', $collineIds)
+            );
+        }
 
         if ($collineId = $filtres['colline_id'] ?? null) {
             $query->whereHas('collines', fn($q) => $q->where('collines.id', $collineId));
@@ -186,12 +234,62 @@ private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
             $query->whereHas('collines.zone.commune', fn($q) => $q->where('province_id', $provinceId));
         }
 
-        return $query->orderBy('name')->get(['id', 'name']);
+        return $query->orderBy('name')->get(['id', 'name', 'actif']);
+    }
+
+    private function listesGeographiques(User $utilisateur): array
+    {
+        $provinces = Province::query();
+        $communes = Commune::query();
+        $zones = Zone::query();
+        $collines = Colline::query();
+
+        if ($utilisateur->role === 'superviseur_provincial') {
+            if (!$utilisateur->province_id) {
+                return ['provinces' => collect(), 'communes' => collect(), 'zones' => collect(), 'collines' => collect()];
+            }
+
+            $communes->where('province_id', $utilisateur->province_id);
+            $zones->whereHas('commune', fn ($q) => $q->where('province_id', $utilisateur->province_id));
+            $collines->whereHas('zone.commune', fn ($q) => $q->where('province_id', $utilisateur->province_id));
+
+            return [
+                'provinces' => $provinces->whereKey($utilisateur->province_id)->get(['id', 'nom']),
+                'communes' => $communes->orderBy('nom')->get(['id', 'nom', 'province_id']),
+                'zones' => $zones->orderBy('nom')->get(['id', 'nom', 'commune_id']),
+                'collines' => $collines->orderBy('nom')->get(['id', 'nom', 'zone_id']),
+            ];
+        }
+
+        if ($utilisateur->role === 'superviseur_communal') {
+            $communeIds = $utilisateur->communesIds();
+            $collineIds = $utilisateur->collinesIdsAutorisees();
+
+            $communes->whereIn('id', $communeIds);
+            $zones->whereIn('commune_id', $communeIds);
+            $collines->whereIn('id', $collineIds);
+            $provinces->whereHas('communes', fn ($q) => $q->whereIn('communes.id', $communeIds));
+
+            return [
+                'provinces' => $provinces->orderBy('nom')->get(['id', 'nom']),
+                'communes' => $communes->orderBy('nom')->get(['id', 'nom', 'province_id']),
+                'zones' => $zones->orderBy('nom')->get(['id', 'nom', 'commune_id']),
+                'collines' => $collines->orderBy('nom')->get(['id', 'nom', 'zone_id']),
+            ];
+        }
+
+        return [
+            'provinces' => $provinces->orderBy('nom')->get(['id', 'nom']),
+            'communes' => $communes->orderBy('nom')->get(['id', 'nom', 'province_id']),
+            'zones' => $zones->orderBy('nom')->get(['id', 'nom', 'commune_id']),
+            'collines' => $collines->orderBy('nom')->get(['id', 'nom', 'zone_id']),
+        ];
     }
 
     public function index(Request $request): Response
     {
         $filtres = $request->only(['province_id', 'commune_id', 'zone_id', 'colline_id', 'enqueteur_id', 'date_debut', 'date_fin', 'menage']);
+        $geographie = $this->listesGeographiques($request->user());
 
         $parcelles = $this->parcellesFiltrees($request)->get();
 
@@ -262,8 +360,10 @@ private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
         $collineSelectionnee = null;
         $enqueteursColline = collect();
 
-        if ($collineId = $filtres['colline_id'] ?? null) {
-            $collineSelectionnee = Colline::find($collineId, ['id', 'nom']);
+        if (($collineId = $filtres['colline_id'] ?? null)
+            && $geographie['collines']->firstWhere('id', (int) $collineId)
+        ) {
+            $collineSelectionnee = $geographie['collines']->firstWhere('id', (int) $collineId);
 
             $statsParEnqueteurId = $parcelles
                 ->filter(fn($p) => $p->menage->enqueteur_id !== null)
@@ -274,10 +374,7 @@ private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
                     'pieds' => (int) $groupe->sum('nombre_pieds'),
                 ]);
 
-            $enqueteursColline = User::where('role', 'enqueteur')
-                ->whereHas('collines', fn($q) => $q->where('collines.id', $collineId))
-                ->orderBy('name')
-                ->get(['id', 'name', 'actif'])
+            $enqueteursColline = $this->enqueteursFiltres($filtres, $request->user())
                 ->map(function ($u) use ($statsParEnqueteurId) {
                     $stats = $statsParEnqueteurId->get($u->id, [
                         'menages' => 0,
@@ -298,11 +395,11 @@ private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
             'filtres' => $filtres,
             'points' => $points,
             'menageCible' => $menageCible,
-            'provinces' => Province::orderBy('nom')->get(['id', 'nom']),
-            'communes' => \App\Models\Commune::orderBy('nom')->get(['id', 'nom', 'province_id']),
-            'zones' => \App\Models\Zone::orderBy('nom')->get(['id', 'nom', 'commune_id']),
-            'collines' => \App\Models\Colline::orderBy('nom')->get(['id', 'nom', 'zone_id']),
-            'enqueteurs' => $this->enqueteursFiltres($filtres),
+            'provinces' => $geographie['provinces'],
+            'communes' => $geographie['communes'],
+            'zones' => $geographie['zones'],
+            'collines' => $geographie['collines'],
+            'enqueteurs' => $this->enqueteursFiltres($filtres, $request->user()),
             'collineSelectionnee' => $collineSelectionnee,
             'enqueteursColline' => $enqueteursColline,
             'total' => $points->count(),
@@ -356,7 +453,8 @@ private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
             'Commune',
             'Zone',
             'Colline',
-            'Enquêteur',
+            'ID enquêteur',
+            'Nom enquêteur',
             'Latitude',
             'Longitude',
             'Altitude',
@@ -392,7 +490,8 @@ private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
                 $menage->colline?->zone?->commune?->nom,
                 $menage->colline?->zone?->nom,
                 $menage->colline?->nom,
-                $menage->enqueteur?->name,
+                $menage->enqueteur_id,
+                $menage->enqueteur?->name ?? 'Non affecté',
                 $estPolygone ? null : ((float) $parcelle->latitude),
                 $estPolygone ? null : ((float) $parcelle->longitude),
                 $this->altitudeParcelle($parcelle),
@@ -417,15 +516,15 @@ private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
         }
 
         $derniereLigne = $ligne - 1;
-        $feuilleDonnees->getStyle('A1:Y1')->applyFromArray([
+        $feuilleDonnees->getStyle('A1:Z1')->applyFromArray([
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'CE1126']],
         ]);
         if ($derniereLigne >= 1) {
-            $feuilleDonnees->setAutoFilter("A1:Y{$derniereLigne}");
+            $feuilleDonnees->setAutoFilter("A1:Z{$derniereLigne}");
         }
         $feuilleDonnees->freezePane('A2');
-        foreach (range('A', 'Y') as $colonne) {
+        foreach (range('A', 'Z') as $colonne) {
             $feuilleDonnees->getColumnDimension($colonne)->setAutoSize(true);
         }
 
@@ -452,6 +551,45 @@ private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
         ]);
         foreach (range('A', 'E') as $colonne) {
             $feuilleSynthese->getColumnDimension($colonne)->setAutoSize(true);
+        }
+
+        // --- Feuille 3 : synthèse par enquêteur ---
+        $feuilleEnqueteurs = $classeur->createSheet();
+        $feuilleEnqueteurs->setTitle('Synthèse par enquêteur');
+        $feuilleEnqueteurs->fromArray([
+            'Enquêteur ID',
+            'Nom de l’enquêteur',
+            'Nombre de parcelles',
+            'Nombre de ménages',
+            'Total pieds de café',
+            'Superficie totale (ha)',
+        ], null, 'A1');
+
+        $parEnqueteur = $parcelles->groupBy(
+            fn ($p) => $p->menage->enqueteur_id ?? 0
+        );
+        $ligne = 2;
+
+        foreach ($parEnqueteur as $enqueteurId => $groupe) {
+            $enqueteur = $groupe->first()->menage->enqueteur;
+
+            $feuilleEnqueteurs->fromArray([
+                $enqueteurId ?: null,
+                $enqueteur?->name ?? 'Non affecté',
+                $groupe->count(),
+                $groupe->pluck('menage_id')->unique()->count(),
+                (int) $groupe->sum('nombre_pieds'),
+                round($groupe->sum(fn ($p) => $this->superficieHectares($p->polygone) ?? 0), 2),
+            ], null, "A{$ligne}");
+            $ligne++;
+        }
+
+        $feuilleEnqueteurs->getStyle('A1:F1')->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'CE1126']],
+        ]);
+        foreach (range('A', 'F') as $colonne) {
+            $feuilleEnqueteurs->getColumnDimension($colonne)->setAutoSize(true);
         }
 
         $classeur->setActiveSheetIndex(0);
@@ -489,7 +627,8 @@ private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
                 'Commune',
                 'Zone',
                 'Colline',
-                'Enquêteur',
+                'ID enquêteur',
+                'Nom enquêteur',
                 'Latitude',
                 'Longitude',
                 'Altitude',
@@ -522,7 +661,8 @@ private function couleurKml(string $hexRrggbb, string $alphaHex = 'ff'): string
                     $menage->colline?->zone?->commune?->nom,
                     $menage->colline?->zone?->nom,
                     $menage->colline?->nom,
-                    $menage->enqueteur?->name,
+                    $menage->enqueteur_id,
+                    $menage->enqueteur?->name ?? 'Non affecté',
                     $estPolygone ? '' : $parcelle->latitude,
                     $estPolygone ? '' : $parcelle->longitude,
                     $this->altitudeParcelle($parcelle),

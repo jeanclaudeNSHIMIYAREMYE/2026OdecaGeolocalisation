@@ -92,6 +92,7 @@ function CarteBurundi({ points = [] }) {
 
                     couchePolygonesRef.current =
                         L.layerGroup().addTo(carte);
+
                 }
 
                 afficherPoints(L, points);
@@ -985,6 +986,9 @@ function BanniereAvancement({ kpi = {}, nombre }) {
 export default function Dashboard({
     kpi = {},
     pointsCarte = [],
+    pointsCarteTotal = 0,
+    pointsCarteLimite = 0,
+    pointsCarteEstLimitee = false,
     filtres = {},
     provinces = [],
     communes = [],
@@ -1299,7 +1303,21 @@ export default function Dashboard({
                                         {nombre(listePointsCarte.length)}
                                     </span>{' '}
                                     points géographiques affichés
+                                    {pointsCarteEstLimitee && (
+                                        <>
+                                            {' '}sur{' '}
+                                            <span className="font-semibold text-gray-700">
+                                                {nombre(pointsCarteTotal)}
+                                            </span>
+                                        </>
+                                    )}
                                 </p>
+                                {pointsCarteEstLimitee && (
+                                    <p className="mt-1 pl-3.5 text-[11px] text-amber-700">
+                                        La carte est limitée à {nombre(pointsCarteLimite)} points pour rester fluide.
+                                        Utilisez les filtres territoriaux pour affiner l'affichage.
+                                    </p>
+                                )}
                             </div>
 
                             <LegendeStatut />

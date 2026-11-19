@@ -17,7 +17,12 @@ const LIBELLES_STATUT = {
         point: 'bg-gray-400',
     },
     en_attente: {
-        texte: 'En attente',
+        texte: 'Déjà commencé',
+        classe: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
+        point: 'bg-amber-500',
+    },
+    deja_commence: {
+        texte: 'Déjà commencé',
         classe: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
         point: 'bg-amber-500',
     },
@@ -396,7 +401,7 @@ export default function Index({
                                 >
                                     <option value="">Tous les statuts</option>
                                     <option value="a_faire">À faire</option>
-                                    <option value="en_attente">En attente</option>
+                                    <option value="deja_commence">Déjà commencé</option>
                                     <option value="termine">Terminé</option>
                                 </select>
                             </Etiquette>

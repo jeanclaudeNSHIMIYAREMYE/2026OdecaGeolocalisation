@@ -103,6 +103,14 @@ Route::delete('/menages/{menage}/parcelles/{parcelle}', [MenageController::class
     ->middleware(['auth', 'verified', 'role:admin,superviseur_national,superviseur_provincial,superviseur_communal'])
     ->name('menages.parcelles.destroy');
 
+Route::get('/menages/{menage}/parcelles/{parcelle}/edit', [MenageController::class, 'editParcelle'])
+    ->middleware(['auth', 'verified', 'role:admin,superviseur_provincial,superviseur_communal'])
+    ->name('menages.parcelles.edit');
+
+Route::put('/menages/{menage}/parcelles/{parcelle}', [MenageController::class, 'updateParcelle'])
+    ->middleware(['auth', 'verified', 'role:admin,superviseur_provincial,superviseur_communal'])
+    ->name('menages.parcelles.update');
+
 
 Route::put('/menages/{menage}/reponses/{reponse}', [MenageController::class, 'modifierReponse'])
     ->middleware(['auth', 'verified', 'role:admin,superviseur_national,superviseur_provincial,superviseur_communal'])

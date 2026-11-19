@@ -431,8 +431,8 @@ export default function Index({
 
     const statutsConnus = {
         a_faire: { label: 'À faire', couleur: '#9CA3AF' },
-        en_attente: { label: 'En attente', couleur: '#F59E0B' },
-        deja_commence: { label: 'En cours', couleur: '#3B82F6' },
+        en_attente: { label: 'Déjà commencé', couleur: '#F59E0B' },
+        deja_commence: { label: 'Déjà commencé', couleur: '#F59E0B' },
         termine: { label: 'Terminés', couleur: '#1EB53A' },
     };
 

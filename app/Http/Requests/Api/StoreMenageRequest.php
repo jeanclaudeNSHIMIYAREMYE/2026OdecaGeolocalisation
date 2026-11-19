@@ -15,7 +15,6 @@ class StoreMenageRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $statut = $this->input('statut');
-        $statutBackend = $statut === 'deja_commence' ? 'en_attente' : $statut;
 
         $this->merge([
             'nom_chef_menage' => $this->nom_chef_menage
@@ -25,7 +24,9 @@ class StoreMenageRequest extends FormRequest
             'prenom_chef_menage' => $this->prenom_chef_menage
                 ? mb_strtoupper($this->prenom_chef_menage, 'UTF-8')
                 : null,
-            'statut' => $statutBackend,
+            'statut' => $statut === 'deja_commence'
+                ? 'en_attente'
+                : $statut,
         ]);
     }
 
@@ -100,6 +101,7 @@ class StoreMenageRequest extends FormRequest
                 'nullable',
                 Rule::in([
                     'a_faire',
+                    'deja_commence',
                     'en_attente',
                     'termine',
                 ]),

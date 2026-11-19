@@ -1,5 +1,4 @@
 <?php
-
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\AccueilController;
 use App\Http\Controllers\Api\V1\GeoReferenceController;
@@ -20,7 +19,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')
     ->name('api.v1.')
-    ->middleware('throttle:public-api')
     ->group(function () {
 
         /*
@@ -30,7 +28,6 @@ Route::prefix('v1')
         */
 
         Route::post('/login', [AuthController::class, 'login'])
-            ->middleware('throttle:login')
             ->name('login');
 
         Route::get('/ping', function () {
@@ -74,60 +71,57 @@ Route::prefix('v1')
 
         Route::middleware('auth:sanctum')->group(function () {
 
-            Route::middleware('throttle:authenticated-api')->group(function () {
+            // Session et compte
+            Route::post('/logout', [AuthController::class, 'logout'])
+                ->name('logout');
 
-                // Session et compte
-                Route::post('/logout', [AuthController::class, 'logout'])
-                    ->name('logout');
+            Route::get('/me', [AuthController::class, 'me'])
+                ->name('me');
 
-                Route::get('/me', [AuthController::class, 'me'])
-                    ->name('me');
+            // Questionnaire
+            Route::get('/questionnaire/actif', [
+                QuestionnaireController::class,
+                'actif'
+            ])->name('questionnaire.actif');
 
-                // Questionnaire
-                Route::get('/questionnaire/actif', [
-                    QuestionnaireController::class,
-                    'actif'
-                ])->name('questionnaire.actif');
+            // Ménages
+            Route::apiResource('menages', MenageController::class);
 
-                // Ménages
-                Route::apiResource('menages', MenageController::class);
+            // Parcelles
+            Route::apiResource('menages.parcelles', ParcelleController::class)
+                ->shallow();
 
-                // Parcelles
-                Route::apiResource('menages.parcelles', ParcelleController::class)
-                    ->shallow();
+            // Accueil
+            Route::get('/accueil', [AccueilController::class, 'index'])
+                ->name('accueil.index');
 
-                // Accueil
-                Route::get('/accueil', [AccueilController::class, 'index'])
-                    ->name('accueil.index');
+            // Réponses
+            Route::post('/reponses', [ReponseController::class, 'store'])
+                ->name('reponses.store');
 
-                // Réponses
-                Route::post('/reponses', [ReponseController::class, 'store'])
-                    ->name('reponses.store');
+            Route::post('/reponses/lot', [ReponseController::class, 'storeLot'])
+                ->name('reponses.lot');
 
-                Route::post('/reponses/lot', [ReponseController::class, 'storeLot'])
-                    ->name('reponses.lot');
-
-                Route::get('/arborescence/connected', [
-                    GeoReferenceController::class,
-                    'arborescence'
-                ])->name('arborescence');
-            });
+            Route::get('/arborescence/connected', [
+                GeoReferenceController::class,
+                'arborescence'
+            ])->name('arborescence');
 
             /*
             |--------------------------------------------------------------------------
             | Synchronisation offline-first
             |--------------------------------------------------------------------------
             */
+
             Route::prefix('sync')
                 ->name('sync.')
-                ->middleware('throttle:sync')
                 ->group(function () {
 
-                Route::post('/push', [SyncPushController::class, 'push'])
-                    ->name('push');
+                    Route::post('/push', [SyncPushController::class, 'push'])
+                        ->name('push');
 
-                Route::get('/pull', [SyncPullController::class, 'pull'])
-                    ->name('pull');
-            });
+                    Route::get('/pull', [SyncPullController::class, 'pull'])
+                        ->name('pull');
+                });
         });
     });

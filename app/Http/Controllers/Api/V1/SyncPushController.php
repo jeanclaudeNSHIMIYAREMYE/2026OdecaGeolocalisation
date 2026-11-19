@@ -40,6 +40,7 @@ class SyncPushController extends Controller
         $mappingMenages = [];
         $mappingParcelles = [];
         $mappingReponses = [];
+        $menagesAffectes = [];
         $errors = [];
 
         $collinesOk = in_array(
@@ -120,11 +121,11 @@ class SyncPushController extends Controller
                         }
                     }
 
-                    $statut = $m['statut'] ?? 'a_faire';
-
-                    if ($statut === 'deja_commence') {
-                        $statut = 'en_attente';
-                    }
+                    $statut = match ($m['statut'] ?? 'a_faire') {
+                        'deja_commence', 'en_attente' => 'en_attente',
+                        'termine' => 'termine',
+                        default => 'a_faire',
+                    };
 
                     $source = in_array(
                         $m['source'] ?? null,
@@ -167,6 +168,7 @@ class SyncPushController extends Controller
                     }
 
                     $mappingMenages[(string) $localId] = $menage->id;
+                    $menagesAffectes[$menage->id] = true;
 
                     Cache::put(
                         $this->cleMappingMenage($user, (string) $localId),
@@ -230,6 +232,8 @@ class SyncPushController extends Controller
                     $menage = Menage::whereKey($menageId)
                         ->lockForUpdate()
                         ->firstOrFail();
+
+                    $menagesAffectes[$menage->id] = true;
 
                     // Vérification des droits territoriaux.
                     AccesTerritorial::verifierMenage(
@@ -435,6 +439,8 @@ class SyncPushController extends Controller
 
                     $menage = Menage::findOrFail($menageId);
 
+                    $menagesAffectes[$menage->id] = true;
+
                     AccesTerritorial::verifierMenage(
                         $user,
                         $menage->id
@@ -493,6 +499,10 @@ class SyncPushController extends Controller
                         'message' => $e->getMessage(),
                     ];
                 }
+            }
+
+            foreach (array_keys($menagesAffectes) as $menageId) {
+                Menage::find($menageId)?->synchroniserStatut();
             }
 
             DB::commit();
