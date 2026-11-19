@@ -309,7 +309,7 @@ public function calculerStatut(): string
     }
 
     // Toutes les parcelles déclarées doivent être enregistrées.
-    if ($nombreParcelles >= $declares) {
+    if ($nombreParcelles === $declares) {
         return 'termine';
     }
 
