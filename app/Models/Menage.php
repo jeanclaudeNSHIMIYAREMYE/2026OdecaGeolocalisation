@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class Menage extends Model
@@ -252,7 +253,7 @@ public function questionnaireEstComplet(): bool
         return false;
     }
 
-    foreach ($questions as $question) {
+    foreach ($questions->filter(fn ($question) => (bool) $question->obligatoire) as $question) {
         // Question conditionnelle : nom de la coopérative.
         if ($question->code === 'nom_cooperative') {
             if (
@@ -319,6 +320,124 @@ public function calculerStatut(): string
 /**
  * Met à jour le statut uniquement si nécessaire.
  */
+/**
+ * Version optimisee du calcul pour les traitements par lots.
+ * Les relations et les questions sont deja chargees en memoire.
+ */
+public function calculerStatutAvecContexte(
+    Collection $questions,
+    Collection $reponses,
+    int $nombreParcelles
+): string {
+    if ($reponses->isEmpty() && $nombreParcelles === 0) {
+        return 'a_faire';
+    }
+
+    $possedeVergers = $this->valeurReponseAvecContexte(
+        'possede_vergers_cafe',
+        $questions,
+        $reponses
+    );
+
+    if (!$this->questionnaireEstCompletAvecContexte($questions, $reponses)) {
+        return 'en_attente';
+    }
+
+    if ($possedeVergers === 'Non') {
+        return 'termine';
+    }
+
+    $vergers = $this->valeurReponseAvecContexte(
+        'effectif_vergers',
+        $questions,
+        $reponses
+    );
+    $sousVergers = $this->valeurReponseAvecContexte(
+        'effectif_sous_vergers',
+        $questions,
+        $reponses
+    );
+
+    $vergers = $vergers === null || $vergers === '' ? 0 : $vergers;
+    $sousVergers = $sousVergers === null || $sousVergers === '' ? 0 : $sousVergers;
+
+    if (
+        !is_numeric($vergers) || (int) $vergers < 0 ||
+        !is_numeric($sousVergers) || (int) $sousVergers < 0
+    ) {
+        return 'en_attente';
+    }
+
+    return $nombreParcelles === ((int) $vergers + (int) $sousVergers)
+        ? 'termine'
+        : 'en_attente';
+}
+
+private function questionnaireEstCompletAvecContexte(
+    Collection $questions,
+    Collection $reponses
+): bool {
+    if ($questions->isEmpty()) {
+        return false;
+    }
+
+    if (
+        $this->valeurReponseAvecContexte(
+            'possede_vergers_cafe',
+            $questions,
+            $reponses
+        ) === 'Non'
+    ) {
+        return true;
+    }
+
+    foreach ($questions->filter(fn ($question) => (bool) $question->obligatoire) as $question) {
+        if ($question->code === 'nom_cooperative') {
+            if (
+                $this->valeurReponseAvecContexte(
+                    'appartenance_cooperative',
+                    $questions,
+                    $reponses
+                ) !== 'Oui'
+            ) {
+                continue;
+            }
+        }
+
+        if (
+            $this->valeurEstVide(
+                $this->valeurReponseAvecContexte(
+                    $question->code,
+                    $questions,
+                    $reponses
+                )
+            )
+        ) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+private function valeurReponseAvecContexte(
+    string $codeQuestion,
+    Collection $questions,
+    Collection $reponses
+): mixed {
+    $question = $questions->first(
+        fn ($element) => $element->code === $codeQuestion
+    );
+
+    if (!$question) {
+        return null;
+    }
+
+    $reponse = $reponses->firstWhere('question_id', $question->id);
+
+    return $reponse ? $this->normaliserValeur($reponse->valeur) : null;
+}
+
 public function synchroniserStatut(): void
 {
     $statut = $this->calculerStatut();
